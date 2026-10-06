@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter web...
+      - run: pnpm lint
+      - run: pnpm test
+
+  deploy:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter web...
+      - name: Build + deploy (OpenNext → Cloudflare)
+        working-directory: apps/web
+        run: pnpm run deploy
+      - name: Sincroniza secrets do runtime
+        working-directory: apps/web
+        run: |
+          printf '{"SUPABASE_URL":"%s","SUPABASE_ANON_KEY":"%s","SUPABASE_SERVICE_ROLE_KEY":"%s"}' \
+            "${{ secrets.SUPABASE_URL }}" "${{ secrets.SUPABASE_ANON_KEY }}" "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            | pnpm exec wrangler secret bulk

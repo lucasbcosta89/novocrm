@@ -1,0 +1,52 @@
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --text: #1a1d23;
+  --muted: #5f6672;
+  --border: #e2e5ea;
+  --accent: #1f5eff;
+  --accent-text: #ffffff;
+  --danger: #c62828;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111318;
+    --surface: #1a1d23;
+    --text: #e8eaee;
+    --muted: #9aa1ad;
+    --border: #2b2f37;
+    --accent: #5b8cff;
+    --danger: #ff6b6b;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+a { color: inherit; }
+
+.auth { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+.auth form { width: 100%; max-width: 360px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 24px; display: grid; gap: 12px; }
+.auth h1 { margin: 0 0 4px; font-size: 1.4rem; }
+.auth label { display: grid; gap: 4px; font-size: .9rem; color: var(--muted); }
+.auth input { padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font-size: 1rem; }
+.auth .erro { color: var(--danger); font-size: .9rem; margin: 0; }
+.auth .alt { font-size: .9rem; color: var(--muted); margin: 0; }
+.btn { padding: 10px 14px; border: 0; border-radius: 8px; background: var(--accent); color: var(--accent-text); font-size: 1rem; cursor: pointer; }
+.btn-link { background: none; border: 0; color: var(--muted); cursor: pointer; padding: 8px 12px; font: inherit; text-align: left; }
+
+.shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+.sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 16px 8px; display: flex; flex-direction: column; gap: 4px; }
+.sidebar .marca { font-weight: 700; padding: 8px 12px 16px; text-decoration: none; }
+.sidebar nav { display: grid; gap: 2px; }
+.sidebar nav a { padding: 8px 12px; border-radius: 6px; text-decoration: none; color: var(--muted); }
+.sidebar nav a:hover { background: var(--bg); color: var(--text); }
+.sidebar form { margin-top: auto; }
+.conteudo { padding: 24px; }
+.conteudo h1 { margin-top: 0; }
+.vazio { border: 1px dashed var(--border); border-radius: 12px; padding: 32px; color: var(--muted); text-align: center; }
+
+@media (max-width: 720px) {
+  .shell { grid-template-columns: 1fr; }
+  .sidebar { border-right: 0; border-bottom: 1px solid var(--border); }
+  .sidebar nav { grid-auto-flow: column; overflow-x: auto; }
+  .conteudo { padding: 16px; }
+}
