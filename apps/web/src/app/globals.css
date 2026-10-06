@@ -90,3 +90,17 @@ a { color: inherit; }
 .anotacao { white-space: pre-wrap; color: var(--muted); }
 .dica { color: var(--muted); }
 section[id] { scroll-margin-top: 16px; }
+
+/* Fase 4: oportunidades e plano de ação */
+.novo > summary { display: inline-block; list-style: none; width: fit-content; }
+.novo > summary::-webkit-details-marker { display: none; }
+.novo[open] > summary { margin-bottom: 12px; }
+.inline { display: flex; gap: 8px; align-items: end; flex-wrap: wrap; }
+.inline .campo { min-width: 150px; }
+.acoes-linha { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.btn-link.perigo { color: var(--danger); }
+.etiqueta { display: inline-block; font-size: .75rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; vertical-align: middle; }
+.etiqueta-oportunidade { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok); }
+.etiqueta-desafio { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
+.tabela tr.concluida td:first-child { text-decoration: line-through; color: var(--muted); }
+.atrasada { color: var(--danger); font-weight: 600; }

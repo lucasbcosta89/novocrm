@@ -25,6 +25,11 @@ Toda fase termina com commit + tag no GitHub.
   - [x] RLS por dono em todas as tabelas (billing/quota só leitura; webhook_events só service role)
   - [x] Critério verificado (cria cliente, abre, vincula a 2 representadas, registra visita)
 - [ ] Fase 4 — Oportunidades e desafios por cliente + plano de ação
+  - [x] Bloco "Oportunidades e Desafios" na página do cliente (+ Novo, tabela tipo/título/prioridade/status/data/ações)
+  - [x] Plano de ação em /app/clientes/:id/oportunidades/:opId (adicionar, concluir, editar, excluir ações)
+  - [x] Atualização de status do item (lista e plano) + API /api/oportunidades, /api/acoes
+  - [x] Checks de domínio no banco + RLS da representada opcional
+  - [ ] Critério verificado (cria item, abre plano, 2 ações, conclui 1)
 - [ ] Fase 5 — Comissão por representada
 - [ ] Fase 6 — Planos, limites e assinatura Mercado Pago
 - [ ] Fase 7 — PDFs (relatórios e catálogos)

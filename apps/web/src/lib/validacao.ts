@@ -23,6 +23,17 @@ const numero = (min: number, max: number, msg: string) =>
     z.number(msg).min(min, msg).max(max, msg),
   );
 
+type SemPadrao<T> = T extends z.ZodDefault<infer I> ? I : T;
+type ShapeParcial<T extends z.ZodRawShape> = { [K in keyof T]: z.ZodOptional<SemPadrao<T[K]>> };
+
+/** Como .partial(), mas sem os defaults: PATCH só altera os campos enviados. */
+function parcial<T extends z.ZodRawShape>(schema: z.ZodObject<T>): z.ZodObject<ShapeParcial<T>> {
+  const shape = Object.fromEntries(
+    Object.entries(schema.shape).map(([k, v]) => [k, ((v instanceof z.ZodDefault ? v.unwrap() : v) as z.ZodType).optional()]),
+  );
+  return z.object(shape) as unknown as z.ZodObject<ShapeParcial<T>>;
+}
+
 export const idSchema = z.uuid("ID inválido");
 
 export const representadaSchema = z.object({
@@ -30,7 +41,7 @@ export const representadaSchema = z.object({
   cnpj: digitosOpcional([14], "CNPJ deve ter 14 dígitos"),
   comissao_padrao: numero(0, 100, "Comissão deve estar entre 0 e 100").default(0),
 });
-export const representadaUpdateSchema = representadaSchema.partial();
+export const representadaUpdateSchema = parcial(representadaSchema);
 
 export const clienteSchema = z.object({
   nome: z.string().trim().min(2, "Informe o nome").max(160),
@@ -47,7 +58,7 @@ export const clienteSchema = z.object({
   segmento: textoOpcional(80),
   anotacoes: textoOpcional(2000),
 });
-export const clienteUpdateSchema = clienteSchema.partial();
+export const clienteUpdateSchema = parcial(clienteSchema);
 
 export const vinculoSchema = z.object({
   representada_ids: z.array(idSchema).max(200),
@@ -62,7 +73,7 @@ export const produtoSchema = z.object({
   desconto_max: numero(0, 100, "Desconto máximo deve estar entre 0 e 100").default(0),
   ativo: z.preprocess((v) => (v === "on" ? true : v === "off" ? false : v), z.boolean()).default(true),
 });
-export const produtoUpdateSchema = produtoSchema.partial();
+export const produtoUpdateSchema = parcial(produtoSchema);
 
 export function slugify(texto: string): string {
   const slug = texto
@@ -95,4 +106,31 @@ export const visitaSchema = z.object({
   anotacoes: textoOpcional(4000),
   resultado: textoOpcional(1000),
 });
-export const visitaUpdateSchema = visitaSchema.partial();
+export const visitaUpdateSchema = parcial(visitaSchema);
+
+export const TIPOS_OPORTUNIDADE = ["oportunidade", "desafio"] as const;
+export const PRIORIDADES = ["baixa", "media", "alta"] as const;
+export const STATUS_OPORTUNIDADE = ["aberta", "em_andamento", "concluida", "nao_aplicavel"] as const;
+export const STATUS_ACAO = ["pendente", "em_andamento", "concluida"] as const;
+
+export const oportunidadeSchema = z.object({
+  tipo: z.enum(TIPOS_OPORTUNIDADE, "Tipo inválido"),
+  titulo: z.string().trim().min(2, "Informe o título").max(200),
+  descricao: textoOpcional(4000),
+  valor_estimado: z.preprocess(
+    (v) => (typeof v === "string" ? (v.trim() === "" ? null : Number(v.replace(",", "."))) : v),
+    z.number("Valor estimado inválido").min(0, "Valor estimado inválido").max(999_999_999_999).nullable().optional(),
+  ),
+  prioridade: z.enum(PRIORIDADES, "Prioridade inválida").default("media"),
+  status: z.enum(STATUS_OPORTUNIDADE, "Status inválido").default("aberta"),
+  representada_id: z.preprocess(vazioParaNull, idSchema.nullable().optional()),
+});
+export const oportunidadeUpdateSchema = parcial(oportunidadeSchema);
+
+export const acaoSchema = z.object({
+  descricao: z.string().trim().min(2, "Descreva a ação").max(1000),
+  responsavel: textoOpcional(120),
+  prazo: z.preprocess(vazioParaNull, z.iso.date("Prazo inválido").nullable().optional()),
+  status: z.enum(STATUS_ACAO, "Status inválido").default("pendente"),
+});
+export const acaoUpdateSchema = parcial(acaoSchema);

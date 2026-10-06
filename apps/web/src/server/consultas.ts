@@ -34,27 +34,6 @@ export async function listarPedidos(
   return data;
 }
 
-export type OportunidadeResumo = {
-  id: string;
-  tipo: "oportunidade" | "desafio";
-  titulo: string;
-  status: string;
-  prioridade: string;
-  valor_estimado: number | null;
-  representada: { nome: string } | null;
-};
-
-export async function listarOportunidades({ supabase }: Contexto, clienteId: string): Promise<OportunidadeResumo[]> {
-  const { data, error } = await supabase
-    .from("oportunidades_desafios")
-    .select("id, tipo, titulo, status, prioridade, valor_estimado, representada:representadas(nome)")
-    .eq("cliente_id", idSchema.parse(clienteId))
-    .order("criado_em", { ascending: false })
-    .returns<OportunidadeResumo[]>();
-  if (error) throw erroBanco(error);
-  return data;
-}
-
 export type PrecoTabela = {
   id: string;
   preco: number;
