@@ -79,3 +79,20 @@ export function slugify(texto: string): string {
 export function primeiroErroZod(error: z.ZodError): string {
   return error.issues[0]?.message ?? "Dados inválidos";
 }
+
+export const TIPOS_VISITA = ["presencial", "telefone", "whatsapp", "video"] as const;
+
+/** "2026-10-06T14:30" (datetime-local, horário de Brasília) ou ISO completo → ISO com offset. */
+const dataHora = z.preprocess(
+  (v) => (typeof v === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v) ? `${v}:00-03:00` : v),
+  z.iso.datetime({ offset: true, message: "Data/hora inválida" }),
+);
+
+export const visitaSchema = z.object({
+  data: dataHora,
+  tipo: z.enum(TIPOS_VISITA, "Tipo de visita inválido").default("presencial"),
+  representada_id: z.preprocess(vazioParaNull, idSchema.nullable().optional()),
+  anotacoes: textoOpcional(4000),
+  resultado: textoOpcional(1000),
+});
+export const visitaUpdateSchema = visitaSchema.partial();

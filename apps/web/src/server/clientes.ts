@@ -81,6 +81,31 @@ export async function excluirCliente({ supabase }: Contexto, id: string): Promis
   if (!count) throw new AppError(404, "Não encontrado", "nao_encontrado");
 }
 
+/** Vincula o cliente a uma representada (idempotente). */
+export async function vincular(ctx: Contexto, clienteId: string, representadaId: string): Promise<Cliente> {
+  const cliente_id = idSchema.parse(clienteId);
+  const { error } = await ctx.supabase
+    .from("cliente_representada")
+    .upsert(
+      { cliente_id, representada_id: idSchema.parse(representadaId) },
+      { onConflict: "cliente_id,representada_id", ignoreDuplicates: true },
+    );
+  if (error) throw error.code === "42501" ? new AppError(404, "Cliente ou representada não encontrados", "nao_encontrado") : erroBanco(error);
+  return obterCliente(ctx, cliente_id);
+}
+
+/** Remove o vínculo cliente ↔ representada (idempotente). */
+export async function desvincular(ctx: Contexto, clienteId: string, representadaId: string): Promise<Cliente> {
+  const cliente_id = idSchema.parse(clienteId);
+  const { error } = await ctx.supabase
+    .from("cliente_representada")
+    .delete()
+    .eq("cliente_id", cliente_id)
+    .eq("representada_id", idSchema.parse(representadaId));
+  if (error) throw erroBanco(error);
+  return obterCliente(ctx, cliente_id);
+}
+
 /** Define o conjunto exato de representadas do cliente (substitui os vínculos anteriores). */
 export async function vincularRepresentadas(ctx: Contexto, clienteId: string, input: unknown): Promise<Cliente> {
   const id = idSchema.parse(clienteId);

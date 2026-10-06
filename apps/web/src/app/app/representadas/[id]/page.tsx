@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Campo, Mensagens, type Busca } from "@/components/form";
-import { formatarMoeda, formatarPercentual } from "@/lib/formato";
+import { TabelaPedidos } from "@/components/tabelas";
+import { formatarDocumento, formatarMoeda, formatarPercentual } from "@/lib/formato";
 import { carregar } from "@/server/acao";
+import { listarPedidos, listarTabelaPrecos, resumoRepresentada } from "@/server/consultas";
 import { listarProdutos } from "@/server/produtos";
 import { obterRepresentada } from "@/server/representadas";
 import {
@@ -20,16 +22,40 @@ export default async function RepresentadaPage({
   searchParams: Busca;
 }) {
   const [{ id }, { erro, ok }] = await Promise.all([params, searchParams]);
-  const [r, produtos] = await carregar((ctx) => Promise.all([obterRepresentada(ctx, id), listarProdutos(ctx, id)]));
+  const [r, produtos, precos, pedidos, resumo] = await carregar((ctx) =>
+    Promise.all([
+      obterRepresentada(ctx, id),
+      listarProdutos(ctx, id),
+      listarTabelaPrecos(ctx, id),
+      listarPedidos(ctx, { representada_id: id }),
+      resumoRepresentada(ctx, id),
+    ]),
+  );
 
   return (
     <>
       <p className="trilha"><Link href="/app/representadas">Representadas</Link> /</p>
       <h1>{r.nome}</h1>
+      <nav className="ancoras">
+        <a href="#geral">Visão geral</a><a href="#catalogo">Catálogo</a><a href="#precos">Tabela de preços</a><a href="#pedidos">Pedidos</a>
+      </nav>
       <Mensagens erro={erro} ok={ok} />
 
-      <section className="card">
-        <h2>Dados</h2>
+      <section className="card" id="geral">
+        <h2>Visão geral</h2>
+        <dl className="resumo">
+          <div><dt>CNPJ</dt><dd>{formatarDocumento(r.cnpj)}</dd></div>
+          <div><dt>Comissão padrão</dt><dd>{formatarPercentual(r.comissao_padrao)}</dd></div>
+          <div><dt>Clientes vinculados</dt><dd>{resumo.clientes}</dd></div>
+          <div><dt>Produtos</dt><dd>{resumo.produtos}</dd></div>
+          <div><dt>Pedidos</dt><dd>{resumo.pedidos}</dd></div>
+        </dl>
+        <div>
+          <button className="btn" type="button" disabled title="Disponível na Fase 8">Abrir catálogo digital</button>
+          <small className="dica"> /catalogo/{r.slug} — disponível em breve</small>
+        </div>
+        <details>
+          <summary>Editar dados</summary>
         <form action={atualizarRepresentadaAction.bind(null, r.id)} className="grade">
           <Campo label="Nome *" name="nome" required minLength={2} defaultValue={r.nome} />
           <Campo label="CNPJ" name="cnpj" inputMode="numeric" defaultValue={r.cnpj ?? ""} />
@@ -40,10 +66,11 @@ export default async function RepresentadaPage({
         <form action={excluirRepresentadaAction.bind(null, r.id)}>
           <button className="btn-perigo" type="submit">Excluir representada</button>
         </form>
+        </details>
       </section>
 
-      <section className="card">
-        <h2>Produtos e tabela de preço padrão</h2>
+      <section className="card" id="catalogo">
+        <h2>Catálogo (produtos)</h2>
         {produtos.length === 0 ? (
           <div className="vazio">Nenhum produto.</div>
         ) : (
@@ -96,6 +123,37 @@ export default async function RepresentadaPage({
           <Campo label="Descrição" name="descricao" />
           <div className="acoes"><button className="btn" type="submit">Adicionar produto</button></div>
         </form>
+      </section>
+
+      <section className="card" id="precos">
+        <h2>Tabela de preços</h2>
+        {precos.length === 0 ? (
+          <div className="vazio">Sem preços cadastrados.</div>
+        ) : (
+          <div className="tabela-wrap">
+            <table className="tabela">
+              <thead>
+                <tr><th>Tabela</th><th>SKU</th><th>Produto</th><th>Preço</th><th>Desc. máx.</th></tr>
+              </thead>
+              <tbody>
+                {precos.map((t) => (
+                  <tr key={t.id}>
+                    <td>{t.cliente ? <Link href={`/app/clientes/${t.cliente.id}`}>{t.cliente.nome}</Link> : "Padrão"}</td>
+                    <td><code>{t.produto?.sku}</code></td>
+                    <td>{t.produto?.nome}</td>
+                    <td>{formatarMoeda(t.preco)}</td>
+                    <td>{formatarPercentual(t.desconto_max ?? 0)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className="card" id="pedidos">
+        <h2>Pedidos</h2>
+        <TabelaPedidos pedidos={pedidos} coluna="cliente" />
       </section>
     </>
   );

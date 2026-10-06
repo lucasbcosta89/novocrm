@@ -1,10 +1,8 @@
 import "server-only";
 import { notFound, redirect, unstable_rethrow } from "next/navigation";
 import { obterContexto, type Contexto } from "./contexto";
+import { comParam } from "@/lib/url";
 import { normalizarErro } from "./erros";
-
-const comParam = (url: string, chave: string, valor: string) =>
-  `${url}${url.includes("?") ? "&" : "?"}${chave}=${encodeURIComponent(valor)}`;
 
 /**
  * Server action padrão: executa com a sessão do usuário e redireciona.

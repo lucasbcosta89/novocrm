@@ -73,3 +73,20 @@ a { color: inherit; }
 .tabela th { font-size: .8rem; color: var(--muted); font-weight: 600; }
 .tabela details form { margin-top: 8px; }
 .trilha { margin: 0 0 4px; color: var(--muted); font-size: .9rem; }
+
+/* Fase 3: páginas de cliente e representada */
+.campo select { padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); font: inherit; font-size: .95rem; width: 100%; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-peq { padding: 4px 10px; font-size: .85rem; }
+.ancoras { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: -8px 0 16px; font-size: .9rem; }
+.ancoras a { color: var(--muted); }
+.resumo { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin: 0; }
+.resumo dt { font-size: .8rem; color: var(--muted); }
+.resumo dd { margin: 2px 0 0; font-weight: 600; }
+.lista, .historico { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.lista li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; }
+.lista li.inativo { color: var(--muted); border-style: dashed; }
+.historico li { padding: 10px 12px; border-left: 3px solid var(--accent); background: var(--bg); border-radius: 0 8px 8px 0; display: grid; gap: 4px; }
+.anotacao { white-space: pre-wrap; color: var(--muted); }
+.dica { color: var(--muted); }
+section[id] { scroll-margin-top: 16px; }

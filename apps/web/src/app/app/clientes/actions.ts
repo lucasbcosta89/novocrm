@@ -1,7 +1,8 @@
 "use server";
 
 import { executarAcao } from "@/server/acao";
-import { atualizarCliente, criarCliente, excluirCliente, vincularRepresentadas } from "@/server/clientes";
+import { atualizarCliente, criarCliente, desvincular, excluirCliente, vincular } from "@/server/clientes";
+import { atualizarVisita, criarVisita, excluirVisita } from "@/server/visitas";
 
 const BASE = "/app/clientes";
 const dados = (fd: FormData) => Object.fromEntries(fd);
@@ -30,11 +31,42 @@ export async function excluirClienteAction(id: string) {
   });
 }
 
-export async function vincularAction(id: string, fd: FormData) {
-  const input = { representada_ids: fd.getAll("representada_ids").map(String) };
-  await executarAcao((ctx) => vincularRepresentadas(ctx, id, input), {
+export async function vincularUmaAction(id: string, representadaId: string) {
+  await executarAcao((ctx) => vincular(ctx, id, representadaId), {
     ok: `${BASE}/${id}`,
     erro: `${BASE}/${id}`,
-    mensagem: "Vínculos atualizados",
+    mensagem: "Representada vinculada",
+  });
+}
+
+export async function desvincularAction(id: string, representadaId: string) {
+  await executarAcao((ctx) => desvincular(ctx, id, representadaId), {
+    ok: `${BASE}/${id}`,
+    erro: `${BASE}/${id}`,
+    mensagem: "Representada desvinculada",
+  });
+}
+
+export async function criarVisitaAction(id: string, fd: FormData) {
+  await executarAcao((ctx) => criarVisita(ctx, id, dados(fd)), {
+    ok: `${BASE}/${id}#visitas`,
+    erro: `${BASE}/${id}`,
+    mensagem: "Visita registrada",
+  });
+}
+
+export async function atualizarVisitaAction(id: string, visitaId: string, fd: FormData) {
+  await executarAcao((ctx) => atualizarVisita(ctx, visitaId, dados(fd)), {
+    ok: `${BASE}/${id}#visitas`,
+    erro: `${BASE}/${id}`,
+    mensagem: "Visita salva",
+  });
+}
+
+export async function excluirVisitaAction(id: string, visitaId: string) {
+  await executarAcao((ctx) => excluirVisita(ctx, visitaId), {
+    ok: `${BASE}/${id}#visitas`,
+    erro: `${BASE}/${id}`,
+    mensagem: "Visita excluída",
   });
 }
