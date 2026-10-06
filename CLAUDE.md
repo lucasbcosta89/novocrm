@@ -7,7 +7,7 @@ Stack: Next.js + TypeScript (web/API), React Native + Expo (app mobile), Supabas
 Mercado Pago (assinaturas), Cloudflare (deploy/R2/domínio), GitHub (versionamento/CI).
 
 ## Serviços (contas ativas do usuário)
-- GitHub: repo crm-multimarcas. CI via GitHub Actions no push da main.
+- GitHub: repo lucasbcosta89/novocrm. CI via GitHub Actions no push da main.
 - Supabase: projeto ativo. Chaves em .env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SUPABASE_ANON_KEY.
 - Cloudflare: domínio + R2 (bucket de arquivos/PDFs, egress grátis) + Pages (deploy do web/API
   com o adapter oficial do Next.js). CLI `wrangler` autenticado. R2 usa credenciais S3-compatíveis em .env.
