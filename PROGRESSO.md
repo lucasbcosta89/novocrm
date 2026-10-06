@@ -18,12 +18,12 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Vincular cliente ↔ representadas (PUT /api/clientes/:id/representadas + UI multi-seleção)
   - [x] CRUD produto + tabela de preço padrão (/api/representadas/:id/produtos, /api/produtos/:id)
   - [x] Critério verificado em produção (A e B, cliente X vinculado às duas, sem duplicar)
-- [ ] Fase 3 — Carteira de clientes e gestão da representada (páginas separadas)
+- [x] Fase 3 — Carteira de clientes e gestão da representada (páginas separadas)
   - [x] /app/clientes/[id]: informações, vincular/desvincular, visitas, pedidos e oportunidades (leitura)
   - [x] /app/representadas/[id]: visão geral, catálogo, tabela de preços, pedidos, botão catálogo digital (placeholder)
   - [x] CRUD de visitas (UI + /api/clientes/:id/visitas, /api/visitas/:id)
   - [x] RLS por dono em todas as tabelas (billing/quota só leitura; webhook_events só service role)
-  - [ ] Critério verificado (cria cliente, abre, vincula a 2 representadas, registra visita)
+  - [x] Critério verificado (cria cliente, abre, vincula a 2 representadas, registra visita)
 - [ ] Fase 4 — Oportunidades e desafios por cliente + plano de ação
 - [ ] Fase 5 — Comissão por representada
 - [ ] Fase 6 — Planos, limites e assinatura Mercado Pago
