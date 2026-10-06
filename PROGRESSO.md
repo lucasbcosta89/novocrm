@@ -12,6 +12,12 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Remote GitHub + secrets do Actions configurados e 1º deploy verde
   - [x] Signup/login verificados em produção
 - [ ] Fase 2 — Modelo multimarcas (representada, cliente, vínculo N:N, catálogo)
+  - [x] Tabelas confirmadas + RLS por dono, slug único, CPF/CNPJ único por usuário, preço padrão único por produto
+  - [x] CRUD representada (API /api/representadas + UI), slug automático, verificarLimite
+  - [x] CRUD cliente (API /api/clientes + UI), verificarLimite
+  - [x] Vincular cliente ↔ representadas (PUT /api/clientes/:id/representadas + UI multi-seleção)
+  - [x] CRUD produto + tabela de preço padrão (/api/representadas/:id/produtos, /api/produtos/:id)
+  - [ ] Critério verificado em produção (A e B, cliente X vinculado às duas, sem duplicar)
 - [ ] Fase 3 — Carteira de clientes e gestão da representada (páginas separadas)
 - [ ] Fase 4 — Oportunidades e desafios por cliente + plano de ação
 - [ ] Fase 5 — Comissão por representada

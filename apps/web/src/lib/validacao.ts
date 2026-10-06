@@ -1,0 +1,81 @@
+import { z } from "zod";
+
+export const soDigitos = (v: string) => v.replace(/\D/g, "");
+
+/** "" (campo de formulário vazio) vira null = limpar o campo. */
+const vazioParaNull = (v: unknown) => (typeof v === "string" && v.trim() === "" ? null : v);
+
+const textoOpcional = (max: number) => z.preprocess(vazioParaNull, z.string().trim().max(max).nullable().optional());
+
+const digitosOpcional = (tamanhos: number[], msg: string) =>
+  z.preprocess(
+    (v) => (typeof v === "string" ? vazioParaNull(soDigitos(v)) : v),
+    z
+      .string()
+      .refine((d) => tamanhos.includes(d.length), msg)
+      .nullable()
+      .optional(),
+  );
+
+const numero = (min: number, max: number, msg: string) =>
+  z.preprocess(
+    (v) => (typeof v === "string" ? Number(v.replace(",", ".")) : v),
+    z.number(msg).min(min, msg).max(max, msg),
+  );
+
+export const idSchema = z.uuid("ID inválido");
+
+export const representadaSchema = z.object({
+  nome: z.string().trim().min(2, "Informe o nome").max(120),
+  cnpj: digitosOpcional([14], "CNPJ deve ter 14 dígitos"),
+  comissao_padrao: numero(0, 100, "Comissão deve estar entre 0 e 100").default(0),
+});
+export const representadaUpdateSchema = representadaSchema.partial();
+
+export const clienteSchema = z.object({
+  nome: z.string().trim().min(2, "Informe o nome").max(160),
+  documento: digitosOpcional([11, 14], "CPF/CNPJ deve ter 11 ou 14 dígitos"),
+  email: z.preprocess(vazioParaNull, z.email("E-mail inválido").trim().toLowerCase().nullable().optional()),
+  celular: textoOpcional(30),
+  whatsapp: textoOpcional(30),
+  cidade: textoOpcional(80),
+  uf: z.preprocess(
+    (v) => (typeof v === "string" ? vazioParaNull(v.trim().toUpperCase()) : v),
+    z.string().regex(/^[A-Z]{2}$/, "UF deve ter 2 letras").nullable().optional(),
+  ),
+  cep: digitosOpcional([8], "CEP deve ter 8 dígitos"),
+  segmento: textoOpcional(80),
+  anotacoes: textoOpcional(2000),
+});
+export const clienteUpdateSchema = clienteSchema.partial();
+
+export const vinculoSchema = z.object({
+  representada_ids: z.array(idSchema).max(200),
+});
+
+export const produtoSchema = z.object({
+  sku: z.string().trim().min(1, "Informe o SKU").max(60),
+  nome: z.string().trim().min(2, "Informe o nome").max(160),
+  descricao: textoOpcional(2000),
+  unidade: textoOpcional(20),
+  preco: numero(0, 99_999_999, "Preço inválido"),
+  desconto_max: numero(0, 100, "Desconto máximo deve estar entre 0 e 100").default(0),
+  ativo: z.preprocess((v) => (v === "on" ? true : v === "off" ? false : v), z.boolean()).default(true),
+});
+export const produtoUpdateSchema = produtoSchema.partial();
+
+export function slugify(texto: string): string {
+  const slug = texto
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60)
+    .replace(/-+$/g, "");
+  return slug || "representada";
+}
+
+export function primeiroErroZod(error: z.ZodError): string {
+  return error.issues[0]?.message ?? "Dados inválidos";
+}
