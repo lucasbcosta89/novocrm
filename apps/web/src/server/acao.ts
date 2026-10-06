@@ -1,5 +1,5 @@
 import "server-only";
-import { notFound, redirect } from "next/navigation";
+import { notFound, redirect, unstable_rethrow } from "next/navigation";
 import { obterContexto, type Contexto } from "./contexto";
 import { normalizarErro } from "./erros";
 
@@ -20,6 +20,7 @@ export async function executarAcao<T>(
     destino = typeof opts.ok === "function" ? opts.ok(resultado) : opts.ok;
     if (opts.mensagem) destino = comParam(destino, "ok", opts.mensagem);
   } catch (e) {
+    unstable_rethrow(e); // erros internos do Next (dynamic usage, redirect, notFound)
     const erro = normalizarErro(e);
     if (erro.status === 401) redirect("/login");
     destino = comParam(opts.erro, "erro", erro.message);
@@ -32,6 +33,7 @@ export async function carregar<T>(fn: (ctx: Contexto) => Promise<T>): Promise<T>
   try {
     return await fn(await obterContexto());
   } catch (e) {
+    unstable_rethrow(e); // erros internos do Next (dynamic usage, redirect, notFound)
     const erro = normalizarErro(e);
     if (erro.status === 404 || erro.code === "validacao") notFound();
     if (erro.status === 401) redirect("/login");
