@@ -3,14 +3,14 @@
 Regra: só marcar [x] quando o critério de pronto da fase estiver verificado.
 Toda fase termina com commit + tag no GitHub.
 
-- [ ] Fase 1 — Infra e esqueleto (conta, dashboard vazio, deploy automático)
+- [x] Fase 1 — Infra e esqueleto (conta, dashboard vazio, deploy automático)
   - [x] Monorepo pnpm (apps/web Next.js 16, apps/mobile Expo esqueleto)
   - [x] Auth Supabase email/senha + /app protegida por middleware
   - [x] Dashboard vazio + sidebar (6 seções)
   - [x] schema.sql aplicado no Supabase (RLS em todas as tabelas) + seed dos 3 planos
   - [x] CI (lint+tests) e deploy OpenNext → Cloudflare em .github/workflows/ci.yml
-  - [ ] Remote GitHub + secrets do Actions configurados e 1º deploy verde
-  - [ ] Signup/login verificados em produção
+  - [x] Remote GitHub + secrets do Actions configurados e 1º deploy verde
+  - [x] Signup/login verificados em produção
 - [ ] Fase 2 — Modelo multimarcas (representada, cliente, vínculo N:N, catálogo)
 - [ ] Fase 3 — Carteira de clientes e gestão da representada (páginas separadas)
 - [ ] Fase 4 — Oportunidades e desafios por cliente + plano de ação
