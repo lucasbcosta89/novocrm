@@ -11,6 +11,7 @@ export type Produto = {
   unidade: string | null;
   preco: number;
   desconto_max: number;
+  comissao: number;
   ativo: boolean;
 };
 
@@ -20,7 +21,7 @@ type ProdutoRow = Omit<Produto, "desconto_max"> & {
 
 // Preço padrão = linha de tabelas_preco com cliente_id null.
 const CAMPOS =
-  "id, representada_id, sku, nome, descricao, unidade, preco, ativo, tabelas_preco(preco, desconto_max)";
+  "id, representada_id, sku, nome, descricao, unidade, preco, comissao, ativo, tabelas_preco(preco, desconto_max)";
 const DUPLICADO = "Já existe produto com este SKU nesta representada";
 
 function mapear({ tabelas_preco, ...p }: ProdutoRow): Produto {
@@ -64,9 +65,14 @@ export async function obterProduto(ctx: Contexto, id: string): Promise<Produto> 
 
 export async function criarProduto(ctx: Contexto, representadaId: string, input: unknown): Promise<Produto> {
   const { desconto_max, ...dados } = produtoSchema.parse(input);
+  const representada_id = idSchema.parse(representadaId);
+  if (dados.comissao === undefined) {
+    const { data: r } = await ctx.supabase.from("representadas").select("comissao_padrao").eq("id", representada_id).maybeSingle();
+    dados.comissao = r?.comissao_padrao ?? 0;
+  }
   const { data, error } = await ctx.supabase
     .from("produtos")
-    .insert({ ...dados, representada_id: idSchema.parse(representadaId) })
+    .insert({ ...dados, representada_id })
     .select("id, representada_id")
     .single<{ id: string; representada_id: string }>();
   if (error) {

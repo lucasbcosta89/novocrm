@@ -71,6 +71,8 @@ export const produtoSchema = z.object({
   unidade: textoOpcional(20),
   preco: numero(0, 99_999_999, "Preço inválido"),
   desconto_max: numero(0, 100, "Desconto máximo deve estar entre 0 e 100").default(0),
+  /** % de comissão do produto; se omitido, usa a comissão padrão da representada. */
+  comissao: numero(0, 100, "Comissão deve estar entre 0 e 100").optional(),
   ativo: z.preprocess((v) => (v === "on" ? true : v === "off" ? false : v), z.boolean()).default(true),
 });
 export const produtoUpdateSchema = parcial(produtoSchema);
@@ -134,3 +136,28 @@ export const acaoSchema = z.object({
   status: z.enum(STATUS_ACAO, "Status inválido").default("pendente"),
 });
 export const acaoUpdateSchema = parcial(acaoSchema);
+
+export const STATUS_COMISSAO = ["a_receber", "recebida", "atrasada", "cancelada"] as const;
+
+export const pedidoSchema = z.object({
+  representada_id: idSchema,
+  cliente_id: idSchema,
+  forma_pagamento: textoOpcional(60),
+  confirmar: z.boolean().default(false),
+  itens: z
+    .array(
+      z.object({
+        produto_id: idSchema,
+        quantidade: numero(0.001, 1_000_000, "Quantidade inválida"),
+        desconto: numero(0, 99_999_999, "Desconto inválido").default(0),
+      }),
+    )
+    .min(1, "Adicione ao menos um item")
+    .max(500),
+});
+export type PedidoInput = z.infer<typeof pedidoSchema>;
+
+/** Status que o usuário pode definir manualmente (cancelada só via cancelamento do pedido). */
+export const marcarComissaoSchema = z.object({
+  status: z.enum(["a_receber", "recebida", "atrasada"], "Status inválido"),
+});

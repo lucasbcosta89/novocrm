@@ -45,7 +45,7 @@ export default async function RepresentadaPage({
         <h2>Visão geral</h2>
         <dl className="resumo">
           <div><dt>CNPJ</dt><dd>{formatarDocumento(r.cnpj)}</dd></div>
-          <div><dt>Comissão padrão</dt><dd>{formatarPercentual(r.comissao_padrao)}</dd></div>
+          <div><dt>Comissão padrão (novos produtos)</dt><dd>{formatarPercentual(r.comissao_padrao)}</dd></div>
           <div><dt>Clientes vinculados</dt><dd>{resumo.clientes}</dd></div>
           <div><dt>Produtos</dt><dd>{resumo.produtos}</dd></div>
           <div><dt>Pedidos</dt><dd>{resumo.pedidos}</dd></div>
@@ -77,7 +77,7 @@ export default async function RepresentadaPage({
           <div className="tabela-wrap">
             <table className="tabela">
               <thead>
-                <tr><th>SKU</th><th>Nome</th><th>Un.</th><th>Preço padrão</th><th>Desc. máx.</th><th>Ativo</th><th></th></tr>
+                <tr><th>SKU</th><th>Nome</th><th>Un.</th><th>Preço padrão</th><th>Desc. máx.</th><th>Comissão</th><th>Ativo</th><th></th></tr>
               </thead>
               <tbody>
                 {produtos.map((p) => (
@@ -87,6 +87,7 @@ export default async function RepresentadaPage({
                     <td>{p.unidade ?? "—"}</td>
                     <td>{formatarMoeda(p.preco)}</td>
                     <td>{formatarPercentual(p.desconto_max)}</td>
+                    <td>{formatarPercentual(p.comissao)}</td>
                     <td>{p.ativo ? "Sim" : "Não"}</td>
                     <td>
                       <details>
@@ -97,6 +98,7 @@ export default async function RepresentadaPage({
                           <Campo label="Unidade" name="unidade" defaultValue={p.unidade ?? ""} />
                           <Campo label="Preço *" name="preco" type="number" step="0.01" min="0" required defaultValue={p.preco} />
                           <Campo label="Desc. máx. (%)" name="desconto_max" type="number" step="0.01" min="0" max="100" defaultValue={p.desconto_max} />
+                          <Campo label="Comissão (%)" name="comissao" type="number" step="0.01" min="0" max="100" defaultValue={p.comissao} />
                           <Campo label="Descrição" name="descricao" defaultValue={p.descricao ?? ""} />
                           <label className="check"><input type="checkbox" name="ativo" defaultChecked={p.ativo} /> Ativo</label>
                           <div className="acoes"><button className="btn" type="submit">Salvar</button></div>
@@ -120,6 +122,7 @@ export default async function RepresentadaPage({
           <Campo label="Unidade" name="unidade" placeholder="un, cx, kg" />
           <Campo label="Preço padrão *" name="preco" type="number" step="0.01" min="0" required />
           <Campo label="Desc. máx. (%)" name="desconto_max" type="number" step="0.01" min="0" max="100" defaultValue="0" />
+          <Campo label="Comissão (%)" name="comissao" type="number" step="0.01" min="0" max="100" defaultValue={r.comissao_padrao} />
           <Campo label="Descrição" name="descricao" />
           <div className="acoes"><button className="btn" type="submit">Adicionar produto</button></div>
         </form>
@@ -152,7 +155,10 @@ export default async function RepresentadaPage({
       </section>
 
       <section className="card" id="pedidos">
-        <h2>Pedidos</h2>
+        <div className="cabecalho">
+          <h2>Pedidos</h2>
+          <Link className="btn btn-peq" href={`/app/pedidos/novo?representada=${r.id}`}>+ Novo pedido</Link>
+        </div>
         <TabelaPedidos pedidos={pedidos} coluna="cliente" />
       </section>
     </>

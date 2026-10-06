@@ -7,3 +7,15 @@ export const ROTULO_STATUS_OPORTUNIDADE: Record<string, string> = {
   nao_aplicavel: "Não aplicável",
 };
 export const ROTULO_STATUS_ACAO: Record<string, string> = { pendente: "Pendente", em_andamento: "Em andamento", concluida: "Concluída" };
+export const ROTULO_STATUS_PEDIDO: Record<string, string> = {
+  rascunho: "Rascunho",
+  confirmado: "Confirmado",
+  entregue: "Entregue",
+  cancelado: "Cancelado",
+};
+export const ROTULO_STATUS_COMISSAO: Record<string, string> = {
+  a_receber: "A receber",
+  recebida: "Recebida",
+  atrasada: "Atrasada",
+  cancelada: "Cancelada",
+};

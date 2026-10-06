@@ -17,6 +17,8 @@ export function erroBanco(error: PostgrestError, duplicado = "Registro já exist
   if (error.code === "23505") return new AppError(409, duplicado, "duplicado");
   if (error.code === "42501") return new AppError(403, "Acesso negado", "rls");
   if (error.code === "23503") return new AppError(409, "Registro está em uso por outros dados", "fk");
+  // raise exception nas funções SQL (regra de negócio): mensagem já é amigável
+  if (error.code === "P0001") return new AppError(400, error.message, "regra");
   if (error.code === "PGRST116") return new AppError(404, "Não encontrado", "nao_encontrado");
   return new AppError(500, "Erro ao acessar o banco", error.code);
 }

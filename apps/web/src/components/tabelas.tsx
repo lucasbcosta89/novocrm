@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { formatarData, formatarMoeda } from "@/lib/formato";
+import { ROTULO_STATUS_PEDIDO } from "@/lib/rotulos";
 import type { PedidoResumo } from "@/server/consultas";
 
 /** Lista de pedidos (somente leitura até a Fase 5). `coluna` = entidade relacionada a exibir. */
@@ -19,10 +20,10 @@ export function TabelaPedidos({ pedidos, coluna }: { pedidos: PedidoResumo[]; co
             const rel = p[coluna];
             return (
               <tr key={p.id}>
-                <td>{p.numero}</td>
+                <td><Link href={`/app/pedidos/${p.id}`}>{p.numero}</Link></td>
                 <td>{formatarData(p.data)}</td>
                 <td>{rel ? <Link href={`/app/${coluna === "cliente" ? "clientes" : "representadas"}/${rel.id}`}>{rel.nome}</Link> : "—"}</td>
-                <td>{p.status}</td>
+                <td>{ROTULO_STATUS_PEDIDO[p.status] ?? p.status}</td>
                 <td>{formatarMoeda(p.valor_total)}</td>
                 <td>{formatarMoeda(p.comissao_total)}</td>
               </tr>

@@ -165,7 +165,10 @@ export default async function ClientePage({
       </section>
 
       <section className="card" id="pedidos">
-        <h2>Pedidos</h2>
+        <div className="cabecalho">
+          <h2>Pedidos</h2>
+          <Link className="btn btn-peq" href={`/app/pedidos/novo?cliente=${c.id}${c.representadas.length === 1 ? `&representada=${c.representadas[0]!.id}` : ""}`}>+ Novo pedido</Link>
+        </div>
         <TabelaPedidos pedidos={pedidos} coluna="representada" />
       </section>
 

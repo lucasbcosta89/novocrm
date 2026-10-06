@@ -104,3 +104,18 @@ section[id] { scroll-margin-top: 16px; }
 .etiqueta-desafio { background: color-mix(in srgb, var(--danger) 15%, transparent); color: var(--danger); }
 .tabela tr.concluida td:first-child { text-decoration: line-through; color: var(--muted); }
 .atrasada { color: var(--danger); font-weight: 600; }
+
+/* Fase 5: pedidos e comissões */
+.cabecalho { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+a.btn { text-decoration: none; display: inline-block; }
+.input-num { width: 90px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font: inherit; }
+.tabela tfoot th { color: var(--text); font-size: .95rem; border-bottom: 0; }
+.cards-resumo { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0 16px; }
+.card-alerta { border-color: var(--danger); }
+.linha-alerta td { background: color-mix(in srgb, var(--danger) 8%, transparent); }
+.alerta { font-weight: 600; }
+.txt-ok { color: var(--ok); }
+.etiqueta-a_receber, .etiqueta-rascunho { background: color-mix(in srgb, var(--accent) 15%, transparent); color: var(--accent); }
+.etiqueta-recebida, .etiqueta-confirmado, .etiqueta-entregue { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok); }
+.etiqueta-atrasada { background: var(--danger); color: #fff; }
+.etiqueta-cancelada, .etiqueta-cancelado { background: var(--border); color: var(--muted); }

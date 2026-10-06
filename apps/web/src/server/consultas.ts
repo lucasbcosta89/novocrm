@@ -20,13 +20,12 @@ const CAMPOS_PEDIDO =
 
 export async function listarPedidos(
   { supabase }: Contexto,
-  filtro: { cliente_id: string } | { representada_id: string },
+  filtro?: { cliente_id: string } | { representada_id: string },
 ): Promise<PedidoResumo[]> {
-  const [coluna, valor] = "cliente_id" in filtro ? ["cliente_id", filtro.cliente_id] : ["representada_id", filtro.representada_id];
-  const { data, error } = await supabase
-    .from("pedidos")
-    .select(CAMPOS_PEDIDO)
-    .eq(coluna, idSchema.parse(valor))
+  let q = supabase.from("pedidos").select(CAMPOS_PEDIDO);
+  if (filtro && "cliente_id" in filtro) q = q.eq("cliente_id", idSchema.parse(filtro.cliente_id));
+  else if (filtro) q = q.eq("representada_id", idSchema.parse(filtro.representada_id));
+  const { data, error } = await q
     .order("data", { ascending: false })
     .limit(100)
     .returns<PedidoResumo[]>();
@@ -38,7 +37,7 @@ export type PrecoTabela = {
   id: string;
   preco: number;
   desconto_max: number | null;
-  produto: { sku: string; nome: string } | null;
+  produto: { id: string; sku: string; nome: string } | null;
   cliente: { id: string; nome: string } | null;
 };
 
@@ -46,7 +45,7 @@ export type PrecoTabela = {
 export async function listarTabelaPrecos({ supabase }: Contexto, representadaId: string): Promise<PrecoTabela[]> {
   const { data, error } = await supabase
     .from("tabelas_preco")
-    .select("id, preco, desconto_max, produto:produtos(sku, nome), cliente:clientes(id, nome)")
+    .select("id, preco, desconto_max, produto:produtos(id, sku, nome), cliente:clientes(id, nome)")
     .eq("representada_id", idSchema.parse(representadaId))
     .returns<PrecoTabela[]>();
   if (error) throw erroBanco(error);
