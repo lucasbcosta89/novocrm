@@ -119,3 +119,18 @@ a.btn { text-decoration: none; display: inline-block; }
 .etiqueta-recebida, .etiqueta-confirmado, .etiqueta-entregue { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok); }
 .etiqueta-atrasada { background: var(--danger); color: #fff; }
 .etiqueta-cancelada, .etiqueta-cancelado { background: var(--border); color: var(--muted); }
+
+/* Fase 6: planos e limites */
+.aviso-limite { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.planos { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.plano { border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: grid; gap: 8px; align-content: start; background: var(--surface); }
+.plano h3 { margin: 0; }
+.plano ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: .9rem; }
+.plano-atual { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.preco { margin: 0; font-size: 1.5rem; font-weight: 700; }
+.preco span { font-size: .85rem; font-weight: 400; color: var(--muted); }
+.modal { border: 1px solid var(--border); border-radius: 12px; padding: 20px; background: var(--surface); color: var(--text); width: min(760px, calc(100vw - 32px)); }
+.modal::backdrop { background: rgb(0 0 0 / .5); }
+.barra { height: 8px; background: var(--border); border-radius: 999px; overflow: hidden; min-width: 80px; }
+.barra span { display: block; height: 100%; background: var(--accent); }
+.barra span.cheia { background: var(--danger); }

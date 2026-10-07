@@ -39,7 +39,15 @@ jobs:
         run: pnpm run deploy
       - name: Sincroniza secrets do runtime
         working-directory: apps/web
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          MP_ACCESS_TOKEN: ${{ secrets.MP_ACCESS_TOKEN }}
+          MP_WEBHOOK_SECRET: ${{ secrets.MP_WEBHOOK_SECRET }}
+          MP_TEST_PAYER_EMAIL: ${{ secrets.MP_TEST_PAYER_EMAIL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        # só envia os secrets preenchidos no GitHub
         run: |
-          printf '{"SUPABASE_URL":"%s","SUPABASE_ANON_KEY":"%s","SUPABASE_SERVICE_ROLE_KEY":"%s"}' \
-            "${{ secrets.SUPABASE_URL }}" "${{ secrets.SUPABASE_ANON_KEY }}" "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+          node -e 'const k=["SUPABASE_URL","SUPABASE_ANON_KEY","SUPABASE_SERVICE_ROLE_KEY","MP_ACCESS_TOKEN","MP_WEBHOOK_SECRET","MP_TEST_PAYER_EMAIL","CRON_SECRET"];console.log(JSON.stringify(Object.fromEntries(k.filter(n=>process.env[n]).map(n=>[n,process.env[n]]))))' \
             | pnpm exec wrangler secret bulk

@@ -1,13 +1,19 @@
 import Link from "next/link";
 import { Mensagens, type Busca } from "@/components/form";
 import { formatarDocumento } from "@/lib/formato";
+import { AvisoLimite } from "@/components/limite";
 import { carregar } from "@/server/acao";
+import { obterUso } from "@/server/quota";
 import { listarClientes } from "@/server/clientes";
 import { criarClienteAction } from "./actions";
 import { CamposCliente } from "./campos";
 
 export default async function ClientesPage({ searchParams }: { searchParams: Busca }) {
-  const [{ erro, ok }, clientes] = await Promise.all([searchParams, carregar(listarClientes)]);
+  const [{ erro, ok }, [clientes, uso]] = await Promise.all([
+    searchParams,
+    carregar((ctx) => Promise.all([listarClientes(ctx), obterUso(ctx)])),
+  ]);
+  const bloqueado = uso.recursos.clientes.atingido;
 
   return (
     <>
@@ -38,9 +44,10 @@ export default async function ClientesPage({ searchParams }: { searchParams: Bus
 
       <section className="card">
         <h2>Novo cliente</h2>
+        <AvisoLimite uso={uso} recurso="clientes" />
         <form action={criarClienteAction} className="grade">
           <CamposCliente />
-          <div className="acoes"><button className="btn" type="submit">Criar</button></div>
+          <div className="acoes"><button className="btn" type="submit" disabled={bloqueado}>Criar</button></div>
         </form>
       </section>
     </>

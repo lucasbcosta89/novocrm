@@ -22,7 +22,8 @@ export function rota<P extends Params = Params>(handler: Handler<P>, statusOk = 
       return resultado === undefined ? new NextResponse(null, { status: 204 }) : NextResponse.json(resultado, { status: statusOk });
     } catch (e) {
       const erro = normalizarErro(e);
-      return NextResponse.json({ erro: erro.message, codigo: erro.code }, { status: erro.status });
+      const upgrade = erro.code === "LIMITE_ATINGIDO" ? { upgrade: true } : {};
+      return NextResponse.json({ erro: erro.message, codigo: erro.code, ...upgrade }, { status: erro.status });
     }
   };
 }

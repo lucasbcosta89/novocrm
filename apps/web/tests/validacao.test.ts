@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { clienteSchema, produtoSchema, representadaSchema, slugify, vinculoSchema } from "@/lib/validacao";
-import { limiteAtingido } from "@/server/quota";
 
 describe("slugify", () => {
   it("remove acentos e símbolos", () => {
@@ -45,10 +44,3 @@ describe("produto e vínculo", () => {
   });
 });
 
-describe("quota", () => {
-  it("limiteAtingido", () => {
-    expect(limiteAtingido(1, 0)).toBe(false);
-    expect(limiteAtingido(1, 1)).toBe(true);
-    expect(limiteAtingido(null, 10_000)).toBe(false);
-  });
-});

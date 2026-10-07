@@ -1,6 +1,7 @@
 import { acaoSchema, acaoUpdateSchema, idSchema, oportunidadeSchema, oportunidadeUpdateSchema } from "@/lib/validacao";
 import type { Contexto } from "./contexto";
 import { AppError, erroBanco } from "./erros";
+import { verificarLimite } from "./quota";
 
 export type Acao = {
   id: string;
@@ -61,8 +62,10 @@ export async function obterOportunidade({ supabase }: Contexto, id: string): Pro
   return data;
 }
 
-export async function criarOportunidade({ supabase }: Contexto, clienteId: string, input: unknown): Promise<Oportunidade> {
+export async function criarOportunidade(ctx: Contexto, clienteId: string, input: unknown): Promise<Oportunidade> {
   const dados = oportunidadeSchema.parse(input);
+  await verificarLimite(ctx, "oportunidades");
+  const { supabase } = ctx;
   const { data, error } = await supabase
     .from("oportunidades_desafios")
     .insert({ ...dados, cliente_id: idSchema.parse(clienteId) })

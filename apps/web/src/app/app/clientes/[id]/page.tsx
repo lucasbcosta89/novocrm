@@ -3,7 +3,9 @@ import { Campo, Mensagens, type Busca } from "@/components/form";
 import { TabelaPedidos } from "@/components/tabelas";
 import { formatarData, formatarDataHora, formatarDocumento, paraInputDataHora } from "@/lib/formato";
 import { TIPOS_VISITA } from "@/lib/validacao";
+import { AvisoLimite } from "@/components/limite";
 import { carregar } from "@/server/acao";
+import { obterUso } from "@/server/quota";
 import { obterCliente } from "@/server/clientes";
 import { listarPedidos } from "@/server/consultas";
 import { listarOportunidades } from "@/server/oportunidades";
@@ -61,13 +63,14 @@ export default async function ClientePage({
   searchParams: Busca;
 }) {
   const [{ id }, { erro, ok }] = await Promise.all([params, searchParams]);
-  const [c, todas, visitas, pedidos, oportunidades] = await carregar((ctx) =>
+  const [c, todas, visitas, pedidos, oportunidades, uso] = await carregar((ctx) =>
     Promise.all([
       obterCliente(ctx, id),
       listarRepresentadas(ctx),
       listarVisitas(ctx, id),
       listarPedidos(ctx, { cliente_id: id }),
       listarOportunidades(ctx, id),
+      obterUso(ctx),
     ]),
   );
   const vinculadas = new Set(c.representadas.map((r) => r.id));
@@ -176,11 +179,12 @@ export default async function ClientePage({
         <div className="cabecalho">
           <h2>Oportunidades e desafios</h2>
         </div>
+        <AvisoLimite uso={uso} recurso="oportunidades" />
         <details className="novo">
           <summary className="btn btn-peq" title="Novo item">+ Novo</summary>
           <form action={criarOportunidadeAction.bind(null, c.id)} className="grade">
             <CamposOportunidade representadas={c.representadas} />
-            <div className="acoes"><button className="btn" type="submit">Criar</button></div>
+            <div className="acoes"><button className="btn" type="submit" disabled={uso.recursos.oportunidades.atingido}>Criar</button></div>
           </form>
         </details>
         {oportunidades.length === 0 ? (

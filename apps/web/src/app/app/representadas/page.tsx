@@ -1,12 +1,18 @@
 import Link from "next/link";
 import { Campo, Mensagens, type Busca } from "@/components/form";
 import { formatarDocumento, formatarPercentual } from "@/lib/formato";
+import { AvisoLimite } from "@/components/limite";
 import { carregar } from "@/server/acao";
+import { obterUso } from "@/server/quota";
 import { listarRepresentadas } from "@/server/representadas";
 import { criarRepresentadaAction } from "./actions";
 
 export default async function RepresentadasPage({ searchParams }: { searchParams: Busca }) {
-  const [{ erro, ok }, representadas] = await Promise.all([searchParams, carregar(listarRepresentadas)]);
+  const [{ erro, ok }, [representadas, uso]] = await Promise.all([
+    searchParams,
+    carregar((ctx) => Promise.all([listarRepresentadas(ctx), obterUso(ctx)])),
+  ]);
+  const bloqueado = uso.recursos.representadas.atingido;
 
   return (
     <>
@@ -37,11 +43,12 @@ export default async function RepresentadasPage({ searchParams }: { searchParams
 
       <section className="card">
         <h2>Nova representada</h2>
+        <AvisoLimite uso={uso} recurso="representadas" />
         <form action={criarRepresentadaAction} className="grade">
           <Campo label="Nome *" name="nome" required minLength={2} />
           <Campo label="CNPJ" name="cnpj" inputMode="numeric" placeholder="00.000.000/0000-00" />
           <Campo label="Comissão padrão (%)" name="comissao_padrao" type="number" step="0.01" min="0" max="100" defaultValue="0" />
-          <div className="acoes"><button className="btn" type="submit">Criar</button></div>
+          <div className="acoes"><button className="btn" type="submit" disabled={bloqueado}>Criar</button></div>
         </form>
       </section>
     </>
