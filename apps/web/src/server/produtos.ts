@@ -1,5 +1,6 @@
 import { idSchema, produtoSchema, produtoUpdateSchema } from "@/lib/validacao";
 import type { Contexto } from "./contexto";
+import { detectarTipoImagem } from "@/lib/imagem";
 import { salvarArquivo } from "./armazenamento";
 import { AppError, erroBanco } from "./erros";
 
@@ -111,13 +112,18 @@ const MAX_IMAGEM = 2 * 1024 * 1024;
 /** Salva a imagem do produto no armazenamento (R2/Storage); chave versionada invalida o cache do catálogo. */
 export async function salvarImagemProduto(ctx: Contexto, produtoId: string, arquivo: unknown): Promise<Produto> {
   if (!(arquivo instanceof File) || arquivo.size === 0) throw new AppError(400, "Selecione uma imagem", "validacao");
-  const ext = TIPOS_IMAGEM[arquivo.type];
-  if (!ext) throw new AppError(400, "Use imagem JPEG ou PNG", "validacao");
   if (arquivo.size > MAX_IMAGEM) throw new AppError(400, "Imagem acima de 2 MB", "validacao");
+  const bytes = new Uint8Array(await arquivo.arrayBuffer());
+  // formato real pelo conteúdo: ex. WebP renomeado para .jpg é recusado (o PDF só aceita JPEG/PNG)
+  const tipo = detectarTipoImagem(bytes);
+  const ext = tipo ? TIPOS_IMAGEM[tipo] : undefined;
+  if (!tipo || !ext) {
+    throw new AppError(400, tipo === "image/webp" ? "Imagem em formato WebP: salve como JPEG ou PNG" : "Use imagem JPEG ou PNG", "validacao");
+  }
 
   const produto = await obterProduto(ctx, produtoId); // 404 se não for do usuário
   const chave = `produtos/${ctx.userId}/${produto.id}-${Date.now()}.${ext}`;
-  await salvarArquivo(chave, new Uint8Array(await arquivo.arrayBuffer()), arquivo.type);
+  await salvarArquivo(chave, bytes, tipo);
 
   const { error } = await ctx.supabase.from("produtos").update({ imagem_url: chave }).eq("id", produto.id);
   if (error) throw erroBanco(error);

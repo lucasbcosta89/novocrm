@@ -3,6 +3,7 @@ import type { Content } from "pdfmake/interfaces";
 import { formatarData, formatarDataHora, formatarDocumento, formatarMoeda, formatarPercentual } from "@/lib/formato";
 import { cabecalho, COR, gerarPdf, indicadores, quebraPagina, secao, tabela } from "@/lib/pdf";
 import { ROTULO_STATUS_COMISSAO, ROTULO_STATUS_PEDIDO } from "@/lib/rotulos";
+import { detectarTipoImagem } from "@/lib/imagem";
 import { idSchema } from "@/lib/validacao";
 import { lerArquivo } from "./armazenamento";
 import type { Contexto } from "./contexto";
@@ -229,11 +230,14 @@ const PLACEHOLDER = `<svg xmlns="http://www.w3.org/2000/svg" width="110" height=
 async function imagemDataUrl(chave: string | null): Promise<string | null> {
   if (!chave) return null;
   const arq = await lerArquivo(chave).catch(() => null);
-  if (!arq || !/image\/(png|jpe?g)/.test(arq.contentType)) return null;
-  let bin = "";
+  if (!arq) return null;
   const bytes = new Uint8Array(arq.bytes);
+  // imagem inválida/não suportada não derruba o catálogo: usa o placeholder
+  const tipo = detectarTipoImagem(bytes);
+  if (tipo !== "image/jpeg" && tipo !== "image/png") return null;
+  let bin = "";
   for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  return `data:${arq.contentType};base64,${btoa(bin)}`;
+  return `data:${tipo};base64,${btoa(bin)}`;
 }
 
 function cartao(p: ProdutoCatalogo, img: string | null): Content {

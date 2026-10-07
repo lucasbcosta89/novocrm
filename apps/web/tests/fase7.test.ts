@@ -60,3 +60,14 @@ describe("geração com pdfmake", () => {
     expect(asc(pdf)).toBe("%PDF-");
   });
 });
+
+describe("imagem", () => {
+  it("detecta formato pelos bytes (WebP renomeado não passa como JPEG)", async () => {
+    const { detectarTipoImagem } = await import("@/lib/imagem");
+    expect(detectarTipoImagem(new Uint8Array([0xff, 0xd8, 0xff, 0xe0]))).toBe("image/jpeg");
+    expect(detectarTipoImagem(new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a]))).toBe("image/png");
+    const webp = new Uint8Array([0x52, 0x49, 0x46, 0x46, 0xf6, 0x11, 0, 0, 0x57, 0x45, 0x42, 0x50]);
+    expect(detectarTipoImagem(webp)).toBe("image/webp");
+    expect(detectarTipoImagem(new Uint8Array([1, 2, 3]))).toBeNull();
+  });
+});
