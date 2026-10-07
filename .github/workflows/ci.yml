@@ -19,6 +19,18 @@ jobs:
       - run: pnpm lint
       - run: pnpm test
 
+  mobile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter mobile...
+      - run: pnpm --filter mobile typecheck
+
   deploy:
     needs: check
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -47,7 +59,11 @@ jobs:
           MP_WEBHOOK_SECRET: ${{ secrets.MP_WEBHOOK_SECRET }}
           MP_TEST_PAYER_EMAIL: ${{ secrets.MP_TEST_PAYER_EMAIL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          WHATSAPP_TOKEN: ${{ secrets.WHATSAPP_TOKEN }}
+          WHATSAPP_PHONE_NUMBER_ID: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
+          WHATSAPP_VERIFY_TOKEN: ${{ secrets.WHATSAPP_VERIFY_TOKEN }}
+          WHATSAPP_APP_SECRET: ${{ secrets.WHATSAPP_APP_SECRET }}
         # só envia os secrets preenchidos no GitHub
         run: |
-          node -e 'const k=["SUPABASE_URL","SUPABASE_ANON_KEY","SUPABASE_SERVICE_ROLE_KEY","MP_ACCESS_TOKEN","MP_WEBHOOK_SECRET","MP_TEST_PAYER_EMAIL","CRON_SECRET"];console.log(JSON.stringify(Object.fromEntries(k.filter(n=>process.env[n]).map(n=>[n,process.env[n]]))))' \
+          node -e 'const k=["SUPABASE_URL","SUPABASE_ANON_KEY","SUPABASE_SERVICE_ROLE_KEY","MP_ACCESS_TOKEN","MP_WEBHOOK_SECRET","MP_TEST_PAYER_EMAIL","CRON_SECRET","WHATSAPP_TOKEN","WHATSAPP_PHONE_NUMBER_ID","WHATSAPP_VERIFY_TOKEN","WHATSAPP_APP_SECRET"];console.log(JSON.stringify(Object.fromEntries(k.filter(n=>process.env[n]).map(n=>[n,process.env[n]]))))' \
             | pnpm exec wrangler secret bulk

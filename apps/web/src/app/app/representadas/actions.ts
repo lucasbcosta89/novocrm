@@ -16,7 +16,9 @@ export async function criarRepresentadaAction(fd: FormData) {
 }
 
 export async function atualizarRepresentadaAction(id: string, fd: FormData) {
-  await executarAcao((ctx) => atualizarRepresentada(ctx, id, dados(fd)), {
+  // checkbox desmarcado não é enviado: ausência = false
+  const input = { ...dados(fd), catalogo_publico: fd.get("catalogo_publico") === "on", criar_pedido_publico: fd.get("criar_pedido_publico") === "on" };
+  await executarAcao((ctx) => atualizarRepresentada(ctx, id, input), {
     ok: `${BASE}/${id}`,
     erro: `${BASE}/${id}`,
     mensagem: "Representada salva",

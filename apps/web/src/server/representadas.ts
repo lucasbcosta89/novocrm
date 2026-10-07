@@ -9,11 +9,13 @@ export type Representada = {
   cnpj: string | null;
   comissao_padrao: number;
   slug: string;
+  catalogo_publico: boolean;
+  criar_pedido_publico: boolean;
   status: string;
   criado_em: string;
 };
 
-const CAMPOS = "id, nome, cnpj, comissao_padrao, slug, status, criado_em";
+const CAMPOS = "id, nome, cnpj, comissao_padrao, slug, catalogo_publico, criar_pedido_publico, status, criado_em";
 
 export async function listarRepresentadas({ supabase }: Contexto): Promise<Representada[]> {
   const { data, error } = await supabase.from("representadas").select(CAMPOS).order("nome");

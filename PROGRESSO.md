@@ -52,6 +52,15 @@ Toda fase termina com commit + tag no GitHub.
   - [ ] R2: habilitar no painel Cloudflare + binding ARQUIVOS (hoje usa Supabase Storage) → ver Pendências
   - [x] Critério verificado (gera mensal e catálogo, baixa, regenera com cache)
 - [ ] Fase 8 — WhatsApp, catálogo público e app offline
+  - [x] Catálogo público /c/[slug] (abas por marca, categorias, carrinho) → pedido origem catalogo_web (rascunho no CRM)
+  - [x] Meta Cloud API: webhook (hub.challenge + X-Hub-Signature-256), templates, janela 24h, conversas_whatsapp → quota conversas_mes
+  - [x] Fluxos: envio de catálogo por marca, confirmação de pedido, follow-up pós-visita 15d (pg_cron → tarefa → WhatsApp); 3 templates no seed
+  - [x] Fallback wa.me quando a Cloud API não está configurada
+  - [x] App Expo (expo-sqlite) local-first: clientes, visitas, pedidos offline; sync push/pull por updated_at, UUID no cliente, LWW
+  - [x] EAS: eas.json (perfil preview → APK)
+  - [ ] Meta: credenciais WHATSAPP_* + templates aprovados no WhatsApp Manager
+  - [ ] Build Android EAS (conta Expo do usuário)
+  - [ ] Critério verificado (envia catálogo; pedido público chega no CRM; visita offline sincroniza)
 
 ## Pendências (fazer após a tag fase-8)
 - [ ] Mercado Pago: corrigir "Mercado Pago indisponível" no checkout (ver log do POST /preapproval), configurar

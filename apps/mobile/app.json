@@ -3,6 +3,13 @@
     "name": "CRM Multimarcas",
     "slug": "crm-multimarcas",
     "version": "0.1.0",
-    "orientation": "portrait"
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "android": {
+      "package": "br.com.crmmultimarcas.app",
+      "permissions": ["android.permission.ACCESS_NETWORK_STATE"]
+    },
+    "ios": { "bundleIdentifier": "br.com.crmmultimarcas.app" },
+    "plugins": ["expo-sqlite", "expo-status-bar"]
   }
 }

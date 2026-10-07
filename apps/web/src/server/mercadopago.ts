@@ -1,5 +1,6 @@
 import "server-only";
 import { envMp } from "@/lib/env";
+import { hmacSha256Hex, iguais } from "@/lib/hmac";
 import { AppError } from "./erros";
 
 const API = "https://api.mercadopago.com";
@@ -47,16 +48,6 @@ export type MpAuthorizedPayment = {
   payment?: { id: number; status: string } | null;
 };
 
-const hex = (buf: ArrayBuffer) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
-
-/** Comparação em tempo constante. */
-function iguais(a: string, b: string) {
-  if (a.length !== b.length) return false;
-  let r = 0;
-  for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return r === 0;
-}
-
 /**
  * Valida x-signature do MP: HMAC-SHA256(secret, "id:<data.id>;request-id:<x-request-id>;ts:<ts>;").
  * https://www.mercadopago.com.br/developers/pt/docs/your-integrations/notifications/webhooks
@@ -82,7 +73,5 @@ export async function assinaturaValida(
   if (xRequestId) manifesto += `request-id:${xRequestId};`;
   manifesto += `ts:${ts};`;
 
-  const chave = await crypto.subtle.importKey("raw", new TextEncoder().encode(segredo), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  const assinatura = hex(await crypto.subtle.sign("HMAC", chave, new TextEncoder().encode(manifesto)));
-  return iguais(assinatura, v1.toLowerCase());
+  return iguais(await hmacSha256Hex(segredo, manifesto), v1.toLowerCase());
 }

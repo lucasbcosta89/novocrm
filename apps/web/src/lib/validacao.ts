@@ -40,6 +40,8 @@ export const representadaSchema = z.object({
   nome: z.string().trim().min(2, "Informe o nome").max(120),
   cnpj: digitosOpcional([14], "CNPJ deve ter 14 dígitos"),
   comissao_padrao: numero(0, 100, "Comissão deve estar entre 0 e 100").default(0),
+  catalogo_publico: z.boolean().optional(),
+  criar_pedido_publico: z.boolean().optional(),
 });
 export const representadaUpdateSchema = parcial(representadaSchema);
 

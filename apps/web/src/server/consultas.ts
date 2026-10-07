@@ -70,3 +70,29 @@ export async function resumoRepresentada({ supabase }: Contexto, representadaId:
   for (const r of [clientes, produtos, pedidos]) if (r.error) throw erroBanco(r.error);
   return { clientes: clientes.count ?? 0, produtos: produtos.count ?? 0, pedidos: pedidos.count ?? 0 };
 }
+
+/** Clientes vinculados a uma representada (para envio de catálogo). */
+export async function listarClientesDaRepresentada({ supabase }: Contexto, representadaId: string): Promise<{ id: string; nome: string }[]> {
+  const { data, error } = await supabase
+    .from("cliente_representada")
+    .select("cliente:clientes(id, nome)")
+    .eq("representada_id", idSchema.parse(representadaId))
+    .returns<{ cliente: { id: string; nome: string } | null }[]>();
+  if (error) throw erroBanco(error);
+  return data.flatMap((v) => (v.cliente ? [v.cliente] : [])).sort((a, b) => a.nome.localeCompare(b.nome));
+}
+
+export type Tarefa = { id: string; titulo: string; data: string | null; tipo: string | null; cliente: { id: string; nome: string } | null };
+
+/** Tarefas pendentes (ex.: follow-up pós-visita gerado pelo job diário). */
+export async function listarTarefasPendentes({ supabase }: Contexto): Promise<Tarefa[]> {
+  const { data, error } = await supabase
+    .from("tarefas")
+    .select("id, titulo, data, tipo, cliente:clientes(id, nome)")
+    .eq("concluida", false)
+    .order("data", { ascending: true })
+    .limit(50)
+    .returns<Tarefa[]>();
+  if (error) throw erroBanco(error);
+  return data;
+}

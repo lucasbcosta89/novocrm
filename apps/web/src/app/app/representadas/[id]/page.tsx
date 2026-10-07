@@ -3,7 +3,8 @@ import { Campo, Mensagens, type Busca } from "@/components/form";
 import { TabelaPedidos } from "@/components/tabelas";
 import { formatarDocumento, formatarMoeda, formatarPercentual } from "@/lib/formato";
 import { carregar } from "@/server/acao";
-import { listarPedidos, listarTabelaPrecos, resumoRepresentada } from "@/server/consultas";
+import { listarClientesDaRepresentada, listarPedidos, listarTabelaPrecos, resumoRepresentada } from "@/server/consultas";
+import { enviarCatalogoAction } from "../../whatsapp-actions";
 import { listarProdutos } from "@/server/produtos";
 import { obterRepresentada } from "@/server/representadas";
 import {
@@ -23,13 +24,14 @@ export default async function RepresentadaPage({
   searchParams: Busca;
 }) {
   const [{ id }, { erro, ok }] = await Promise.all([params, searchParams]);
-  const [r, produtos, precos, pedidos, resumo] = await carregar((ctx) =>
+  const [r, produtos, precos, pedidos, resumo, vinculados] = await carregar((ctx) =>
     Promise.all([
       obterRepresentada(ctx, id),
       listarProdutos(ctx, id),
       listarTabelaPrecos(ctx, id),
       listarPedidos(ctx, { representada_id: id }),
       resumoRepresentada(ctx, id),
+      listarClientesDaRepresentada(ctx, id),
     ]),
   );
 
@@ -52,9 +54,27 @@ export default async function RepresentadaPage({
           <div><dt>Pedidos</dt><dd>{resumo.pedidos}</dd></div>
         </dl>
         <div>
-          <button className="btn" type="button" disabled title="Disponível na Fase 8">Abrir catálogo digital</button>
-          <small className="dica"> /catalogo/{r.slug} — disponível em breve</small>
+          {r.catalogo_publico ? (
+            <>
+              <a className="btn" href={`/c/${r.slug}`} target="_blank" rel="noopener noreferrer">Abrir catálogo digital</a>
+              <small className="dica"> /c/{r.slug} · {r.criar_pedido_publico ? "aceitando pedidos" : "somente vitrine"}</small>
+            </>
+          ) : (
+            <small className="dica">Catálogo digital desativado — ative em “Editar dados”.</small>
+          )}
         </div>
+        {r.catalogo_publico && vinculados.length > 0 && (
+          <form action={enviarCatalogoAction.bind(null, r.id, `/app/representadas/${r.id}`)} className="inline">
+            <label className="campo">
+              <span>Enviar catálogo via WhatsApp para</span>
+              <select name="cliente_id" required defaultValue="">
+                <option value="" disabled>Selecione o cliente…</option>
+                {vinculados.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
+              </select>
+            </label>
+            <button className="btn btn-peq" type="submit">Enviar</button>
+          </form>
+        )}
         <details>
           <summary>Editar dados</summary>
         <form action={atualizarRepresentadaAction.bind(null, r.id)} className="grade">
@@ -62,6 +82,8 @@ export default async function RepresentadaPage({
           <Campo label="CNPJ" name="cnpj" inputMode="numeric" defaultValue={r.cnpj ?? ""} />
           <Campo label="Comissão padrão (%)" name="comissao_padrao" type="number" step="0.01" min="0" max="100" defaultValue={r.comissao_padrao} />
           <Campo label="Slug (catálogo público)" value={r.slug} readOnly disabled />
+          <label className="check"><input type="checkbox" name="catalogo_publico" defaultChecked={r.catalogo_publico} /> Catálogo digital público</label>
+          <label className="check"><input type="checkbox" name="criar_pedido_publico" defaultChecked={r.criar_pedido_publico} /> Aceitar pedidos pelo catálogo</label>
           <div className="acoes"><button className="btn" type="submit">Salvar</button></div>
         </form>
         <form action={excluirRepresentadaAction.bind(null, r.id)}>

@@ -5,6 +5,7 @@ import { ROTULO_STATUS_COMISSAO, ROTULO_STATUS_PEDIDO } from "@/lib/rotulos";
 import { carregar } from "@/server/acao";
 import { obterPedido } from "@/server/pedidos";
 import { cancelarPedidoAction, confirmarPedidoAction, excluirPedidoAction } from "../actions";
+import { confirmacaoPedidoAction } from "../../whatsapp-actions";
 
 export default async function PedidoPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Busca }) {
   const [{ id }, { erro, ok }] = await Promise.all([params, searchParams]);
@@ -26,6 +27,7 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
           <div><dt>Valor total</dt><dd>{formatarMoeda(p.valor_total)}</dd></div>
           <div><dt>Comissão total</dt><dd>{formatarMoeda(p.comissao_total)}</dd></div>
           <div><dt>Pagamento</dt><dd>{p.forma_pagamento ?? "—"}</dd></div>
+          <div><dt>Origem</dt><dd>{p.origem === "catalogo_web" ? "Catálogo digital" : p.origem === "whatsapp" ? "WhatsApp" : "App"}</dd></div>
           {comissao && (
             <div>
               <dt>Comissão</dt>
@@ -36,7 +38,13 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
             </div>
           )}
         </dl>
+        {p.observacoes && <p className="anotacao">Obs. do cliente: {p.observacoes}</p>}
         <div className="acoes-linha">
+          {p.status !== "cancelado" && (
+            <form action={confirmacaoPedidoAction.bind(null, p.id)}>
+              <button className="btn-link" type="submit">Enviar confirmação via WhatsApp</button>
+            </form>
+          )}
           {p.status === "rascunho" && (
             <>
               <form action={confirmarPedidoAction.bind(null, p.id)}>

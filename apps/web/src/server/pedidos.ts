@@ -24,13 +24,14 @@ export type Pedido = {
   comissao_total: number;
   forma_pagamento: string | null;
   origem: string;
+  observacoes: string | null;
   cliente: { id: string; nome: string } | null;
   representada: { id: string; nome: string } | null;
   itens: PedidoItem[];
   comissao: { id: string; status: string; valor: number; percentual: number; data_prevista: string | null }[];
 };
 
-const CAMPOS = `id, numero, data, status, valor_total, comissao_total, forma_pagamento, origem,
+const CAMPOS = `id, numero, data, status, valor_total, comissao_total, forma_pagamento, origem, observacoes,
   cliente:clientes(id, nome), representada:representadas(id, nome),
   itens:pedido_itens(id, produto_id, descricao, quantidade, preco_unitario, desconto, subtotal, comissao_percentual, comissao_valor, produto:produtos(sku)),
   comissao:comissoes(id, status, valor, percentual, data_prevista)`;

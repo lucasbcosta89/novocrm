@@ -25,6 +25,7 @@ import {
   vincularUmaAction,
 } from "../actions";
 import { CamposCliente } from "../campos";
+import { enviarCatalogoClienteAction } from "../../whatsapp-actions";
 import { CamposOportunidade, OPCOES_STATUS, Selecao } from "../campos-oportunidade";
 
 const ROTULO_TIPO: Record<string, string> = { presencial: "Presencial", telefone: "Telefone", whatsapp: "WhatsApp", video: "Vídeo" };
@@ -116,9 +117,14 @@ export default async function ClientePage({
             {c.representadas.map((r) => (
               <li key={r.id}>
                 <Link href={`/app/representadas/${r.id}`}>{r.nome}</Link>
+                <span className="acoes-linha">
+                <form action={enviarCatalogoClienteAction.bind(null, r.id, c.id)}>
+                  <button className="btn-link" type="submit" title="Envia o link do catálogo digital pelo WhatsApp">Enviar catálogo</button>
+                </form>
                 <form action={desvincularAction.bind(null, c.id, r.id)}>
                   <button className="btn-perigo btn-peq" type="submit">Desvincular</button>
                 </form>
+                </span>
               </li>
             ))}
             {naoVinculadas.map((r) => (
