@@ -30,12 +30,12 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Atualização de status do item (lista e plano) + API /api/oportunidades, /api/acoes
   - [x] Checks de domínio no banco + RLS da representada opcional
   - [x] Critério verificado (cria item, abre plano, 2 ações, conclui 1)
-- [ ] Fase 5 — Comissão por produto
+- [x] Fase 5 — Comissão por produto
   - [x] Pedido + itens (API /api/pedidos + UI /app/pedidos/novo e /app/pedidos/:id), função SQL atômica criar_pedido
   - [x] Comissão por produto (produtos.comissao); snapshot % e R$ por item na confirmação; 1 linha em comissoes (vence fim do mês)
   - [x] /app/comissoes: resumo por representada, lançamentos, marcar recebida/atrasada, alerta de atrasadas
   - [x] Job diário pg_cron (06:00 BRT) marca a_receber vencida como atrasada
-  - [ ] Critério verificado (A R$600×5% + B R$400×10% = R$70 na representada; página bate)
+  - [x] Critério verificado (A R$600×5% + B R$400×10% = R$70 na representada; página bate)
 - [ ] Fase 6 — Planos, limites e assinatura Mercado Pago
 - [ ] Fase 7 — PDFs (relatórios e catálogos)
 - [ ] Fase 8 — WhatsApp, catálogo público e app offline
