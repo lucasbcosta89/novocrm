@@ -44,19 +44,21 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Seed de preços 49/89/149; usuário não altera o próprio plano
   - [ ] Configurar MP: MP_WEBHOOK_SECRET + webhook no painel + credenciais de teste → adiado (Pendências)
   - [ ] Critério: assinatura aprovada libera / modal leva ao checkout → adiado (deu "Mercado Pago indisponível")
-- [ ] Fase 7 — PDFs (relatórios e catálogos)
+- [x] Fase 7 — PDFs (relatórios e catálogos)
   - [x] Lib PDF (pdfmake, fontes Roboto embutidas): cabeçalho com logo, tabela com cabeçalho repetido, quebra de página, rodapé
   - [x] Relatório mensal (visitas, pedidos, comissões, positivação) e de comissões do período; catálogo com imagens, categorias e página por marca
   - [x] hash_cache (não regenera nem consome quota se nada mudou); geração em segundo plano (after); download autenticado
   - [x] /app/relatorios com quota pdf_mes; imagem e categoria de produto
-  - [ ] R2: habilitar no painel Cloudflare + binding ARQUIVOS (hoje usa Supabase Storage)
-  - [ ] Critério verificado (gera mensal e catálogo, baixa, regenera com cache)
+  - [ ] R2: habilitar no painel Cloudflare + binding ARQUIVOS (hoje usa Supabase Storage) → ver Pendências
+  - [x] Critério verificado (gera mensal e catálogo, baixa, regenera com cache)
 - [ ] Fase 8 — WhatsApp, catálogo público e app offline
 
 ## Pendências (fazer após a tag fase-8)
 - [ ] Mercado Pago: corrigir "Mercado Pago indisponível" no checkout (ver log do POST /preapproval), configurar
       MP_WEBHOOK_SECRET + webhook no painel (eventos Pagamentos e Planos e assinaturas), secrets MP_* no GitHub,
       credenciais/usuários de teste (MP_TEST_PAYER_EMAIL) e validar: assinatura aprovada libera o plano.
+- [ ] R2: habilitar R2 no painel Cloudflare, criar bucket e adicionar binding ARQUIVOS no wrangler.jsonc
+      (código já usa R2 quando o binding existe; hoje os arquivos vão para o Supabase Storage).
 
 Como rodar (toda sessão):
 1. Terminal na pasta do projeto → digite: claude
