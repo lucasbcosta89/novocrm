@@ -1,7 +1,7 @@
 "use server";
 
 import { executarAcao } from "@/server/acao";
-import { atualizarProduto, criarProduto, excluirProduto } from "@/server/produtos";
+import { atualizarProduto, criarProduto, excluirProduto, salvarImagemProduto } from "@/server/produtos";
 import { atualizarRepresentada, criarRepresentada, excluirRepresentada } from "@/server/representadas";
 
 const BASE = "/app/representadas";
@@ -54,5 +54,13 @@ export async function excluirProdutoAction(representadaId: string, produtoId: st
     ok: `${BASE}/${representadaId}`,
     erro: `${BASE}/${representadaId}`,
     mensagem: "Produto excluído",
+  });
+}
+
+export async function imagemProdutoAction(representadaId: string, produtoId: string, fd: FormData) {
+  await executarAcao((ctx) => salvarImagemProduto(ctx, produtoId, fd.get("imagem")), {
+    ok: `${BASE}/${representadaId}#catalogo`,
+    erro: `${BASE}/${representadaId}#catalogo`,
+    mensagem: "Imagem atualizada",
   });
 }

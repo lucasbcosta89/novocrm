@@ -45,6 +45,12 @@ Toda fase termina com commit + tag no GitHub.
   - [ ] Configurar MP: MP_WEBHOOK_SECRET + webhook no painel + credenciais de teste → adiado (Pendências)
   - [ ] Critério: assinatura aprovada libera / modal leva ao checkout → adiado (deu "Mercado Pago indisponível")
 - [ ] Fase 7 — PDFs (relatórios e catálogos)
+  - [x] Lib PDF (pdfmake, fontes Roboto embutidas): cabeçalho com logo, tabela com cabeçalho repetido, quebra de página, rodapé
+  - [x] Relatório mensal (visitas, pedidos, comissões, positivação) e de comissões do período; catálogo com imagens, categorias e página por marca
+  - [x] hash_cache (não regenera nem consome quota se nada mudou); geração em segundo plano (after); download autenticado
+  - [x] /app/relatorios com quota pdf_mes; imagem e categoria de produto
+  - [ ] R2: habilitar no painel Cloudflare + binding ARQUIVOS (hoje usa Supabase Storage)
+  - [ ] Critério verificado (gera mensal e catálogo, baixa, regenera com cache)
 - [ ] Fase 8 — WhatsApp, catálogo público e app offline
 
 ## Pendências (fazer após a tag fase-8)

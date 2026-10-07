@@ -1,5 +1,6 @@
 import { idSchema, produtoSchema, produtoUpdateSchema } from "@/lib/validacao";
 import type { Contexto } from "./contexto";
+import { salvarArquivo } from "./armazenamento";
 import { AppError, erroBanco } from "./erros";
 
 export type Produto = {
@@ -12,6 +13,8 @@ export type Produto = {
   preco: number;
   desconto_max: number;
   comissao: number;
+  categoria: string | null;
+  imagem_url: string | null;
   ativo: boolean;
 };
 
@@ -21,7 +24,7 @@ type ProdutoRow = Omit<Produto, "desconto_max"> & {
 
 // Preço padrão = linha de tabelas_preco com cliente_id null.
 const CAMPOS =
-  "id, representada_id, sku, nome, descricao, unidade, preco, comissao, ativo, tabelas_preco(preco, desconto_max)";
+  "id, representada_id, sku, nome, descricao, unidade, preco, comissao, categoria, imagem_url, ativo, tabelas_preco(preco, desconto_max)";
 const DUPLICADO = "Já existe produto com este SKU nesta representada";
 
 function mapear({ tabelas_preco, ...p }: ProdutoRow): Produto {
@@ -100,4 +103,24 @@ export async function excluirProduto({ supabase }: Contexto, id: string): Promis
   const { error, count } = await supabase.from("produtos").delete({ count: "exact" }).eq("id", idSchema.parse(id));
   if (error) throw erroBanco(error);
   if (!count) throw new AppError(404, "Não encontrado", "nao_encontrado");
+}
+
+const TIPOS_IMAGEM: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png" };
+const MAX_IMAGEM = 2 * 1024 * 1024;
+
+/** Salva a imagem do produto no armazenamento (R2/Storage); chave versionada invalida o cache do catálogo. */
+export async function salvarImagemProduto(ctx: Contexto, produtoId: string, arquivo: unknown): Promise<Produto> {
+  if (!(arquivo instanceof File) || arquivo.size === 0) throw new AppError(400, "Selecione uma imagem", "validacao");
+  const ext = TIPOS_IMAGEM[arquivo.type];
+  if (!ext) throw new AppError(400, "Use imagem JPEG ou PNG", "validacao");
+  if (arquivo.size > MAX_IMAGEM) throw new AppError(400, "Imagem acima de 2 MB", "validacao");
+
+  const produto = await obterProduto(ctx, produtoId); // 404 se não for do usuário
+  const chave = `produtos/${ctx.userId}/${produto.id}-${Date.now()}.${ext}`;
+  await salvarArquivo(chave, new Uint8Array(await arquivo.arrayBuffer()), arquivo.type);
+
+  const { error } = await ctx.supabase.from("produtos").update({ imagem_url: chave }).eq("id", produto.id);
+  if (error) throw erroBanco(error);
+  await ctx.supabase.from("uploads").insert({ user_id: ctx.userId, representada_id: produto.representada_id, tipo: "foto_produto", r2_key: chave });
+  return obterProduto(ctx, produto.id);
 }

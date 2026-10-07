@@ -12,6 +12,7 @@ import {
   criarProdutoAction,
   excluirProdutoAction,
   excluirRepresentadaAction,
+  imagemProdutoAction,
 } from "../actions";
 
 export default async function RepresentadaPage({
@@ -77,13 +78,22 @@ export default async function RepresentadaPage({
           <div className="tabela-wrap">
             <table className="tabela">
               <thead>
-                <tr><th>SKU</th><th>Nome</th><th>Un.</th><th>Preço padrão</th><th>Desc. máx.</th><th>Comissão</th><th>Ativo</th><th></th></tr>
+                <tr><th></th><th>SKU</th><th>Nome</th><th>Categoria</th><th>Un.</th><th>Preço padrão</th><th>Desc. máx.</th><th>Comissão</th><th>Ativo</th><th></th></tr>
               </thead>
               <tbody>
                 {produtos.map((p) => (
                   <tr key={p.id}>
+                    <td>
+                      {p.imagem_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img className="miniatura" src={`/api/produtos/${p.id}/imagem?v=${encodeURIComponent(p.imagem_url)}`} alt="" />
+                      ) : (
+                        <span className="miniatura vazia" />
+                      )}
+                    </td>
                     <td><code>{p.sku}</code></td>
                     <td>{p.nome}</td>
+                    <td>{p.categoria ?? "—"}</td>
                     <td>{p.unidade ?? "—"}</td>
                     <td>{formatarMoeda(p.preco)}</td>
                     <td>{formatarPercentual(p.desconto_max)}</td>
@@ -96,12 +106,20 @@ export default async function RepresentadaPage({
                           <Campo label="SKU *" name="sku" required defaultValue={p.sku} />
                           <Campo label="Nome *" name="nome" required defaultValue={p.nome} />
                           <Campo label="Unidade" name="unidade" defaultValue={p.unidade ?? ""} />
+                          <Campo label="Categoria" name="categoria" defaultValue={p.categoria ?? ""} />
                           <Campo label="Preço *" name="preco" type="number" step="0.01" min="0" required defaultValue={p.preco} />
                           <Campo label="Desc. máx. (%)" name="desconto_max" type="number" step="0.01" min="0" max="100" defaultValue={p.desconto_max} />
                           <Campo label="Comissão (%)" name="comissao" type="number" step="0.01" min="0" max="100" defaultValue={p.comissao} />
                           <Campo label="Descrição" name="descricao" defaultValue={p.descricao ?? ""} />
                           <label className="check"><input type="checkbox" name="ativo" defaultChecked={p.ativo} /> Ativo</label>
                           <div className="acoes"><button className="btn" type="submit">Salvar</button></div>
+                        </form>
+                        <form action={imagemProdutoAction.bind(null, r.id, p.id)} className="inline">
+                          <label className="campo">
+                            <span>Imagem (JPEG/PNG até 2 MB)</span>
+                            <input type="file" name="imagem" accept="image/jpeg,image/png" required />
+                          </label>
+                          <button className="btn btn-peq" type="submit">Enviar imagem</button>
                         </form>
                         <form action={excluirProdutoAction.bind(null, r.id, p.id)}>
                           <button className="btn-perigo" type="submit">Excluir produto</button>
@@ -120,6 +138,7 @@ export default async function RepresentadaPage({
           <Campo label="SKU *" name="sku" required />
           <Campo label="Nome *" name="nome" required minLength={2} />
           <Campo label="Unidade" name="unidade" placeholder="un, cx, kg" />
+          <Campo label="Categoria" name="categoria" placeholder="Ex.: Linha escolar" />
           <Campo label="Preço padrão *" name="preco" type="number" step="0.01" min="0" required />
           <Campo label="Desc. máx. (%)" name="desconto_max" type="number" step="0.01" min="0" max="100" defaultValue="0" />
           <Campo label="Comissão (%)" name="comissao" type="number" step="0.01" min="0" max="100" defaultValue={r.comissao_padrao} />
