@@ -65,6 +65,8 @@ Toda fase termina com commit + tag no GitHub.
 ## Pendências (fazer após a tag fase-8)
 - [ ] Segurança: ativar leaked password protection no Supabase Auth
 - [x] Mercado Pago: checkout, webhook (x-signature) e conciliação validados em teste (2026-10-09)
+- [ ] Mercado Pago produção: trocar MP_ACCESS_TOKEN pelo token da conta real, remover MP_TEST_PAYER_EMAIL,
+      cadastrar webhook na aplicação real e atualizar MP_WEBHOOK_SECRET (.env + secrets do GitHub)
 
 Como rodar (toda sessão):
 1. Terminal na pasta do projeto → digite: claude
