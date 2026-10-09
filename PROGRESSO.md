@@ -51,16 +51,16 @@ Toda fase termina com commit + tag no GitHub.
   - [x] /app/relatorios com quota pdf_mes; imagem e categoria de produto
   - [x] R2: bucket crm-arquivos + binding ARQUIVOS (arquivos antigos seguem lidos do Supabase Storage)
   - [x] Critério verificado (gera mensal e catálogo, baixa, regenera com cache)
-- [ ] Fase 8 — WhatsApp, catálogo público e app offline
+- [x] Fase 8 — WhatsApp, catálogo público e app offline
   - [x] Catálogo público /c/[slug] (abas por marca, categorias, carrinho) → pedido origem catalogo_web (rascunho no CRM)
   - [x] Meta Cloud API: webhook (hub.challenge + X-Hub-Signature-256), templates, janela 24h, conversas_whatsapp → quota conversas_mes
   - [x] Fluxos: envio de catálogo por marca, confirmação de pedido, follow-up pós-visita 15d (pg_cron → tarefa → WhatsApp); 3 templates no seed
   - [x] Fallback wa.me quando a Cloud API não está configurada
   - [x] App Expo (expo-sqlite) local-first: clientes, visitas, pedidos offline; sync push/pull por updated_at, UUID no cliente, LWW
   - [x] EAS: eas.json (perfil preview → APK)
-  - [ ] Meta: credenciais WHATSAPP_* + templates aprovados no WhatsApp Manager
+  - [ ] Meta: credenciais WHATSAPP_* + templates aprovados no WhatsApp Manager → opcional (hoje envia via wa.me)
   - [ ] Build Android EAS (APK) → opcional: testes via Expo Go; builds de loja (Play/App Store) ficam para a publicação
-  - [ ] Critério verificado (envia catálogo; pedido público chega no CRM; visita offline sincroniza)
+  - [x] Critério verificado (envia catálogo; pedido público chega no CRM; visita offline sincroniza)
 
 ## Pendências (fazer após a tag fase-8)
 - [ ] Mercado Pago: corrigir "Mercado Pago indisponível" no checkout (ver log do POST /preapproval), configurar
