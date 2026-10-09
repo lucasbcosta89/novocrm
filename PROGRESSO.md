@@ -63,7 +63,7 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Critério verificado (envia catálogo; pedido público chega no CRM; visita offline sincroniza)
 
 ## Pendências (fazer após a tag fase-8)
-- [ ] Segurança: ativar leaked password protection no Supabase Auth
+- [ ] Segurança: ativar leaked password protection no Supabase Auth (requer plano Pro; ao ativar, validar que o cadastro via admin.createUser também bloqueia senha vazada)
 - [x] Mercado Pago: checkout, webhook (x-signature) e conciliação validados em teste (2026-10-09)
 - [ ] Mercado Pago produção: trocar MP_ACCESS_TOKEN pelo token da conta real, remover MP_TEST_PAYER_EMAIL,
       cadastrar webhook na aplicação real e atualizar MP_WEBHOOK_SECRET (.env + secrets do GitHub)
