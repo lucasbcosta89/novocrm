@@ -49,7 +49,7 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Relatório mensal (visitas, pedidos, comissões, positivação) e de comissões do período; catálogo com imagens, categorias e página por marca
   - [x] hash_cache (não regenera nem consome quota se nada mudou); geração em segundo plano (after); download autenticado
   - [x] /app/relatorios com quota pdf_mes; imagem e categoria de produto
-  - [ ] R2: habilitar no painel Cloudflare + binding ARQUIVOS (hoje usa Supabase Storage) → ver Pendências
+  - [x] R2: bucket crm-arquivos + binding ARQUIVOS (arquivos antigos seguem lidos do Supabase Storage)
   - [x] Critério verificado (gera mensal e catálogo, baixa, regenera com cache)
 - [ ] Fase 8 — WhatsApp, catálogo público e app offline
   - [x] Catálogo público /c/[slug] (abas por marca, categorias, carrinho) → pedido origem catalogo_web (rascunho no CRM)
@@ -59,15 +59,13 @@ Toda fase termina com commit + tag no GitHub.
   - [x] App Expo (expo-sqlite) local-first: clientes, visitas, pedidos offline; sync push/pull por updated_at, UUID no cliente, LWW
   - [x] EAS: eas.json (perfil preview → APK)
   - [ ] Meta: credenciais WHATSAPP_* + templates aprovados no WhatsApp Manager
-  - [ ] Build Android EAS (conta Expo do usuário)
+  - [ ] Build Android EAS (APK) → opcional: testes via Expo Go; builds de loja (Play/App Store) ficam para a publicação
   - [ ] Critério verificado (envia catálogo; pedido público chega no CRM; visita offline sincroniza)
 
 ## Pendências (fazer após a tag fase-8)
 - [ ] Mercado Pago: corrigir "Mercado Pago indisponível" no checkout (ver log do POST /preapproval), configurar
       MP_WEBHOOK_SECRET + webhook no painel (eventos Pagamentos e Planos e assinaturas), secrets MP_* no GitHub,
       credenciais/usuários de teste (MP_TEST_PAYER_EMAIL) e validar: assinatura aprovada libera o plano.
-- [ ] R2: habilitar R2 no painel Cloudflare, criar bucket e adicionar binding ARQUIVOS no wrangler.jsonc
-      (código já usa R2 quando o binding existe; hoje os arquivos vão para o Supabase Storage).
 
 Como rodar (toda sessão):
 1. Terminal na pasta do projeto → digite: claude

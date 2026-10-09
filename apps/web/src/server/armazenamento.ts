@@ -38,7 +38,8 @@ export async function lerArquivo(chave: string): Promise<{ bytes: ArrayBuffer; c
   const bucket = r2();
   if (bucket) {
     const obj = await bucket.get(chave);
-    return obj ? { bytes: await obj.arrayBuffer(), contentType: obj.httpMetadata?.contentType ?? "application/octet-stream" } : null;
+    if (obj) return { bytes: await obj.arrayBuffer(), contentType: obj.httpMetadata?.contentType ?? "application/octet-stream" };
+    // não está no R2: arquivo gravado antes da migração → busca no Supabase Storage
   }
   const { data, error } = await supabaseAdmin().storage.from(BUCKET).download(chave);
   if (error || !data) return null;

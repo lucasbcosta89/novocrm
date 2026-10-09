@@ -4,5 +4,7 @@
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-10-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
-  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" }
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  // PDFs e imagens (arquivos antigos continuam sendo lidos do Supabase Storage)
+  "r2_buckets": [{ "binding": "ARQUIVOS", "bucket_name": "crm-arquivos" }]
 }
