@@ -36,14 +36,14 @@ Toda fase termina com commit + tag no GitHub.
   - [x] /app/comissoes: resumo por representada, lançamentos, marcar recebida/atrasada, alerta de atrasadas
   - [x] Job diário pg_cron (06:00 BRT) marca a_receber vencida como atrasada
   - [x] Critério verificado (A R$600×5% + B R$400×10% = R$70 na representada; página bate)
-- [x] Fase 6 — Planos, limites e assinatura Mercado Pago (checkout MP adiado — ver Pendências)
+- [x] Fase 6 — Planos, limites e assinatura Mercado Pago
   - [x] Quota: usage mantido por triggers (inc/dec, mensais por YYYY-MM) + bloqueio no banco; verificarLimite nos POST (403 LIMITE_ATINGIDO, upgrade:true)
   - [x] GET /api/usage; banners "limite atingido — upgrade" + botões desabilitados + modal de planos
   - [x] /app/configurar: plano, uso/limites, checkout MP (POST /preapproval → init_point)
   - [x] Webhook /api/webhooks/mercadopago: x-signature, 200 imediato, fila webhook_events, worker (GET /v1/payments), idempotência, carência 7d (pg_cron)
   - [x] Seed de preços 49/89/149; usuário não altera o próprio plano
-  - [ ] Configurar MP: MP_WEBHOOK_SECRET + webhook no painel + credenciais de teste → adiado (Pendências)
-  - [ ] Critério: assinatura aprovada libera / modal leva ao checkout → adiado (deu "Mercado Pago indisponível")
+  - [x] Configurar MP: MP_WEBHOOK_SECRET + webhook no painel + credenciais de teste (comprador de teste)
+  - [x] Critério: modal leva ao checkout; assinatura aprovada libera o plano (webhook 200 + conciliação de pagamentos)
 - [x] Fase 7 — PDFs (relatórios e catálogos)
   - [x] Lib PDF (pdfmake, fontes Roboto embutidas): cabeçalho com logo, tabela com cabeçalho repetido, quebra de página, rodapé
   - [x] Relatório mensal (visitas, pedidos, comissões, positivação) e de comissões do período; catálogo com imagens, categorias e página por marca
@@ -63,9 +63,8 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Critério verificado (envia catálogo; pedido público chega no CRM; visita offline sincroniza)
 
 ## Pendências (fazer após a tag fase-8)
-- [ ] Mercado Pago: corrigir "Mercado Pago indisponível" no checkout (ver log do POST /preapproval), configurar
-      MP_WEBHOOK_SECRET + webhook no painel (eventos Pagamentos e Planos e assinaturas), secrets MP_* no GitHub,
-      credenciais/usuários de teste (MP_TEST_PAYER_EMAIL) e validar: assinatura aprovada libera o plano.
+- [ ] Segurança: ativar leaked password protection no Supabase Auth
+- [x] Mercado Pago: checkout, webhook (x-signature) e conciliação validados em teste (2026-10-09)
 
 Como rodar (toda sessão):
 1. Terminal na pasta do projeto → digite: claude

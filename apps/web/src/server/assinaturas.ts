@@ -220,9 +220,16 @@ export async function processarFila(limite = 10): Promise<number> {
         .update({ status: r.status, erro: r.detalhe ?? null, processed_at: new Date().toISOString(), tentativas: e.tentativas + 1 })
         .eq("id", e.id);
     } catch (err) {
+      // recusa definitiva do MP (4xx, ex.: pagamento inexistente) não adianta repetir; 5xx/rede fica para nova tentativa
+      const definitivo = err instanceof AppError && err.code === "mercado_pago" && err.status === 400;
       await admin
         .from("webhook_events")
-        .update({ status: "erro", erro: err instanceof Error ? err.message : String(err), tentativas: e.tentativas + 1 })
+        .update({
+          status: definitivo ? "ignorado" : "erro",
+          erro: err instanceof Error ? err.message : String(err),
+          tentativas: e.tentativas + 1,
+          ...(definitivo ? { processed_at: new Date().toISOString() } : {}),
+        })
         .eq("id", e.id);
     }
   }
