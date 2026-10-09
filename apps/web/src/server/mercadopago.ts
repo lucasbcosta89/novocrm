@@ -19,6 +19,16 @@ export async function mp<T>(caminho: string, init: { method?: string; body?: unk
   if (!res.ok) {
     const detalhe = await res.text().catch(() => "");
     console.error(`Mercado Pago ${init.method ?? "GET"} ${caminho} → ${res.status}: ${detalhe.slice(0, 500)}`);
+    // 4xx = dados recusados pelo MP: mostra o motivo (ex.: comprador/vendedor de teste misturados, back_url inválida)
+    let motivo = "";
+    try {
+      motivo = (JSON.parse(detalhe) as { message?: string }).message ?? "";
+    } catch {
+      /* corpo não-JSON */
+    }
+    if (res.status >= 400 && res.status < 500 && motivo) {
+      throw new AppError(400, `Mercado Pago recusou: ${motivo}`, "mercado_pago");
+    }
     throw new AppError(502, `Mercado Pago indisponível (${res.status}). Tente novamente.`, "mercado_pago");
   }
   return (await res.json()) as T;

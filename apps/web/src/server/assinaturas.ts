@@ -34,6 +34,9 @@ const planoSchema = z.enum(ORDEM_PLANOS as [string, ...string[]], "Plano inváli
  */
 export async function iniciarAssinatura(ctx: Contexto, planoInput: unknown, origem: string): Promise<string> {
   const codigo = planoSchema.parse(planoInput);
+  if (!origem.startsWith("https://")) {
+    throw new AppError(400, "O checkout do Mercado Pago só funciona pelo endereço público (https), não pelo localhost.", "mercado_pago");
+  }
   const admin = supabaseAdmin();
   const [{ data: plano, error: e1 }, { data: usuario, error: e2 }, { data: atual }] = await Promise.all([
     admin.from("planos").select("codigo, nome, preco").eq("codigo", codigo).single<{ codigo: string; nome: string; preco: number }>(),
