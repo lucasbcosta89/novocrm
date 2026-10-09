@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 import { executarAcao } from "@/server/acao";
-import { iniciarAssinatura } from "@/server/assinaturas";
+import { conciliarAssinatura, iniciarAssinatura } from "@/server/assinaturas";
 
 /** Cria a assinatura no Mercado Pago e redireciona ao checkout (init_point). */
 export async function iniciarAssinaturaAction(fd: FormData) {
@@ -12,4 +12,16 @@ export async function iniciarAssinaturaAction(fd: FormData) {
     ok: (initPoint) => initPoint,
     erro: "/app/configurar",
   });
+}
+
+/** Confere no Mercado Pago se o pagamento foi aprovado (caso a notificação ainda não tenha chegado). */
+export async function verificarPagamentoAction() {
+  let mensagem = "";
+  await executarAcao(
+    async (ctx) => {
+      const { aplicados } = await conciliarAssinatura(ctx.userId);
+      mensagem = aplicados ? "Pagamento confirmado: plano liberado!" : "Pagamento ainda não aprovado pelo Mercado Pago. Tente em instantes.";
+    },
+    { ok: () => `/app/configurar?ok=${encodeURIComponent(mensagem)}`, erro: "/app/configurar" },
+  );
 }

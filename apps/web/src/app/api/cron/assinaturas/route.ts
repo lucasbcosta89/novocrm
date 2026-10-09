@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { processarFila } from "@/server/assinaturas";
+import { conciliarTodas, processarFila } from "@/server/assinaturas";
 
 /**
  * Reprocessa a fila de webhooks (pendentes/erro). Chamar por cron externo com
@@ -10,5 +10,6 @@ export async function POST(req: NextRequest) {
   if (!segredo || req.headers.get("authorization") !== `Bearer ${segredo}`) {
     return NextResponse.json({ erro: "não autorizado" }, { status: 401 });
   }
-  return NextResponse.json({ processados: await processarFila(50) });
+  const processados = await processarFila(50);
+  return NextResponse.json({ processados, conciliados: await conciliarTodas() });
 }

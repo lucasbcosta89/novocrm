@@ -158,6 +158,45 @@ async function processarEvento(e: EventoMp): Promise<{ status: "processado" | "i
   return { status: "ignorado", detalhe: `tipo ${e.type}` };
 }
 
+/**
+ * Conciliação: consulta no MP os pagamentos da assinatura do usuário e aplica os aprovados
+ * (GET /v1/payments/{id} confirma "approved"). Rede de segurança caso um webhook se perca; idempotente.
+ */
+export async function conciliarAssinatura(userId: string): Promise<{ aplicados: number }> {
+  const { data: a } = await supabaseAdmin()
+    .from("assinaturas")
+    .select("mp_preapproval_id, mp_preapproval_anterior")
+    .eq("user_id", userId)
+    .maybeSingle<{ mp_preapproval_id: string | null; mp_preapproval_anterior: string | null }>();
+  let aplicados = 0;
+  for (const preapprovalId of [a?.mp_preapproval_anterior, a?.mp_preapproval_id]) {
+    if (!preapprovalId) continue;
+    const busca = await mp<{ results?: MpAuthorizedPayment[] }>(`/authorized_payments/search?preapproval_id=${encodeURIComponent(preapprovalId)}`);
+    for (const autorizado of busca.results ?? []) {
+      if (autorizado.payment?.status !== "approved") continue;
+      const pagamento = await mp<MpPayment>(`/v1/payments/${autorizado.payment.id}`);
+      if (pagamento.status !== "approved") continue;
+      const r = await aplicarPagamento({ ...pagamento, external_reference: pagamento.external_reference ?? autorizado.external_reference }, preapprovalId);
+      if (r.startsWith("ativada") || r.startsWith("estendida")) aplicados++;
+    }
+  }
+  return { aplicados };
+}
+
+/** Concilia todas as assinaturas pendentes/ativas (usado pelo cron). */
+export async function conciliarTodas(): Promise<number> {
+  const { data } = await supabaseAdmin()
+    .from("assinaturas")
+    .select("user_id")
+    .not("mp_preapproval_id", "is", null)
+    .in("status", ["pending", "active"]);
+  let total = 0;
+  for (const { user_id } of data ?? []) {
+    total += (await conciliarAssinatura(user_id as string).catch(() => ({ aplicados: 0 }))).aplicados;
+  }
+  return total;
+}
+
 const MAX_TENTATIVAS = 5;
 
 /** Worker: processa a fila (pendentes e com erro, até 5 tentativas). */

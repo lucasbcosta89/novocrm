@@ -3,7 +3,9 @@ import { OpcoesPlano } from "@/components/upgrade";
 import { formatarData, formatarMoeda } from "@/lib/formato";
 import { fimDaCarencia, RECURSOS, RECURSOS_MENSAIS, ROTULO_RECURSO } from "@/lib/planos";
 import { carregar } from "@/server/acao";
-import { obterAssinatura } from "@/server/assinaturas";
+import { conciliarAssinatura, obterAssinatura } from "@/server/assinaturas";
+import { obterContexto } from "@/server/contexto";
+import { verificarPagamentoAction } from "./actions";
 import { obterUso } from "@/server/quota";
 
 const ROTULO_ASSINATURA: Record<string, string> = {
@@ -20,6 +22,12 @@ export default async function ConfigurarPage({
   searchParams: Promise<{ erro?: string; ok?: string; retorno?: string }>;
 }) {
   const { erro, ok, retorno } = await searchParams;
+  // Voltando do checkout ou com assinatura pendente: confere no MP e libera o plano se o pagamento já foi aprovado.
+  const pendente = (await carregar(obterAssinatura))?.status === "pending";
+  if (retorno === "mp" || pendente) {
+    const { userId } = await obterContexto();
+    await conciliarAssinatura(userId).catch((e) => console.error("conciliação MP", e));
+  }
   const [uso, assinatura] = await carregar((ctx) => Promise.all([obterUso(ctx), obterAssinatura(ctx)]));
 
   const carencia = fimDaCarencia(assinatura?.periodo_fim ?? null);
@@ -48,6 +56,11 @@ export default async function ConfigurarPage({
           {assinatura?.status === "pending" && <div><dt>Plano escolhido</dt><dd>{assinatura.plano}</dd></div>}
           {assinatura?.periodo_fim && <div><dt>Válida até</dt><dd>{formatarData(assinatura.periodo_fim)}</dd></div>}
         </dl>
+        {assinatura?.status === "pending" && (
+          <form action={verificarPagamentoAction}>
+            <button className="btn btn-peq" type="submit">Já paguei — verificar pagamento</button>
+          </form>
+        )}
       </section>
 
       <section className="card">
