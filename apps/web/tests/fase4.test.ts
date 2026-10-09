@@ -4,7 +4,7 @@ import { acaoSchema, oportunidadeSchema, oportunidadeUpdateSchema } from "@/lib/
 describe("oportunidadeSchema", () => {
   it("aplica padrões e converte valor", () => {
     const o = oportunidadeSchema.parse({ tipo: "oportunidade", titulo: "Ampliar mix", valor_estimado: "1500,50", representada_id: "" });
-    expect(o).toMatchObject({ prioridade: "media", status: "aberta", valor_estimado: 1500.5, representada_id: null });
+    expect(o).toMatchObject({ prioridade: "media", status: "nao_iniciado", valor_estimado: 1500.5, representada_id: null });
   });
   it("valor vazio vira null; rejeita tipo/prioridade/status inválidos", () => {
     expect(oportunidadeSchema.parse({ tipo: "desafio", titulo: "Atraso", valor_estimado: "" }).valor_estimado).toBeNull();
@@ -13,14 +13,14 @@ describe("oportunidadeSchema", () => {
     expect(oportunidadeUpdateSchema.safeParse({ status: "fechada" }).success).toBe(false);
   });
   it("update parcial só com status", () => {
-    expect(oportunidadeUpdateSchema.parse({ status: "em_andamento" })).toEqual({ status: "em_andamento" });
+    expect(oportunidadeUpdateSchema.parse({ status: "em_progresso" })).toEqual({ status: "em_progresso" });
   });
 });
 
 describe("acaoSchema", () => {
   it("padrão pendente; prazo vazio vira null", () => {
     expect(acaoSchema.parse({ descricao: "Ligar", prazo: "", responsavel: "" })).toEqual({
-      descricao: "Ligar", prazo: null, responsavel: null, status: "pendente",
+      descricao: "Ligar", prazo: null, responsavel: null, status: "nao_iniciado",
     });
   });
   it("valida prazo e status", () => {

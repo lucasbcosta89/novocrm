@@ -204,7 +204,7 @@ export default async function ClientePage({
               <tbody>
                 {oportunidades.map((o) => {
                   const plano = `/app/clientes/${c.id}/oportunidades/${o.id}`;
-                  const concluidas = o.acoes.filter((a) => a.status === "concluida").length;
+                  const concluidas = o.acoes.filter((a) => a.status === "concluido").length;
                   return (
                     <tr key={o.id}>
                       <td><span className={`etiqueta etiqueta-${o.tipo}`}>{ROTULO_TIPO_OPORTUNIDADE[o.tipo]}</span></td>

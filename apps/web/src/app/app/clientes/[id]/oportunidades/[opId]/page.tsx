@@ -44,7 +44,7 @@ export default async function PlanoAcaoPage({
   const [o, cliente] = await carregar((ctx) => Promise.all([obterOportunidade(ctx, opId), obterCliente(ctx, id)]));
   if (o.cliente_id !== cliente.id) notFound();
 
-  const concluidas = o.acoes.filter((a) => a.status === "concluida").length;
+  const concluidas = o.acoes.filter((a) => a.status === "concluido").length;
 
   return (
     <>
@@ -93,22 +93,22 @@ export default async function PlanoAcaoPage({
               </thead>
               <tbody>
                 {o.acoes.map((a) => {
-                  const atrasada = a.status !== "concluida" && a.prazo != null && a.prazo < hoje();
+                  const atrasada = a.status !== "concluido" && a.status !== "cancelado" && a.prazo != null && a.prazo < hoje();
                   return (
-                    <tr key={a.id} className={a.status === "concluida" ? "concluida" : undefined}>
+                    <tr key={a.id} className={a.status === "concluido" ? "concluida" : undefined}>
                       <td>{a.descricao}</td>
                       <td>{a.responsavel ?? "—"}</td>
                       <td className={atrasada ? "atrasada" : undefined}>{a.prazo ? formatarData(`${a.prazo}T12:00:00Z`) : "—"}</td>
                       <td>{ROTULO_STATUS_ACAO[a.status] ?? a.status}</td>
                       <td className="acoes-linha">
-                        {a.status !== "concluida" ? (
+                        {a.status !== "concluido" ? (
                           <form action={atualizarAcaoAction.bind(null, cliente.id, o.id, a.id)}>
-                            <input type="hidden" name="status" value="concluida" />
+                            <input type="hidden" name="status" value="concluido" />
                             <button className="btn btn-peq" type="submit">Concluir</button>
                           </form>
                         ) : (
                           <form action={atualizarAcaoAction.bind(null, cliente.id, o.id, a.id)}>
-                            <input type="hidden" name="status" value="pendente" />
+                            <input type="hidden" name="status" value="nao_iniciado" />
                             <button className="btn-link" type="submit">Reabrir</button>
                           </form>
                         )}

@@ -115,8 +115,10 @@ export const visitaUpdateSchema = parcial(visitaSchema);
 
 export const TIPOS_OPORTUNIDADE = ["oportunidade", "desafio"] as const;
 export const PRIORIDADES = ["baixa", "media", "alta"] as const;
-export const STATUS_OPORTUNIDADE = ["aberta", "em_andamento", "concluida", "nao_aplicavel"] as const;
-export const STATUS_ACAO = ["pendente", "em_andamento", "concluida"] as const;
+/** Status unificados (Fase 4b) para oportunidades e ações do plano. */
+export const STATUS_OPORTUNIDADE = ["nao_iniciado", "em_progresso", "atrasado", "cancelado", "concluido"] as const;
+export const STATUS_ACAO = STATUS_OPORTUNIDADE;
+export const RESULTADOS = ["ganhou", "perdeu"] as const;
 
 export const oportunidadeSchema = z.object({
   tipo: z.enum(TIPOS_OPORTUNIDADE, "Tipo inválido"),
@@ -127,8 +129,13 @@ export const oportunidadeSchema = z.object({
     z.number("Valor estimado inválido").min(0, "Valor estimado inválido").max(999_999_999_999).nullable().optional(),
   ),
   prioridade: z.enum(PRIORIDADES, "Prioridade inválida").default("media"),
-  status: z.enum(STATUS_OPORTUNIDADE, "Status inválido").default("aberta"),
+  status: z.enum(STATUS_OPORTUNIDADE, "Status inválido").default("nao_iniciado"),
   representada_id: z.preprocess(vazioParaNull, idSchema.nullable().optional()),
+  cidade: textoOpcional(80),
+  estado: z.preprocess(
+    (v) => (typeof v === "string" ? vazioParaNull(v.trim().toUpperCase()) : v),
+    z.string().regex(/^[A-Z]{2}$/, "Estado (UF) deve ter 2 letras").nullable().optional(),
+  ),
 });
 export const oportunidadeUpdateSchema = parcial(oportunidadeSchema);
 
@@ -136,7 +143,9 @@ export const acaoSchema = z.object({
   descricao: z.string().trim().min(2, "Descreva a ação").max(1000),
   responsavel: textoOpcional(120),
   prazo: z.preprocess(vazioParaNull, z.iso.date("Prazo inválido").nullable().optional()),
-  status: z.enum(STATUS_ACAO, "Status inválido").default("pendente"),
+  status: z.enum(STATUS_ACAO, "Status inválido").default("nao_iniciado"),
+  data_entrega: z.preprocess(vazioParaNull, z.iso.date("Data de entrega inválida").nullable().optional()),
+  observacoes: textoOpcional(2000),
 });
 export const acaoUpdateSchema = parcial(acaoSchema);
 
@@ -163,4 +172,21 @@ export type PedidoInput = z.infer<typeof pedidoSchema>;
 /** Status que o usuário pode definir manualmente (cancelada só via cancelamento do pedido). */
 export const marcarComissaoSchema = z.object({
   status: z.enum(["a_receber", "recebida", "atrasada"], "Status inválido"),
+});
+
+/** Nova oportunidade pela página global (kanban): representada obrigatória, produtos dela e ações do plano. */
+export const novaOportunidadeSchema = oportunidadeSchema.extend({
+  tipo: z.enum(TIPOS_OPORTUNIDADE, "Tipo inválido").default("oportunidade"),
+  representada_id: z.uuid("Selecione a representada"),
+  produtos: z
+    .array(z.object({ produto_id: idSchema, quantidade: numero(0.001, 1_000_000, "Quantidade inválida").default(1) }))
+    .max(200)
+    .default([])
+    .refine((ps) => new Set(ps.map((p) => p.produto_id)).size === ps.length, "Produto repetido"),
+  acoes: z.array(acaoSchema).max(100).default([]),
+});
+
+export const resultadoSchema = z.object({
+  resultado: z.enum(RESULTADOS, "Selecione Ganhou ou Perdeu"),
+  observacoes_resultado: textoOpcional(2000),
 });

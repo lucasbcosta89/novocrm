@@ -169,3 +169,25 @@ a.btn { text-decoration: none; display: inline-block; }
 .oculto { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
 .confirmacao { max-width: 520px; margin: 24px auto; text-align: center; justify-items: center; }
 @media (max-width: 860px) { .publico-corpo { grid-template-columns: 1fr; } .resumo-carrinho { position: static; } }
+
+/* Fase 4b: kanban de oportunidades */
+.kanban-barra { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin-top: 0; }
+.kanban-barra .campo { min-width: 140px; }
+.kanban-acoes { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.kanban-grupo { margin-top: 20px; }
+.kanban-grupo-titulo { font-size: 1rem; margin: 0 0 8px; }
+.kanban { display: grid; grid-template-columns: repeat(5, minmax(200px, 1fr)); gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+.kanban-coluna { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; min-height: 140px; transition: background .15s; }
+.kanban-coluna h3 { margin: 0 0 4px; font-size: .9rem; display: flex; justify-content: space-between; }
+.kanban-coluna.sobre { background: color-mix(in srgb, var(--accent) 10%, var(--surface)); border-color: var(--accent); }
+.coluna-atrasado h3 { color: var(--danger); }
+.coluna-concluido h3 { color: var(--ok); }
+.kanban-cartao { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 10px; display: grid; gap: 4px; cursor: grab; font-size: .9rem; }
+.kanban-cartao:active { cursor: grabbing; }
+.kanban-cartao select { margin-top: 4px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); font: inherit; font-size: .8rem; }
+.kanban-cartao.resultado-ganhou { border-left: 3px solid var(--ok); }
+.kanban-cartao.resultado-perdeu { border-left: 3px solid var(--danger); }
+.cartao-topo { display: flex; justify-content: space-between; align-items: center; }
+.kanban-log { margin-top: 24px; }
+.modal-largo { width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 32px); }
+.tabela-form input, .tabela-form select { width: 100%; min-width: 110px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font: inherit; }
