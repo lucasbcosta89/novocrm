@@ -30,11 +30,11 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Atualização de status do item (lista e plano) + API /api/oportunidades, /api/acoes
   - [x] Checks de domínio no banco + RLS da representada opcional
   - [x] Critério verificado (cria item, abre plano, 2 ações, conclui 1)
-- [ ] Fase 4b — Página Oportunidades (kanban)
+- [x] Fase 4b — Página Oportunidades (kanban)
   - [x] Schema: status unificados (5), cidade/estado, resultado/observações/data_conclusao, cliente opcional, oportunidade_produtos; RLS por user_id
   - [x] /app/oportunidades: kanban 5 colunas (arrastar salva), filtros + agrupamento, modal Nova Oportunidade (produtos da representada + ações), modal Resultado
   - [x] Log no rodapé: total, ganhas, perdidas, % aproveitamento
-  - [ ] Critério verificado (2 produtos + 2 ações; arrasta e persiste; conclui Ganhou; 1 de 1 = 100%)
+  - [x] Critério verificado (2 produtos + 2 ações; arrasta e persiste; conclui Ganhou; 1 de 1 = 100%)
 - [x] Fase 5 — Comissão por produto
   - [x] Pedido + itens (API /api/pedidos + UI /app/pedidos/novo e /app/pedidos/:id), função SQL atômica criar_pedido
   - [x] Comissão por produto (produtos.comissao); snapshot % e R$ por item na confirmação; 1 linha em comissoes (vence fim do mês)
