@@ -20,7 +20,7 @@ describe("CPF/CNPJ", () => {
     expect(mascaraCpf("52998224725")).toBe("529.982.247-25");
     expect(mascaraCpf("5299")).toBe("529.9");
     expect(mascaraCnpj("11222333000181")).toBe("11.222.333/0001-81");
-    expect(ocultarCpf("52998224725")).toBe("529.982.247-**");
+    expect(ocultarCpf("52998224725")).toBe("529.***.***-25");
     expect(ocultarCnpj("11222333000181")).toBe("11.222.333/0001-**");
     expect(ocultarCpf(null)).toBeNull();
   });
