@@ -35,11 +35,12 @@ Toda fase termina com commit + tag no GitHub.
   - [x] /app/oportunidades: kanban 5 colunas (arrastar salva), filtros + agrupamento, modal Nova Oportunidade (produtos da representada + ações), modal Resultado
   - [x] Log no rodapé: total, ganhas, perdidas, % aproveitamento
   - [x] Critério verificado (2 produtos + 2 ações; arrasta e persiste; conclui Ganhou; 1 de 1 = 100%)
-- [ ] Fase 4c — Detalhe da oportunidade
+- [x] Fase 4c — Detalhe da oportunidade
   - [x] Clique no card abre o detalhe (arrastar continua mudando status)
   - [x] Edita cadastro, status (regra de conclusão), produtos (busca na representada) e ações; troca de representada remove produtos da marca anterior
   - [x] Excluir com confirmação; cascade remove produtos e ações (sem órfãos) e devolve a quota
-  - [ ] Critério verificado (abre; edita e salva; +1 ação / −1 ação; Concluído abre resultado; exclui sem órfãos)
+  - [x] Estado: menu com os 27 estados do Brasil (validação por sigla)
+  - [x] Critério verificado (abre; edita e salva; +1 ação / −1 ação; Concluído abre resultado; exclui sem órfãos)
 - [x] Fase 5 — Comissão por produto
   - [x] Pedido + itens (API /api/pedidos + UI /app/pedidos/novo e /app/pedidos/:id), função SQL atômica criar_pedido
   - [x] Comissão por produto (produtos.comissao); snapshot % e R$ por item na confirmação; 1 linha em comissoes (vence fim do mês)

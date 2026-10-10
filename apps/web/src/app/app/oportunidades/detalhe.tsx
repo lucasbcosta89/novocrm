@@ -6,7 +6,7 @@ import { formatarData, formatarDataHora } from "@/lib/formato";
 import { ROTULO_PRIORIDADE, ROTULO_RESULTADO, ROTULO_STATUS_OPORTUNIDADE, ROTULO_TIPO_OPORTUNIDADE } from "@/lib/rotulos";
 import { PRIORIDADES, STATUS_OPORTUNIDADE, TIPOS_OPORTUNIDADE } from "@/lib/validacao";
 import type { Acao, CartaoKanban, OportunidadeDetalhe } from "@/server/oportunidades";
-import { api, BuscaProdutos, ConfirmarModal, Modal, ResultadoModal } from "./comum";
+import { api, BuscaProdutos, ConfirmarModal, Modal, ResultadoModal, SelectEstado } from "./comum";
 
 type Rep = { id: string; nome: string };
 type Status = (typeof STATUS_OPORTUNIDADE)[number];
@@ -152,7 +152,7 @@ export function DetalheOportunidade({
               </select>
             </label>
             <label className="campo"><span>Cidade</span><input name="cidade" defaultValue={o.cidade ?? ""} /></label>
-            <label className="campo"><span>Estado (UF)</span><input name="estado" maxLength={2} defaultValue={o.estado ?? ""} /></label>
+            <SelectEstado defaultValue={o.estado} />
             <label className="campo">
               <span>Representada *</span>
               <select name="representada_id" required defaultValue={o.representada_id ?? ""}>

@@ -57,3 +57,14 @@ describe("Fase 4c: produto da oportunidade", () => {
     expect(produtoOportunidadeSchema.safeParse({ produto_id: "x" }).success).toBe(false);
   });
 });
+
+describe("estado da oportunidade", () => {
+  it("aceita só siglas válidas do Brasil", async () => {
+    const { oportunidadeUpdateSchema } = await import("@/lib/validacao");
+    const { UFS } = await import("@/lib/ufs");
+    expect(UFS).toHaveLength(27);
+    expect(oportunidadeUpdateSchema.parse({ estado: "sp" }).estado).toBe("SP");
+    expect(oportunidadeUpdateSchema.parse({ estado: "" }).estado).toBeNull();
+    expect(oportunidadeUpdateSchema.safeParse({ estado: "XX" }).success).toBe(false);
+  });
+});

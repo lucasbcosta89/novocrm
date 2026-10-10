@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { formatarMoeda } from "@/lib/formato";
+import { UFS } from "@/lib/ufs";
 import type { CartaoKanban } from "@/server/oportunidades";
 import type { Produto } from "@/server/produtos";
 
@@ -155,5 +156,18 @@ export function ConfirmarModal({ titulo, texto, rotulo, onConfirmar, onFechar }:
         </div>
       </div>
     </Modal>
+  );
+}
+
+/** Menu com todos os estados do Brasil. */
+export function SelectEstado({ name = "estado", defaultValue }: { name?: string; defaultValue?: string | null }) {
+  return (
+    <label className="campo">
+      <span>Estado</span>
+      <select name={name} defaultValue={defaultValue ?? ""}>
+        <option value="">Selecione…</option>
+        {UFS.map(([sigla, nome]) => <option key={sigla} value={sigla}>{nome} ({sigla})</option>)}
+      </select>
+    </label>
   );
 }

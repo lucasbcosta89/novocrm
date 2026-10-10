@@ -8,7 +8,7 @@ import { ROTULO_PRIORIDADE, ROTULO_RESULTADO, ROTULO_STATUS_OPORTUNIDADE, ROTULO
 import { PRIORIDADES, STATUS_OPORTUNIDADE } from "@/lib/validacao";
 import type { CartaoKanban } from "@/server/oportunidades";
 import type { Produto } from "@/server/produtos";
-import { api, BuscaProdutos, Modal, ResultadoModal } from "./comum";
+import { api, BuscaProdutos, Modal, ResultadoModal, SelectEstado } from "./comum";
 import { DetalheOportunidade } from "./detalhe";
 
 type Rep = { id: string; nome: string };
@@ -291,7 +291,7 @@ function NovaOportunidade({ representadas, onFechar, onCriada }: { representadas
         <div className="grade">
           <label className="campo"><span>Nome *</span><input name="titulo" required minLength={2} /></label>
           <label className="campo"><span>Cidade</span><input name="cidade" /></label>
-          <label className="campo"><span>Estado (UF)</span><input name="estado" maxLength={2} /></label>
+          <SelectEstado />
           <label className="campo">
             <span>Representada *</span>
             <select required value={repId} onChange={(e) => { setRepId(e.target.value); setSelecionados([]); }}>

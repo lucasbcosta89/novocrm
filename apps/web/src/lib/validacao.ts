@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { SIGLAS_UF } from "./ufs";
 
 export const soDigitos = (v: string) => v.replace(/\D/g, "");
 
@@ -134,7 +135,7 @@ export const oportunidadeSchema = z.object({
   cidade: textoOpcional(80),
   estado: z.preprocess(
     (v) => (typeof v === "string" ? vazioParaNull(v.trim().toUpperCase()) : v),
-    z.string().regex(/^[A-Z]{2}$/, "Estado (UF) deve ter 2 letras").nullable().optional(),
+    z.string().refine((uf) => SIGLAS_UF.includes(uf), "Estado inválido").nullable().optional(),
   ),
 });
 export const oportunidadeUpdateSchema = parcial(oportunidadeSchema);
