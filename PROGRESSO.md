@@ -70,11 +70,11 @@ Toda fase termina com commit + tag no GitHub.
   - [x] /app/relatorios com quota pdf_mes; imagem e categoria de produto
   - [x] R2: bucket crm-arquivos + binding ARQUIVOS (arquivos antigos seguem lidos do Supabase Storage)
   - [x] Critério verificado (gera mensal e catálogo, baixa, regenera com cache)
-- [ ] Fase 7b — Template padrão dos relatórios (cabeçalho do representante + rodapé Feito com)
+- [x] Fase 7b — Template padrão dos relatórios (cabeçalho do representante + rodapé Feito com)
   - [x] Template único (lib/pdf.ts) em todos os relatórios e no catálogo: tabela do representante (Nome, Empresa, CNPJ — nunca CPF; só campos preenchidos), título grande em negrito, conteúdo da Fase 7 inalterado
-  - [x] Rodapé em todas as páginas: "Feito com" + logo (assets/logo-feito-com.png → base64 no build, 5 KB) no canto inferior esquerdo
+  - [x] Rodapé em todas as páginas: "Feito com" + logo (base64 no build, sem margem, 256 px) no canto inferior direito; data e paginação à esquerda
   - [x] Cache dos PDFs invalidado (VERSAO_LAYOUT 2) para regenerar no novo template
-  - [ ] Critério verificado (comissões e catálogo com cabeçalho, título e rodapé)
+  - [x] Critério verificado (comissões e catálogo com cabeçalho, título e rodapé)
 - [x] Fase 8 — WhatsApp, catálogo público e app offline
   - [x] Catálogo público /c/[slug] (abas por marca, categorias, carrinho) → pedido origem catalogo_web (rascunho no CRM)
   - [x] Meta Cloud API: webhook (hub.challenge + X-Hub-Signature-256), templates, janela 24h, conversas_whatsapp → quota conversas_mes

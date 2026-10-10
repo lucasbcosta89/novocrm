@@ -112,10 +112,11 @@ export async function gerarPdf(
     images: { logoFeitoCom: LOGO_FEITO_COM },
     content: [...(opts.representante ? [tabelaRepresentante(opts.representante)] : []), ...conteudo],
     footer: (pagina, total): Content => ({
+      // esquerda: geração e paginação · direita: "Feito com" + logo
       columns: [
+        { text: `Gerado em ${geradoEm} · ${pagina} / ${total}`, style: "rodape", width: "*" as const, margin: [0, 12, 0, 0] },
         { text: "Feito com", style: "rodape", width: "auto" as const, margin: [0, 12, 6, 0] },
         { width: "auto" as const, stack: [{ image: "logoFeitoCom", fit: [160, 32] }] },
-        { text: `Gerado em ${geradoEm} · ${pagina} / ${total}`, alignment: "right", style: "rodape", margin: [0, 12, 0, 0] },
       ],
       margin: [36, 14, 36, 0],
     }),
