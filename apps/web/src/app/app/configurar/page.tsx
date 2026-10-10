@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { Mensagens } from "@/components/form";
 import { OpcoesPlano } from "@/components/upgrade";
 import { formatarData, formatarMoeda } from "@/lib/formato";
@@ -29,6 +30,12 @@ export default async function ConfigurarPage({
     await conciliarAssinatura(userId).catch((e) => console.error("conciliação MP", e));
   }
   const [uso, assinatura] = await carregar((ctx) => Promise.all([obterUso(ctx), obterAssinatura(ctx)]));
+
+  // checkout concluído → cadastro pós-checkout (dados + LGPD), se ainda não feito
+  if (retorno === "mp" && assinatura?.status === "active") {
+    const { data: u } = await (await obterContexto()).supabase.from("usuarios").select("consentimento_lgpd_aceito_em").maybeSingle<{ consentimento_lgpd_aceito_em: string | null }>();
+    if (!u?.consentimento_lgpd_aceito_em) redirect("/app/cadastro");
+  }
 
   const carencia = fimDaCarencia(assinatura?.periodo_fim ?? null);
 

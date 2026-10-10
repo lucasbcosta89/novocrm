@@ -55,6 +55,14 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Seed de preços 49/89/149; usuário não altera o próprio plano
   - [x] Configurar MP: MP_WEBHOOK_SECRET + webhook no painel + credenciais de teste (comprador de teste)
   - [x] Critério: modal leva ao checkout; assinatura aprovada libera o plano (webhook 200 + conciliação de pagamentos)
+- [ ] Fase 6b — Cadastro pós-checkout, dados do usuário e LGPD
+  - [x] usuarios: CPF/CNPJ cifrados (pgcrypto, chave DADOS_PESSOAIS_CHAVE no .env), DV validado no banco (função + trigger), endereço, aceites
+  - [x] RLS própria linha; anon sem acesso; authenticated não lê cpf/cnpj direto (só via função do próprio usuário)
+  - [x] /app/cadastro (após checkout): campos na ordem pedida, máscaras, 27 UFs, 2 aceites obrigatórios (data/hora + versão)
+  - [x] /app/perfil: edição com CPF/CNPJ mascarados até "Editar"; aceites somente leitura; /politica-de-privacidade pública
+  - [ ] Substituir rascunhos: texto do consentimento LGPD (src/conteudo/consentimento-lgpd.ts) e docs/politica-privacidade.md
+  - [ ] Secret DADOS_PESSOAIS_CHAVE no GitHub (mesmo valor do .env)
+  - [ ] Critério verificado (CPF inválido rejeitado; 27 UFs; botão exige aceites; aceite grava data+versão; CPF mascarado; política pública; RLS)
 - [x] Fase 7 — PDFs (relatórios e catálogos)
   - [x] Lib PDF (pdfmake, fontes Roboto embutidas): cabeçalho com logo, tabela com cabeçalho repetido, quebra de página, rodapé
   - [x] Relatório mensal (visitas, pedidos, comissões, positivação) e de comissões do período; catálogo com imagens, categorias e página por marca

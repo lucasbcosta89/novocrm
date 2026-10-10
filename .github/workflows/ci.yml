@@ -63,7 +63,8 @@ jobs:
           WHATSAPP_PHONE_NUMBER_ID: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
           WHATSAPP_VERIFY_TOKEN: ${{ secrets.WHATSAPP_VERIFY_TOKEN }}
           WHATSAPP_APP_SECRET: ${{ secrets.WHATSAPP_APP_SECRET }}
+          DADOS_PESSOAIS_CHAVE: ${{ secrets.DADOS_PESSOAIS_CHAVE }}
         # só envia os secrets preenchidos no GitHub
         run: |
-          node -e 'const k=["SUPABASE_URL","SUPABASE_ANON_KEY","SUPABASE_SERVICE_ROLE_KEY","MP_ACCESS_TOKEN","MP_WEBHOOK_SECRET","MP_TEST_PAYER_EMAIL","CRON_SECRET","WHATSAPP_TOKEN","WHATSAPP_PHONE_NUMBER_ID","WHATSAPP_VERIFY_TOKEN","WHATSAPP_APP_SECRET"];console.log(JSON.stringify(Object.fromEntries(k.filter(n=>process.env[n]).map(n=>[n,process.env[n]]))))' \
+          node -e 'const k=["SUPABASE_URL","SUPABASE_ANON_KEY","SUPABASE_SERVICE_ROLE_KEY","MP_ACCESS_TOKEN","MP_WEBHOOK_SECRET","MP_TEST_PAYER_EMAIL","CRON_SECRET","WHATSAPP_TOKEN","WHATSAPP_PHONE_NUMBER_ID","WHATSAPP_VERIFY_TOKEN","WHATSAPP_APP_SECRET","DADOS_PESSOAIS_CHAVE"];console.log(JSON.stringify(Object.fromEntries(k.filter(n=>process.env[n]).map(n=>[n,process.env[n]]))))' \
             | pnpm exec wrangler secret bulk

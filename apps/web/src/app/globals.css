@@ -198,3 +198,17 @@ a.btn { text-decoration: none; display: inline-block; }
 .detalhe-op h3 { margin: 8px 0 0; }
 .resultado-op { margin: 0; align-self: center; }
 .zona-perigo { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 8px; }
+
+/* Fase 6b: dados do usuário e LGPD */
+.sidebar-conta { margin-top: auto; display: grid; gap: 2px; }
+.sidebar-conta form { margin-top: 0; }
+.link-conta { padding: 8px 12px; color: var(--text); text-decoration: none; font-size: .9rem; }
+.valor-oculto { display: flex; gap: 8px; align-items: center; padding: 8px 0; }
+.erro-campo { color: var(--danger); }
+.aceites { display: grid; gap: 10px; }
+.check.aceite { align-items: flex-start; }
+.check.aceite input { margin-top: 3px; }
+.politica-rolagem { max-height: 60vh; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin: 8px 0 12px; }
+.markdown h1 { font-size: 1.4rem; } .markdown h2 { font-size: 1.1rem; margin-top: 18px; }
+.markdown blockquote { margin: 0; padding: 8px 12px; border-left: 3px solid var(--danger); background: var(--bg); }
+.politica { max-width: 780px; }

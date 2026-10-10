@@ -7,6 +7,7 @@
     "start": "next start",
     "lint": "tsc --noEmit && eslint .",
     "test": "vitest run",
+    "gerar:politica": "node scripts/gerar-politica.mjs",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview"
   },
