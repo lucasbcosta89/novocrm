@@ -1,7 +1,7 @@
 import "server-only";
 import type { Content } from "pdfmake/interfaces";
 import { formatarData, formatarDataHora, formatarDocumento, formatarMoeda, formatarPercentual } from "@/lib/formato";
-import { cabecalho, COR, gerarPdf, indicadores, quebraPagina, secao, tabela } from "@/lib/pdf";
+import { cabecalho, COR, gerarPdf, indicadores, quebraPagina, secao, tabela, type Representante } from "@/lib/pdf";
 import { ROTULO_STATUS_COMISSAO, ROTULO_STATUS_PEDIDO } from "@/lib/rotulos";
 import { detectarTipoImagem } from "@/lib/imagem";
 import { idSchema } from "@/lib/validacao";
@@ -15,7 +15,8 @@ import { erroBanco } from "./erros";
 export function limitesPeriodo(periodo: string): { inicio: string; fim: string; rotulo: string } {
   const [ano, mes] = periodo.split("-").map(Number) as [number, number];
   const prox = mes === 12 ? `${ano + 1}-01` : `${ano}-${String(mes + 1).padStart(2, "0")}`;
-  const rotulo = new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(Date.UTC(ano, mes - 1, 15)));
+  const nomeMes = new Intl.DateTimeFormat("pt-BR", { month: "long", timeZone: "UTC" }).format(new Date(Date.UTC(ano, mes - 1, 15)));
+  const rotulo = `${nomeMes.charAt(0).toUpperCase()}${nomeMes.slice(1)}/${ano}`;
   return { inicio: `${periodo}-01T00:00:00-03:00`, fim: `${prox}-01T00:00:00-03:00`, rotulo };
 }
 
@@ -73,13 +74,13 @@ export function positivacao(d: Pick<DadosMensal, "pedidos" | "carteira">) {
   return { positivados, carteira: d.carteira, percentual: d.carteira ? Math.round((positivados / d.carteira) * 1000) / 10 : 0 };
 }
 
-export function pdfMensal(d: DadosMensal): Promise<Uint8Array> {
+export function pdfMensal(d: DadosMensal, representante?: Representante): Promise<Uint8Array> {
   const { rotulo } = limitesPeriodo(d.periodo);
   const pos = positivacao(d);
   const totalPedidos = soma(d.pedidos.map((p) => p.valor_total));
   const porStatus = (s: string) => soma(d.comissoes.filter((c) => c.status === s).map((c) => c.valor));
   const conteudo: Content[] = [
-    cabecalho(`Relatório mensal — ${d.representada.nome}`, `${rotulo} · CNPJ ${formatarDocumento(d.representada.cnpj)}`),
+    cabecalho(`Relatório Mensal — ${rotulo}`, `${d.representada.nome} · CNPJ ${formatarDocumento(d.representada.cnpj)}`),
     indicadores([
       { rotulo: "Visitas", valor: String(d.visitas.length) },
       { rotulo: "Pedidos", valor: String(d.pedidos.length) },
@@ -121,7 +122,7 @@ export function pdfMensal(d: DadosMensal): Promise<Uint8Array> {
       { vazio: "Nenhuma visita registrada no período." },
     ),
   ];
-  return gerarPdf(conteudo, { titulo: `Relatório mensal ${d.representada.nome} ${d.periodo}` });
+  return gerarPdf(conteudo, { titulo: `Relatório mensal ${d.representada.nome} ${d.periodo}`, representante });
 }
 
 /* ---------- relatório de comissões ---------- */
@@ -154,12 +155,12 @@ export async function dadosComissoes(ctx: Contexto, representadaId: string, peri
   return { representada: rep, periodo, comissoes };
 }
 
-export function pdfComissoes(d: DadosComissoes): Promise<Uint8Array> {
+export function pdfComissoes(d: DadosComissoes, representante?: Representante): Promise<Uint8Array> {
   const { rotulo } = limitesPeriodo(d.periodo);
   const validas = d.comissoes.filter((c) => c.status !== "cancelada");
   const por = (s: string) => soma(validas.filter((c) => c.status === s).map((c) => c.valor));
   const conteudo: Content[] = [
-    cabecalho(`Comissões — ${d.representada.nome}`, `Pedidos de ${rotulo}`),
+    cabecalho(`Relatório de Comissões — ${rotulo}`, `${d.representada.nome} · pedidos do período`),
     indicadores([
       { rotulo: "Total", valor: formatarMoeda(soma(validas.map((c) => c.valor))) },
       { rotulo: "A receber", valor: formatarMoeda(por("a_receber")) },
@@ -181,7 +182,7 @@ export function pdfComissoes(d: DadosComissoes): Promise<Uint8Array> {
       { vazio: "Nenhuma comissão no período.", totais: ["Total", "", "", "", "", formatarMoeda(soma(validas.map((c) => c.valor))), "", ""] },
     ),
   ];
-  return gerarPdf(conteudo, { titulo: `Comissões ${d.representada.nome} ${d.periodo}`, paisagem: true });
+  return gerarPdf(conteudo, { titulo: `Comissões ${d.representada.nome} ${d.periodo}`, paisagem: true, representante });
 }
 
 /* ---------- catálogo ---------- */
@@ -254,7 +255,7 @@ function cartao(p: ProdutoCatalogo, img: string | null): Content {
   };
 }
 
-export async function pdfCatalogo(d: DadosCatalogo): Promise<Uint8Array> {
+export async function pdfCatalogo(d: DadosCatalogo, representante?: Representante): Promise<Uint8Array> {
   const conteudo: Content[] = [];
   for (const [i, marca] of d.marcas.entries()) {
     if (i > 0) conteudo.push(quebraPagina()); // uma página (ou mais) por marca
@@ -279,5 +280,5 @@ export async function pdfCatalogo(d: DadosCatalogo): Promise<Uint8Array> {
     }
   }
   const nome = d.marcas.length === 1 ? d.marcas[0]!.representada.nome : "todas as marcas";
-  return gerarPdf(conteudo, { titulo: `Catálogo ${nome}` });
+  return gerarPdf(conteudo, { titulo: `Catálogo ${nome}`, representante });
 }

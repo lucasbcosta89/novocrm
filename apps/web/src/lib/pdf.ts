@@ -3,6 +3,8 @@ import type { Content, ContentTable, TDocumentDefinitions } from "pdfmake/interf
 // Build "browser" do pdfmake: JS puro + fontes Roboto embutidas (vfs) → roda em Node e no Workers, sem fs.
 import pdfMakeBuild from "pdfmake/build/pdfmake";
 import vfsFonts from "pdfmake/build/vfs_fonts";
+import { LOGO_FEITO_COM } from "@/conteudo/logo-feito-com.gerado";
+import { mascaraCnpj } from "./documentos-br";
 
 type PdfMake = {
   addVirtualFileSystem?: (vfs: unknown) => void;
@@ -16,26 +18,33 @@ else pdfMake.vfs = vfsFonts;
 
 export const COR = { primaria: "#1f5eff", texto: "#1a1d23", suave: "#5f6672", borda: "#e2e5ea", fundo: "#f6f7f9", alerta: "#c62828" };
 
-const LOGO_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36">
-  <rect width="36" height="36" rx="8" fill="${COR.primaria}"/>
-  <text x="18" y="23" font-family="Helvetica" font-size="14" font-weight="bold" fill="#fff" text-anchor="middle">CM</text>
-</svg>`;
+/** Dados do representante no cabeçalho (nunca CPF). */
+export type Representante = { nome: string; nome_empresa: string | null; cnpj: string | null };
 
-/** Cabeçalho padrão com logo, título e subtítulo. */
+/** Template (Fase 7b): tabela com os dados do representante; só as linhas preenchidas. */
+function tabelaRepresentante(r: Representante): Content {
+  const linhas: [string, string][] = [["Representante", r.nome]];
+  if (r.nome_empresa?.trim()) linhas.push(["Empresa", r.nome_empresa.trim()]);
+  if (r.cnpj?.replace(/\D/g, "")) linhas.push(["CNPJ", mascaraCnpj(r.cnpj)]);
+  return {
+    table: { widths: ["auto", "*"], body: linhas.map(([k, v]) => [{ text: k, style: "th" }, { text: v }]) },
+    layout: {
+      hLineColor: () => COR.borda,
+      vLineColor: () => COR.borda,
+      hLineWidth: () => 0.5,
+      vLineWidth: () => 0.5,
+      paddingTop: () => 3,
+      paddingBottom: () => 3,
+    },
+    margin: [0, 0, 0, 14],
+  };
+}
+
+/** Título do relatório (fonte maior, negrito) com subtítulo opcional. */
 export function cabecalho(titulo: string, subtitulo?: string): Content {
   return {
-    columns: [
-      { svg: LOGO_SVG, width: 36 },
-      {
-        stack: [
-          { text: titulo, style: "titulo" },
-          ...(subtitulo ? [{ text: subtitulo, style: "subtitulo" }] : []),
-        ],
-        margin: [10, 0, 0, 0],
-      },
-      { text: "CRM Multimarcas", alignment: "right", style: "marca", width: "auto" },
-    ],
-    margin: [0, 0, 0, 16],
+    stack: [{ text: titulo, style: "titulo" }, ...(subtitulo ? [{ text: subtitulo, style: "subtitulo" }] : [])],
+    margin: [0, 0, 0, 14],
   };
 }
 
@@ -86,26 +95,34 @@ export function indicadores(itens: { rotulo: string; valor: string }[]): Content
   };
 }
 
-export async function gerarPdf(conteudo: Content[], opts: { titulo: string; paisagem?: boolean }): Promise<Uint8Array> {
+/**
+ * Template padrão de todos os PDFs: tabela do representante → conteúdo (que começa pelo título) →
+ * rodapé em todas as páginas com "Feito com" + logo (canto inferior esquerdo) e paginação.
+ */
+export async function gerarPdf(
+  conteudo: Content[],
+  opts: { titulo: string; paisagem?: boolean; representante?: Representante },
+): Promise<Uint8Array> {
   const geradoEm = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" }).format(new Date());
   const doc: TDocumentDefinitions = {
     info: { title: opts.titulo, creator: "CRM Multimarcas" },
     pageSize: "A4",
     pageOrientation: opts.paisagem ? "landscape" : "portrait",
-    pageMargins: [36, 36, 36, 48],
-    content: conteudo,
-    footer: (pagina, total) => ({
+    pageMargins: [36, 36, 36, 56],
+    images: { logoFeitoCom: LOGO_FEITO_COM },
+    content: [...(opts.representante ? [tabelaRepresentante(opts.representante)] : []), ...conteudo],
+    footer: (pagina, total): Content => ({
       columns: [
-        { text: `Gerado em ${geradoEm}`, style: "rodape" },
-        { text: `${pagina} / ${total}`, alignment: "right", style: "rodape" },
+        { text: "Feito com", style: "rodape", width: "auto" as const, margin: [0, 9, 4, 0] },
+        { width: "auto" as const, stack: [{ image: "logoFeitoCom", fit: [72, 26] }] },
+        { text: `Gerado em ${geradoEm} · ${pagina} / ${total}`, alignment: "right", style: "rodape", margin: [0, 9, 0, 0] },
       ],
-      margin: [36, 16, 36, 0],
+      margin: [36, 14, 36, 0],
     }),
     defaultStyle: { font: "Roboto", fontSize: 9, color: COR.texto },
     styles: {
-      titulo: { fontSize: 16, bold: true },
+      titulo: { fontSize: 18, bold: true },
       subtitulo: { fontSize: 10, color: COR.suave, margin: [0, 2, 0, 0] },
-      marca: { fontSize: 8, color: COR.suave },
       secao: { fontSize: 12, bold: true, margin: [0, 14, 0, 6], color: COR.primaria },
       th: { bold: true, fontSize: 8, color: COR.suave },
       tabela: { margin: [0, 0, 0, 8] },

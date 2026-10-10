@@ -14,7 +14,7 @@ describe("período", () => {
   it("limites em horário de Brasília e virada de ano", () => {
     expect(limitesPeriodo("2026-10")).toMatchObject({ inicio: "2026-10-01T00:00:00-03:00", fim: "2026-11-01T00:00:00-03:00" });
     expect(limitesPeriodo("2026-12").fim).toBe("2027-01-01T00:00:00-03:00");
-    expect(limitesPeriodo("2026-10").rotulo).toMatch(/outubro/);
+    expect(limitesPeriodo("2026-10").rotulo).toBe("Outubro/2026");
   });
 });
 
@@ -69,5 +69,23 @@ describe("imagem", () => {
     const webp = new Uint8Array([0x52, 0x49, 0x46, 0x46, 0xf6, 0x11, 0, 0, 0x57, 0x45, 0x42, 0x50]);
     expect(detectarTipoImagem(webp)).toBe("image/webp");
     expect(detectarTipoImagem(new Uint8Array([1, 2, 3]))).toBeNull();
+  });
+});
+
+describe("Fase 7b: template padrão", () => {
+  it("logo embutida é PNG pequeno em base64 (sem URL externa)", async () => {
+    const { LOGO_FEITO_COM } = await import("@/conteudo/logo-feito-com.gerado");
+    expect(LOGO_FEITO_COM.startsWith("data:image/png;base64,iVBOR")).toBe(true);
+    expect(LOGO_FEITO_COM.length).toBeLessThan(40_000);
+  });
+
+  it("comissões e catálogo geram PDF com o cabeçalho do representante (com e sem empresa/CNPJ)", async () => {
+    const { pdfComissoes } = await import("@/server/relatorios");
+    const completo = { nome: "Ana Rep", nome_empresa: "Ana Representações", cnpj: "11222333000181" };
+    const so_nome = { nome: "Ana Rep", nome_empresa: null, cnpj: null };
+    const dados = { representada: REP, periodo: "2026-10", comissoes: [] };
+    expect(asc(await pdfComissoes(dados, completo))).toBe("%PDF-");
+    expect(asc(await pdfComissoes(dados, so_nome))).toBe("%PDF-");
+    expect(asc(await pdfCatalogo({ marcas: [{ representada: REP, produtos: [] }] }, completo))).toBe("%PDF-");
   });
 });

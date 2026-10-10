@@ -9,7 +9,8 @@
     "test": "vitest run",
     "gerar:politica": "node scripts/gerar-politica.mjs",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview"
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "gerar:logo": "node scripts/gerar-logo.mjs"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "1.20.8",
@@ -29,6 +30,7 @@
     "@types/react-dom": "^19.2.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "16.3.8",
+    "sharp": "0.35.5",
     "typescript": "^5.9.0",
     "vitest": "5.0.3",
     "wrangler": "4.147.0"

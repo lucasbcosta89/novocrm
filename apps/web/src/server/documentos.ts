@@ -6,6 +6,8 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { salvarArquivo } from "./armazenamento";
 import type { Contexto } from "./contexto";
 import { AppError, erroBanco } from "./erros";
+import type { Representante } from "@/lib/pdf";
+import { revelarDocumentos } from "./perfil";
 import { verificarLimite } from "./quota";
 import { dadosCatalogo, dadosComissoes, dadosMensal, limitesPeriodo, pdfCatalogo, pdfComissoes, pdfMensal } from "./relatorios";
 
@@ -41,7 +43,7 @@ export type Documento = {
 };
 
 const CAMPOS = "id, tipo, titulo, periodo, status, erro, tamanho, criado_em, gerado_em, representada:representadas(nome)";
-const VERSAO_LAYOUT = 1; // mudar invalida o cache de todos os PDFs
+const VERSAO_LAYOUT = 2; // mudar invalida o cache de todos os PDFs (2 = template da Fase 7b)
 
 export const urlDownload = (id: string) => `/api/documentos/${id}/download`;
 
@@ -51,20 +53,29 @@ async function sha256(texto: string): Promise<string> {
 }
 
 /** Coleta os dados (com a sessão do usuário) e devolve o gerador do PDF. */
-async function preparar(ctx: Contexto, s: Solicitacao) {
+/** Cabeçalho do template: nome, empresa e CNPJ do representante (CPF nunca entra no PDF). */
+async function representante(ctx: Contexto): Promise<Representante> {
+  const [{ data }, docs] = await Promise.all([
+    ctx.supabase.from("usuarios").select("nome, nome_empresa").eq("id", ctx.userId).single<{ nome: string; nome_empresa: string | null }>(),
+    revelarDocumentos(ctx),
+  ]);
+  return { nome: data?.nome ?? "", nome_empresa: data?.nome_empresa ?? null, cnpj: docs.cnpj };
+}
+
+async function preparar(ctx: Contexto, s: Solicitacao, rep: Representante) {
   if (s.tipo === "catalogo") {
     const dados = await dadosCatalogo(ctx, s.representada_id);
     if (dados.marcas.length === 0) throw new AppError(404, "Representada não encontrada", "nao_encontrado");
     const nome = s.representada_id === "todas" ? "todas as marcas" : dados.marcas[0]!.representada.nome;
-    return { dados, titulo: `Catálogo — ${nome}`, gerar: () => pdfCatalogo(dados) };
+    return { dados, titulo: `Catálogo — ${nome}`, gerar: () => pdfCatalogo(dados, rep) };
   }
   const { rotulo } = limitesPeriodo(s.periodo);
   if (s.tipo === "relatorio_periodo") {
     const dados = await dadosMensal(ctx, s.representada_id, s.periodo);
-    return { dados, titulo: `Relatório mensal — ${dados.representada.nome} — ${rotulo}`, gerar: () => pdfMensal(dados) };
+    return { dados, titulo: `Relatório mensal — ${dados.representada.nome} — ${rotulo}`, gerar: () => pdfMensal(dados, rep) };
   }
   const dados = await dadosComissoes(ctx, s.representada_id, s.periodo);
-  return { dados, titulo: `Comissões — ${dados.representada.nome} — ${rotulo}`, gerar: () => pdfComissoes(dados) };
+  return { dados, titulo: `Comissões — ${dados.representada.nome} — ${rotulo}`, gerar: () => pdfComissoes(dados, rep) };
 }
 
 /** Gera o PDF fora do ciclo da requisição e marca o documento como pronto/falha. */
@@ -90,8 +101,9 @@ async function processar(id: string, userId: string, gerar: () => Promise<Uint8A
  */
 export async function solicitarDocumento(ctx: Contexto, input: unknown): Promise<{ documento: Documento; url: string; cache: boolean }> {
   const s = solicitacaoSchema.parse(input);
-  const { dados, titulo, gerar } = await preparar(ctx, s);
-  const hash = await sha256(JSON.stringify({ v: VERSAO_LAYOUT, s, dados }));
+  const rep = await representante(ctx);
+  const { dados, titulo, gerar } = await preparar(ctx, s, rep);
+  const hash = await sha256(JSON.stringify({ v: VERSAO_LAYOUT, s, dados, rep }));
 
   const { data: existente, error: e1 } = await ctx.supabase
     .from("documentos")
