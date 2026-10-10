@@ -47,7 +47,7 @@ export const ocultarCpf = (cpf: string | null) => {
   const d = digitos(cpf);
   return d.length === 11 ? `${d.slice(0, 3)}.***.***-${d.slice(9)}` : null;
 };
-/** Exibição fora da edição: mostra os 2 primeiros e os 2 últimos dígitos (11.***.***/****-81). */
+// Exibição fora da edição: mostra os 2 primeiros e os 2 últimos dígitos do CNPJ (ex.: 11.***.***/****-81).
 export const ocultarCnpj = (cnpj: string | null) => {
   const d = digitos(cnpj);
   return d.length === 14 ? `${d.slice(0, 2)}.***.***/****-${d.slice(12)}` : null;
