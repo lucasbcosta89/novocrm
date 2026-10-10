@@ -21,7 +21,8 @@ export function erroBanco(error: PostgrestError, duplicado = "Registro já exist
   // raise exception nas funções SQL (regra de negócio): mensagem já é amigável
   if (error.code === "P0001") return new AppError(400, error.message, "regra");
   if (error.code === "PGRST116") return new AppError(404, "Não encontrado", "nao_encontrado");
-  return new AppError(500, "Erro ao acessar o banco", error.code);
+  console.error("PostgREST", error.code, error.message, error.details);
+  return new AppError(500, `Erro ao acessar o banco (código ${error.code || "?"})`, error.code);
 }
 
 export function normalizarErro(e: unknown): AppError {
