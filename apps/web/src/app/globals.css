@@ -191,3 +191,10 @@ a.btn { text-decoration: none; display: inline-block; }
 .kanban-log { margin-top: 24px; }
 .modal-largo { width: min(980px, calc(100vw - 32px)); max-height: calc(100vh - 32px); }
 .tabela-form input, .tabela-form select { width: 100%; min-width: 110px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font: inherit; }
+
+/* Fase 4c: detalhe da oportunidade */
+.kanban-cartao { cursor: pointer; }
+.kanban-cartao:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.detalhe-op h3 { margin: 8px 0 0; }
+.resultado-op { margin: 0; align-self: center; }
+.zona-perigo { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 8px; }

@@ -190,3 +190,8 @@ export const resultadoSchema = z.object({
   resultado: z.enum(RESULTADOS, "Selecione Ganhou ou Perdeu"),
   observacoes_resultado: textoOpcional(2000),
 });
+
+export const produtoOportunidadeSchema = z.object({
+  produto_id: idSchema,
+  quantidade: numero(0.001, 1_000_000, "Quantidade inválida").default(1),
+});

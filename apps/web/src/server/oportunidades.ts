@@ -1,5 +1,6 @@
 import {
-  acaoSchema, acaoUpdateSchema, idSchema, novaOportunidadeSchema, oportunidadeSchema, oportunidadeUpdateSchema, resultadoSchema,
+  acaoSchema, acaoUpdateSchema, idSchema, novaOportunidadeSchema, oportunidadeSchema, oportunidadeUpdateSchema,
+  produtoOportunidadeSchema, resultadoSchema,
 } from "@/lib/validacao";
 import type { Contexto } from "./contexto";
 import { AppError, erroBanco } from "./erros";
@@ -39,7 +40,14 @@ export type Oportunidade = {
   acoes: { status: string }[];
 };
 
-export type OportunidadeDetalhe = Omit<Oportunidade, "acoes"> & { acoes: Acao[] };
+export type ProdutoOportunidade = {
+  id: string;
+  produto_id: string;
+  quantidade: number;
+  produto: { id: string; sku: string; nome: string; preco: number } | null;
+};
+
+export type OportunidadeDetalhe = Omit<Oportunidade, "acoes"> & { acoes: Acao[]; produtos: ProdutoOportunidade[] };
 
 const CAMPOS =
   "id, cliente_id, representada_id, tipo, titulo, descricao, valor_estimado, prioridade, status, cidade, estado, resultado, observacoes_resultado, data_conclusao, criado_em, atualizado_em, representada:representadas(nome), cliente:clientes(id, nome)";
@@ -63,7 +71,7 @@ export async function listarOportunidades({ supabase }: Contexto, clienteId: str
 export async function obterOportunidade({ supabase }: Contexto, id: string): Promise<OportunidadeDetalhe> {
   const { data, error } = await supabase
     .from("oportunidades_desafios")
-    .select(`${CAMPOS}, acoes:plano_acao(${CAMPOS_ACAO})`)
+    .select(`${CAMPOS}, acoes:plano_acao(${CAMPOS_ACAO}), produtos:oportunidade_produtos(id, produto_id, quantidade, produto:produtos(id, sku, nome, preco))`)
     .eq("id", idSchema.parse(id))
     .order("criado_em", { referencedTable: "plano_acao", ascending: true })
     .single<OportunidadeDetalhe>();
@@ -100,6 +108,7 @@ export async function atualizarOportunidade(ctx: Contexto, id: string, input: un
     .eq("id", idSchema.parse(id));
   if (error) throw erroReferencia(error);
   if (!count) throw new AppError(404, "Não encontrado", "nao_encontrado");
+  if (dados.representada_id !== undefined) await removerProdutosDeOutraRepresentada(ctx, id);
   return obterOportunidade(ctx, id);
 }
 
@@ -217,5 +226,37 @@ export async function concluirOportunidade(ctx: Contexto, id: string, input: unk
     .eq("id", idSchema.parse(id));
   if (error) throw erroBanco(error);
   if (!count) throw new AppError(404, "Não encontrado", "nao_encontrado");
+  return obterOportunidade(ctx, id);
+}
+
+/* ---------- Produtos da oportunidade (Fase 4c) ---------- */
+
+/** Representada trocada: produtos de outra marca deixam de valer e são removidos. */
+async function removerProdutosDeOutraRepresentada({ supabase }: Contexto, oportunidadeId: string) {
+  const { data: op } = await supabase.from("oportunidades_desafios").select("representada_id").eq("id", oportunidadeId).single<{ representada_id: string | null }>();
+  const { data: itens } = await supabase
+    .from("oportunidade_produtos")
+    .select("id, produto:produtos(representada_id)")
+    .eq("oportunidade_id", oportunidadeId)
+    .returns<{ id: string; produto: { representada_id: string } | null }[]>();
+  const fora = (itens ?? []).filter((i) => i.produto?.representada_id !== op?.representada_id).map((i) => i.id);
+  if (fora.length) await supabase.from("oportunidade_produtos").delete().in("id", fora);
+}
+
+/** Adiciona o produto (ou atualiza a quantidade, se já estiver na oportunidade). */
+export async function definirProdutoOportunidade(ctx: Contexto, oportunidadeId: string, input: unknown): Promise<OportunidadeDetalhe> {
+  const p = produtoOportunidadeSchema.parse(input);
+  const id = idSchema.parse(oportunidadeId);
+  const { error } = await ctx.supabase
+    .from("oportunidade_produtos")
+    .upsert({ oportunidade_id: id, ...p }, { onConflict: "oportunidade_id,produto_id" });
+  if (error) throw error.code === "42501" ? new AppError(400, "Produto não pertence à representada da oportunidade", "referencia_invalida") : erroBanco(error);
+  return obterOportunidade(ctx, id);
+}
+
+export async function removerProdutoOportunidade(ctx: Contexto, oportunidadeId: string, produtoId: string): Promise<OportunidadeDetalhe> {
+  const id = idSchema.parse(oportunidadeId);
+  const { error } = await ctx.supabase.from("oportunidade_produtos").delete().eq("oportunidade_id", id).eq("produto_id", idSchema.parse(produtoId));
+  if (error) throw erroBanco(error);
   return obterOportunidade(ctx, id);
 }

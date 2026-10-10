@@ -47,3 +47,13 @@ describe("conclusão e log", () => {
     expect(resumoOportunidades([]).aproveitamento).toBe(0);
   });
 });
+
+describe("Fase 4c: produto da oportunidade", () => {
+  it("quantidade padrão 1 e validação", async () => {
+    const { produtoOportunidadeSchema } = await import("@/lib/validacao");
+    expect(produtoOportunidadeSchema.parse({ produto_id: P1 })).toEqual({ produto_id: P1, quantidade: 1 });
+    expect(produtoOportunidadeSchema.parse({ produto_id: P1, quantidade: "2,5" }).quantidade).toBe(2.5);
+    expect(produtoOportunidadeSchema.safeParse({ produto_id: P1, quantidade: 0 }).success).toBe(false);
+    expect(produtoOportunidadeSchema.safeParse({ produto_id: "x" }).success).toBe(false);
+  });
+});
