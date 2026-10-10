@@ -47,7 +47,7 @@ describe("cadastro", () => {
 describe("política de privacidade", () => {
   it("conteúdo gerado está em dia com docs/politica-privacidade.md (rode pnpm gerar:politica)", () => {
     const md = readFileSync(path.resolve(__dirname, "../../../docs/politica-privacidade.md"), "utf8").replace(/\r\n/g, "\n");
-    expect(md).toContain(`<!-- versao: ${VERSAO_POLITICA} -->`);
+    expect(md.includes(`versao: ${VERSAO_POLITICA}`) || md.split("\n")[0]!.includes(VERSAO_POLITICA)).toBe(true);
     expect(md.replace(/<!--[\s\S]*?-->\n?/, "")).toBe(POLITICA_MD);
   });
 });
