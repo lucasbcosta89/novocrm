@@ -42,10 +42,10 @@ export function mascaraCnpj(valor: string): string {
     .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
 }
 
-/** Exibição fora da edição: oculta os dígitos verificadores do CNPJ. */
 /** Exibição fora da edição: mostra os 3 primeiros e os 2 últimos dígitos (529.***.***-25). */
 export const ocultarCpf = (cpf: string | null) => {
-  const d = (cpf ?? "").replace(/D/g, "");
+  const d = digitos(cpf);
   return d.length === 11 ? `${d.slice(0, 3)}.***.***-${d.slice(9)}` : null;
 };
+/** Exibição fora da edição: oculta os dígitos verificadores do CNPJ (00.000.000/0000-**). */
 export const ocultarCnpj = (cnpj: string | null) => (cnpj ? `${mascaraCnpj(cnpj).slice(0, 16)}**` : null);
