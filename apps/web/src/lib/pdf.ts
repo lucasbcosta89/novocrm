@@ -108,14 +108,14 @@ export async function gerarPdf(
     info: { title: opts.titulo, creator: "CRM Multimarcas" },
     pageSize: "A4",
     pageOrientation: opts.paisagem ? "landscape" : "portrait",
-    pageMargins: [36, 36, 36, 56],
+    pageMargins: [36, 36, 36, 62],
     images: { logoFeitoCom: LOGO_FEITO_COM },
     content: [...(opts.representante ? [tabelaRepresentante(opts.representante)] : []), ...conteudo],
     footer: (pagina, total): Content => ({
       columns: [
-        { text: "Feito com", style: "rodape", width: "auto" as const, margin: [0, 9, 4, 0] },
-        { width: "auto" as const, stack: [{ image: "logoFeitoCom", fit: [72, 26] }] },
-        { text: `Gerado em ${geradoEm} · ${pagina} / ${total}`, alignment: "right", style: "rodape", margin: [0, 9, 0, 0] },
+        { text: "Feito com", style: "rodape", width: "auto" as const, margin: [0, 12, 6, 0] },
+        { width: "auto" as const, stack: [{ image: "logoFeitoCom", fit: [160, 32] }] },
+        { text: `Gerado em ${geradoEm} · ${pagina} / ${total}`, alignment: "right", style: "rodape", margin: [0, 12, 0, 0] },
       ],
       margin: [36, 14, 36, 0],
     }),

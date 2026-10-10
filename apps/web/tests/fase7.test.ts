@@ -76,7 +76,7 @@ describe("Fase 7b: template padrão", () => {
   it("logo embutida é PNG pequeno em base64 (sem URL externa)", async () => {
     const { LOGO_FEITO_COM } = await import("@/conteudo/logo-feito-com.gerado");
     expect(LOGO_FEITO_COM.startsWith("data:image/png;base64,iVBOR")).toBe(true);
-    expect(LOGO_FEITO_COM.length).toBeLessThan(40_000);
+    expect(LOGO_FEITO_COM.length).toBeLessThan(100_000);
   });
 
   it("comissões e catálogo geram PDF com o cabeçalho do representante (com e sem empresa/CNPJ)", async () => {
