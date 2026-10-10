@@ -61,7 +61,7 @@ Toda fase termina com commit + tag no GitHub.
   - [x] /app/cadastro (após checkout): campos na ordem pedida, máscaras, 27 UFs, 2 aceites obrigatórios (data/hora + versão)
   - [x] /app/perfil: edição com CPF/CNPJ mascarados até "Editar"; aceites somente leitura; /politica-de-privacidade pública
   - [x] Textos definitivos: consentimento LGPD v1.0 e Política de Privacidade v1.0
-  - [ ] Secret DADOS_PESSOAIS_CHAVE no GitHub (mesmo valor do .env)
+  - [x] Secret DADOS_PESSOAIS_CHAVE no GitHub (mesmo valor do .env)
   - [x] Critério verificado (CPF inválido rejeitado; 27 UFs; botão exige aceites; aceite grava data+versão; CPF mascarado; política pública; RLS)
 - [x] Fase 7 — PDFs (relatórios e catálogos)
   - [x] Lib PDF (pdfmake, fontes Roboto embutidas): cabeçalho com logo, tabela com cabeçalho repetido, quebra de página, rodapé
