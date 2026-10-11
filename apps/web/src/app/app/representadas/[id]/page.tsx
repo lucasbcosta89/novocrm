@@ -4,7 +4,12 @@ import { TabelaPedidos } from "@/components/tabelas";
 import { formatarDocumento, formatarMoeda, formatarPercentual } from "@/lib/formato";
 import { carregar } from "@/server/acao";
 import { listarClientesDaRepresentada, listarPedidos, listarTabelaPrecos, resumoRepresentada } from "@/server/consultas";
-import { enviarCatalogoAction } from "../../whatsapp-actions";
+import { AvisoLimite } from "@/components/limite";
+import { DocumentosRecentes } from "@/components/documentos-recentes";
+import { EnviarCatalogo } from "@/components/enviar-catalogo";
+import { listarDocumentos } from "@/server/documentos";
+import { obterUso } from "@/server/quota";
+import { gerarDocumentoAction } from "../documentos-actions";
 import { listarProdutos } from "@/server/produtos";
 import { obterRepresentada } from "@/server/representadas";
 import {
@@ -24,7 +29,7 @@ export default async function RepresentadaPage({
   searchParams: Busca;
 }) {
   const [{ id }, { erro, ok }] = await Promise.all([params, searchParams]);
-  const [r, produtos, precos, pedidos, resumo, vinculados] = await carregar((ctx) =>
+  const [r, produtos, precos, pedidos, resumo, vinculados, documentos, uso] = await carregar((ctx) =>
     Promise.all([
       obterRepresentada(ctx, id),
       listarProdutos(ctx, id),
@@ -32,6 +37,8 @@ export default async function RepresentadaPage({
       listarPedidos(ctx, { representada_id: id }),
       resumoRepresentada(ctx, id),
       listarClientesDaRepresentada(ctx, id),
+      listarDocumentos(ctx, { representada_id: id }, 5),
+      obterUso(ctx),
     ]),
   );
 
@@ -63,18 +70,23 @@ export default async function RepresentadaPage({
             <small className="dica">Catálogo digital desativado — ative em “Editar dados”.</small>
           )}
         </div>
-        {r.catalogo_publico && vinculados.length > 0 && (
-          <form action={enviarCatalogoAction.bind(null, r.id, `/app/representadas/${r.id}`)} className="inline">
-            <label className="campo">
-              <span>Enviar catálogo via WhatsApp para</span>
-              <select name="cliente_id" required defaultValue="">
-                <option value="" disabled>Selecione o cliente…</option>
-                {vinculados.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
-              </select>
-            </label>
-            <button className="btn btn-peq" type="submit">Enviar</button>
-          </form>
-        )}
+        <div className="card-interno" id="documentos">
+          <h3>Catálogo</h3>
+          <AvisoLimite uso={uso} recurso="pdf_mes" />
+          <div className="acoes-linha">
+            <form action={gerarDocumentoAction.bind(null, `/app/representadas/${r.id}#documentos`)}>
+              <input type="hidden" name="tipo" value="catalogo" />
+              <input type="hidden" name="representada_id" value={r.id} />
+              <button className="btn btn-peq" type="submit" disabled={uso.recursos.pdf_mes.atingido}>Gerar Catálogo (PDF)</button>
+            </form>
+            {r.catalogo_publico && vinculados.length > 0 ? (
+              <EnviarCatalogo representadaId={r.id} clientes={vinculados} />
+            ) : (
+              <small className="dica">{r.catalogo_publico ? "Vincule clientes para enviar o catálogo." : "Ative o catálogo digital para enviar por WhatsApp."}</small>
+            )}
+          </div>
+          <DocumentosRecentes documentos={documentos} />
+        </div>
         <details>
           <summary>Editar dados</summary>
         <form action={atualizarRepresentadaAction.bind(null, r.id)} className="grade">

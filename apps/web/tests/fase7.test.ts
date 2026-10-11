@@ -27,11 +27,19 @@ describe("positivação", () => {
 });
 
 describe("solicitação", () => {
-  it("valida tipo, período e 'todas' só no catálogo", () => {
+  it("valida tipo e período; relatórios aceitam 'todas' (gerais); catálogo geral é tipo próprio (Fase 7c)", () => {
     expect(solicitacaoSchema.safeParse({ tipo: "relatorio_periodo", representada_id: REP.id, periodo: "2026-10" }).success).toBe(true);
     expect(solicitacaoSchema.safeParse({ tipo: "relatorio_periodo", representada_id: REP.id, periodo: "10/2026" }).success).toBe(false);
-    expect(solicitacaoSchema.safeParse({ tipo: "catalogo", representada_id: "todas" }).success).toBe(true);
-    expect(solicitacaoSchema.safeParse({ tipo: "relatorio_comissao", representada_id: "todas", periodo: "2026-10" }).success).toBe(false);
+    expect(solicitacaoSchema.safeParse({ tipo: "relatorio_comissao", representada_id: "todas", periodo: "2026-10" }).success).toBe(true);
+    expect(solicitacaoSchema.safeParse({ tipo: "catalogo_geral" }).success).toBe(true);
+    expect(solicitacaoSchema.safeParse({ tipo: "catalogo", representada_id: "todas" }).success).toBe(false);
+  });
+
+  it("relatórios gerais: uma seção por representada + totais gerais", async () => {
+    const { pdfMensalGeral, pdfComissoesGeral } = await import("@/server/relatorios");
+    const mensal = (nome: string) => ({ representada: { ...REP, nome }, periodo: "2026-10", visitas: [], pedidos: [], comissoes: [{ valor: 70, status: "a_receber" }], carteira: 1 });
+    expect(asc(await pdfMensalGeral([mensal("A"), mensal("B")], "2026-10"))).toBe("%PDF-");
+    expect(asc(await pdfComissoesGeral([{ representada: REP, periodo: "2026-10", comissoes: [] }], "2026-10"))).toBe("%PDF-");
   });
 });
 

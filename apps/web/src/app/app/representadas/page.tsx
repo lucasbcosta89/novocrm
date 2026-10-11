@@ -6,18 +6,41 @@ import { carregar } from "@/server/acao";
 import { obterUso } from "@/server/quota";
 import { listarRepresentadas } from "@/server/representadas";
 import { criarRepresentadaAction } from "./actions";
+import { DocumentosRecentes } from "@/components/documentos-recentes";
+import { mesAtual } from "@/lib/planos";
+import { listarDocumentos } from "@/server/documentos";
+import { gerarDocumentoAction } from "./documentos-actions";
 
 export default async function RepresentadasPage({ searchParams }: { searchParams: Busca }) {
-  const [{ erro, ok }, [representadas, uso]] = await Promise.all([
+  const [{ erro, ok }, [representadas, uso, documentos]] = await Promise.all([
     searchParams,
-    carregar((ctx) => Promise.all([listarRepresentadas(ctx), obterUso(ctx)])),
+    carregar((ctx) => Promise.all([listarRepresentadas(ctx), obterUso(ctx), listarDocumentos(ctx, { geral: true }, 8)])),
   ]);
+  const semPdf = uso.recursos.pdf_mes.atingido || representadas.length === 0;
   const bloqueado = uso.recursos.representadas.atingido;
 
   return (
     <>
       <h1>Representadas</h1>
       <Mensagens erro={erro} ok={ok} />
+
+      {/* Documentos gerais: todas as representadas em um único PDF (quota pdf_mes por documento) */}
+      <section className="card" id="documentos">
+        <h2>Relatórios e catálogos gerais</h2>
+        <AvisoLimite uso={uso} recurso="pdf_mes" />
+        <form action={gerarDocumentoAction.bind(null, "/app/representadas#documentos")} className="barra-acoes">
+          <input type="hidden" name="representada_id" value="todas" />
+          <label className="campo">
+            <span>Período (relatórios)</span>
+            <input type="month" name="periodo" defaultValue={mesAtual()} required />
+          </label>
+          <button className="btn" type="submit" name="tipo" value="relatorio_periodo" disabled={semPdf}>Relatório Mensal (Geral)</button>
+          <button className="btn" type="submit" name="tipo" value="relatorio_comissao" disabled={semPdf}>Relatório de Comissões (Geral)</button>
+          <button className="btn" type="submit" name="tipo" value="catalogo_geral" disabled={semPdf}>Catálogo Geral</button>
+          <span className="dica">PDFs este mês: {uso.recursos.pdf_mes.usado}{uso.recursos.pdf_mes.limite != null ? ` de ${uso.recursos.pdf_mes.limite}` : ""}</span>
+        </form>
+        <DocumentosRecentes documentos={documentos} />
+      </section>
 
       {representadas.length === 0 ? (
         <div className="vazio">Nenhuma representada cadastrada.</div>

@@ -212,3 +212,11 @@ a.btn { text-decoration: none; display: inline-block; }
 .markdown h1 { font-size: 1.4rem; } .markdown h2 { font-size: 1.1rem; margin-top: 18px; }
 .markdown blockquote { margin: 0; padding: 8px 12px; border-left: 3px solid var(--danger); background: var(--bg); }
 .politica { max-width: 780px; }
+
+/* Fase 7c: geração de PDFs nas páginas de representadas */
+.barra-acoes { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.card-interno { border-top: 1px solid var(--border); padding-top: 12px; display: grid; gap: 10px; }
+.card-interno h3 { margin: 0; }
+.enviar-catalogo { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+.enviar-catalogo.compacto { display: inline-flex; align-items: center; }
+.barra-larga { height: 10px; max-width: 420px; }

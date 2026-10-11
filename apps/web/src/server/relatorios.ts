@@ -74,13 +74,12 @@ export function positivacao(d: Pick<DadosMensal, "pedidos" | "carteira">) {
   return { positivados, carteira: d.carteira, percentual: d.carteira ? Math.round((positivados / d.carteira) * 1000) / 10 : 0 };
 }
 
-export function pdfMensal(d: DadosMensal, representante?: Representante): Promise<Uint8Array> {
-  const { rotulo } = limitesPeriodo(d.periodo);
+/** Corpo do relatório mensal de uma representada (estrutura da Fase 7). */
+function corpoMensal(d: DadosMensal): Content[] {
   const pos = positivacao(d);
   const totalPedidos = soma(d.pedidos.map((p) => p.valor_total));
   const porStatus = (s: string) => soma(d.comissoes.filter((c) => c.status === s).map((c) => c.valor));
-  const conteudo: Content[] = [
-    cabecalho(`Relatório Mensal — ${rotulo}`, `${d.representada.nome} · CNPJ ${formatarDocumento(d.representada.cnpj)}`),
+  return [
     indicadores([
       { rotulo: "Visitas", valor: String(d.visitas.length) },
       { rotulo: "Pedidos", valor: String(d.pedidos.length) },
@@ -122,7 +121,53 @@ export function pdfMensal(d: DadosMensal, representante?: Representante): Promis
       { vazio: "Nenhuma visita registrada no período." },
     ),
   ];
+}
+
+export function pdfMensal(d: DadosMensal, representante?: Representante): Promise<Uint8Array> {
+  const { rotulo } = limitesPeriodo(d.periodo);
+  const conteudo: Content[] = [
+    cabecalho(`Relatório Mensal — ${rotulo}`, `${d.representada.nome} · CNPJ ${formatarDocumento(d.representada.cnpj)}`),
+    ...corpoMensal(d),
+  ];
   return gerarPdf(conteudo, { titulo: `Relatório mensal ${d.representada.nome} ${d.periodo}`, representante });
+}
+
+/** Relatório mensal geral (Fase 7c): uma seção por representada + totais gerais no fim. */
+export function pdfMensalGeral(ds: DadosMensal[], periodo: string, representante?: Representante): Promise<Uint8Array> {
+  const { rotulo } = limitesPeriodo(periodo);
+  const conteudo: Content[] = [cabecalho(`Relatório Mensal (Geral) — ${rotulo}`, `${ds.length} representada(s)`)];
+  ds.forEach((d, i) => {
+    if (i > 0) conteudo.push(quebraPagina());
+    conteudo.push(secaoRepresentada(d.representada), ...corpoMensal(d));
+  });
+  const pedidos = ds.flatMap((d) => d.pedidos);
+  const comissoes = ds.flatMap((d) => d.comissoes);
+  conteudo.push(
+    secao("Totais gerais"),
+    tabela(
+      [
+        { titulo: "Representada", valor: (d: DadosMensal) => d.representada.nome },
+        { titulo: "Visitas", valor: (d) => d.visitas.length, alinhar: "right", largura: "auto" },
+        { titulo: "Pedidos", valor: (d) => d.pedidos.length, alinhar: "right", largura: "auto" },
+        { titulo: "Vendido", valor: (d) => formatarMoeda(soma(d.pedidos.map((p) => p.valor_total))), alinhar: "right", largura: "auto" },
+        { titulo: "Comissões", valor: (d) => formatarMoeda(soma(d.comissoes.map((c) => c.valor))), alinhar: "right", largura: "auto" },
+        { titulo: "Positivação", valor: (d) => `${String(positivacao(d).percentual).replace(".", ",")}%`, alinhar: "right", largura: "auto" },
+      ],
+      ds,
+      {
+        vazio: "Nenhuma representada.",
+        totais: [
+          "Total geral",
+          ds.reduce((s, d) => s + d.visitas.length, 0),
+          pedidos.length,
+          formatarMoeda(soma(pedidos.map((p) => p.valor_total))),
+          formatarMoeda(soma(comissoes.map((c) => c.valor))),
+          "",
+        ],
+      },
+    ),
+  );
+  return gerarPdf(conteudo, { titulo: `Relatório mensal geral ${periodo}`, representante });
 }
 
 /* ---------- relatório de comissões ---------- */
@@ -155,12 +200,13 @@ export async function dadosComissoes(ctx: Contexto, representadaId: string, peri
   return { representada: rep, periodo, comissoes };
 }
 
-export function pdfComissoes(d: DadosComissoes, representante?: Representante): Promise<Uint8Array> {
-  const { rotulo } = limitesPeriodo(d.periodo);
-  const validas = d.comissoes.filter((c) => c.status !== "cancelada");
+const validasComissoes = (d: DadosComissoes) => d.comissoes.filter((c) => c.status !== "cancelada");
+
+/** Corpo do relatório de comissões de uma representada (estrutura da Fase 7). */
+function corpoComissoes(d: DadosComissoes): Content[] {
+  const validas = validasComissoes(d);
   const por = (s: string) => soma(validas.filter((c) => c.status === s).map((c) => c.valor));
-  const conteudo: Content[] = [
-    cabecalho(`Relatório de Comissões — ${rotulo}`, `${d.representada.nome} · pedidos do período`),
+  return [
     indicadores([
       { rotulo: "Total", valor: formatarMoeda(soma(validas.map((c) => c.valor))) },
       { rotulo: "A receber", valor: formatarMoeda(por("a_receber")) },
@@ -182,7 +228,56 @@ export function pdfComissoes(d: DadosComissoes, representante?: Representante): 
       { vazio: "Nenhuma comissão no período.", totais: ["Total", "", "", "", "", formatarMoeda(soma(validas.map((c) => c.valor))), "", ""] },
     ),
   ];
+}
+
+export function pdfComissoes(d: DadosComissoes, representante?: Representante): Promise<Uint8Array> {
+  const { rotulo } = limitesPeriodo(d.periodo);
+  const conteudo: Content[] = [cabecalho(`Relatório de Comissões — ${rotulo}`, `${d.representada.nome} · pedidos do período`), ...corpoComissoes(d)];
   return gerarPdf(conteudo, { titulo: `Comissões ${d.representada.nome} ${d.periodo}`, paisagem: true, representante });
+}
+
+/** Relatório de comissões geral (Fase 7c): uma seção por representada + totais gerais no fim. */
+export function pdfComissoesGeral(ds: DadosComissoes[], periodo: string, representante?: Representante): Promise<Uint8Array> {
+  const { rotulo } = limitesPeriodo(periodo);
+  const conteudo: Content[] = [cabecalho(`Relatório de Comissões (Geral) — ${rotulo}`, `${ds.length} representada(s) · pedidos do período`)];
+  for (const d of ds) conteudo.push(secaoRepresentada(d.representada), ...corpoComissoes(d));
+  const total = (d: DadosComissoes, s?: string) => soma(validasComissoes(d).filter((c) => !s || c.status === s).map((c) => c.valor));
+  conteudo.push(
+    secao("Totais gerais"),
+    tabela(
+      [
+        { titulo: "Representada", valor: (d: DadosComissoes) => d.representada.nome },
+        { titulo: "A receber", valor: (d) => formatarMoeda(total(d, "a_receber")), alinhar: "right", largura: "auto" },
+        { titulo: "Recebida", valor: (d) => formatarMoeda(total(d, "recebida")), alinhar: "right", largura: "auto" },
+        { titulo: "Atrasada", valor: (d) => formatarMoeda(total(d, "atrasada")), alinhar: "right", largura: "auto" },
+        { titulo: "Total", valor: (d) => formatarMoeda(total(d)), alinhar: "right", largura: "auto" },
+      ],
+      ds,
+      {
+        vazio: "Nenhuma representada.",
+        totais: [
+          "Total geral",
+          formatarMoeda(soma(ds.map((d) => total(d, "a_receber")))),
+          formatarMoeda(soma(ds.map((d) => total(d, "recebida")))),
+          formatarMoeda(soma(ds.map((d) => total(d, "atrasada")))),
+          formatarMoeda(soma(ds.map((d) => total(d)))),
+        ],
+      },
+    ),
+  );
+  return gerarPdf(conteudo, { titulo: `Comissões geral ${periodo}`, paisagem: true, representante });
+}
+
+/** Cabeçalho de seção de uma representada nos relatórios gerais. */
+function secaoRepresentada(r: Rep): Content {
+  return { text: r.nome, style: "titulo", fontSize: 14, margin: [0, 10, 0, 6] };
+}
+
+/** Todas as representadas do usuário (para os relatórios gerais). */
+export async function idsRepresentadas({ supabase }: Contexto): Promise<string[]> {
+  const { data, error } = await supabase.from("representadas").select("id").order("nome").returns<{ id: string }[]>();
+  if (error) throw erroBanco(error);
+  return data.map((r) => r.id);
 }
 
 /* ---------- catálogo ---------- */

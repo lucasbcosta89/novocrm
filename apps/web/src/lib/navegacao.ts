@@ -3,7 +3,6 @@ export const SECOES = [
   { slug: "clientes", titulo: "Clientes" },
   { slug: "oportunidades", titulo: "Oportunidades" },
   { slug: "comissoes", titulo: "Comissões" },
-  { slug: "relatorios", titulo: "Relatórios" },
   { slug: "configurar", titulo: "Configurar" },
 ] as const;
 

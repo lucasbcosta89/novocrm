@@ -3,8 +3,8 @@
 import { headers } from "next/headers";
 import { comParam } from "@/lib/url";
 import { executarAcao } from "@/server/acao";
-import type { Contexto } from "@/server/contexto";
-import { erroBanco } from "@/server/erros";
+import { obterContexto, type Contexto } from "@/server/contexto";
+import { erroBanco, normalizarErro } from "@/server/erros";
 import { enviarCatalogo, enviarConfirmacaoPedido, enviarFollowUp, type Envio } from "@/server/whatsapp";
 
 async function origem() {
@@ -52,4 +52,17 @@ export async function concluirTarefaAction(tarefaId: string) {
     },
     { ok: "/app", erro: "/app", mensagem: "Tarefa concluída" },
   );
+}
+
+/** Variante sem redirecionamento: devolve o link wa.me para o cliente abrir em NOVA ABA (Fase 7c). */
+export async function enviarCatalogoNovaAbaAction(
+  representadaId: string,
+  clienteId: string,
+): Promise<{ url?: string; ok?: string; erro?: string }> {
+  try {
+    const envio = await enviarCatalogo(await obterContexto(), clienteId, representadaId, await origem());
+    return envio.modo === "link" ? { url: envio.url } : { ok: "Catálogo enviado pelo WhatsApp" };
+  } catch (e) {
+    return { erro: normalizarErro(e).message };
+  }
 }

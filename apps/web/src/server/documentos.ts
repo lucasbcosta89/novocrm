@@ -9,23 +9,30 @@ import { AppError, erroBanco } from "./erros";
 import type { Representante } from "@/lib/pdf";
 import { revelarDocumentos } from "./perfil";
 import { verificarLimite } from "./quota";
-import { dadosCatalogo, dadosComissoes, dadosMensal, limitesPeriodo, pdfCatalogo, pdfComissoes, pdfMensal } from "./relatorios";
+import {
+  dadosCatalogo, dadosComissoes, dadosMensal, idsRepresentadas, limitesPeriodo,
+  pdfCatalogo, pdfComissoes, pdfComissoesGeral, pdfMensal, pdfMensalGeral,
+} from "./relatorios";
 
-export const TIPOS_DOCUMENTO = ["relatorio_periodo", "relatorio_comissao", "catalogo"] as const;
+export const TIPOS_DOCUMENTO = ["relatorio_periodo", "relatorio_comissao", "catalogo", "catalogo_geral"] as const;
 export type TipoDocumento = (typeof TIPOS_DOCUMENTO)[number];
 
 export const ROTULO_DOCUMENTO: Record<TipoDocumento, string> = {
   relatorio_periodo: "Relatório mensal",
   relatorio_comissao: "Relatório de comissões",
   catalogo: "Catálogo",
+  catalogo_geral: "Catálogo geral",
 };
 
 const periodoSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Período inválido (use AAAA-MM)");
+/** "todas" = relatório geral (todas as representadas do usuário em um documento). */
+const representadaOuTodas = z.union([idSchema, z.literal("todas")]);
 
 export const solicitacaoSchema = z.discriminatedUnion("tipo", [
-  z.object({ tipo: z.literal("relatorio_periodo"), representada_id: idSchema, periodo: periodoSchema }),
-  z.object({ tipo: z.literal("relatorio_comissao"), representada_id: idSchema, periodo: periodoSchema }),
-  z.object({ tipo: z.literal("catalogo"), representada_id: z.union([idSchema, z.literal("todas")]) }),
+  z.object({ tipo: z.literal("relatorio_periodo"), representada_id: representadaOuTodas, periodo: periodoSchema }),
+  z.object({ tipo: z.literal("relatorio_comissao"), representada_id: representadaOuTodas, periodo: periodoSchema }),
+  z.object({ tipo: z.literal("catalogo"), representada_id: idSchema }),
+  z.object({ tipo: z.literal("catalogo_geral") }),
 ]);
 export type Solicitacao = z.infer<typeof solicitacaoSchema>;
 
@@ -63,16 +70,26 @@ async function representante(ctx: Contexto): Promise<Representante> {
 }
 
 async function preparar(ctx: Contexto, s: Solicitacao, rep: Representante) {
-  if (s.tipo === "catalogo") {
-    const dados = await dadosCatalogo(ctx, s.representada_id);
-    if (dados.marcas.length === 0) throw new AppError(404, "Representada não encontrada", "nao_encontrado");
-    const nome = s.representada_id === "todas" ? "todas as marcas" : dados.marcas[0]!.representada.nome;
-    return { dados, titulo: `Catálogo — ${nome}`, gerar: () => pdfCatalogo(dados, rep) };
+  if (s.tipo === "catalogo" || s.tipo === "catalogo_geral") {
+    const geral = s.tipo === "catalogo_geral";
+    const dados = await dadosCatalogo(ctx, geral ? "todas" : s.representada_id);
+    if (dados.marcas.length === 0) throw new AppError(404, geral ? "Cadastre uma representada primeiro" : "Representada não encontrada", "nao_encontrado");
+    return { dados, titulo: geral ? "Catálogo Geral" : `Catálogo — ${dados.marcas[0]!.representada.nome}`, gerar: () => pdfCatalogo(dados, rep) };
   }
   const { rotulo } = limitesPeriodo(s.periodo);
+  const ids = s.representada_id === "todas" ? await idsRepresentadas(ctx) : null;
+  if (ids && ids.length === 0) throw new AppError(404, "Cadastre uma representada primeiro", "nao_encontrado");
   if (s.tipo === "relatorio_periodo") {
+    if (ids) {
+      const dados = await Promise.all(ids.map((id) => dadosMensal(ctx, id, s.periodo)));
+      return { dados, titulo: `Relatório Mensal (Geral) — ${rotulo}`, gerar: () => pdfMensalGeral(dados, s.periodo, rep) };
+    }
     const dados = await dadosMensal(ctx, s.representada_id, s.periodo);
     return { dados, titulo: `Relatório mensal — ${dados.representada.nome} — ${rotulo}`, gerar: () => pdfMensal(dados, rep) };
+  }
+  if (ids) {
+    const dados = await Promise.all(ids.map((id) => dadosComissoes(ctx, id, s.periodo)));
+    return { dados, titulo: `Relatório de Comissões (Geral) — ${rotulo}`, gerar: () => pdfComissoesGeral(dados, s.periodo, rep) };
   }
   const dados = await dadosComissoes(ctx, s.representada_id, s.periodo);
   return { dados, titulo: `Comissões — ${dados.representada.nome} — ${rotulo}`, gerar: () => pdfComissoes(dados, rep) };
@@ -134,7 +151,7 @@ export async function solicitarDocumento(ctx: Contexto, input: unknown): Promise
       .insert({
         user_id: ctx.userId,
         tipo: s.tipo,
-        representada_id: s.representada_id === "todas" ? null : s.representada_id,
+        representada_id: "representada_id" in s && s.representada_id !== "todas" ? s.representada_id : null,
         periodo: "periodo" in s ? s.periodo : null,
         parametros: s,
         titulo,
@@ -152,8 +169,16 @@ export async function solicitarDocumento(ctx: Contexto, input: unknown): Promise
   return { documento: doc, url: urlDownload(doc.id), cache: false };
 }
 
-export async function listarDocumentos({ supabase }: Contexto): Promise<Documento[]> {
-  const { data, error } = await supabase.from("documentos").select(CAMPOS).order("criado_em", { ascending: false }).limit(100).returns<Documento[]>();
+/** filtro: documentos de uma representada ou os gerais (sem representada). */
+export async function listarDocumentos(
+  { supabase }: Contexto,
+  filtro?: { representada_id: string } | { geral: true },
+  limite = 100,
+): Promise<Documento[]> {
+  let q = supabase.from("documentos").select(CAMPOS);
+  if (filtro && "geral" in filtro) q = q.is("representada_id", null);
+  else if (filtro) q = q.eq("representada_id", idSchema.parse(filtro.representada_id));
+  const { data, error } = await q.order("criado_em", { ascending: false }).limit(limite).returns<Documento[]>();
   if (error) throw erroBanco(error);
   return data;
 }

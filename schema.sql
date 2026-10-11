@@ -1237,3 +1237,7 @@ grant select (id, email, nome, whatsapp, documento, plano, status, criado_em, no
               consentimento_lgpd_aceito_em, consentimento_lgpd_versao, politica_privacidade_aceita_em, politica_privacidade_versao)
   on usuarios to authenticated;
 -- RLS (já existente): usuarios_proprio_select / usuarios_proprio_update → auth.uid() = id
+
+-- FASE 7c: catálogo geral (todas as representadas em um PDF)
+alter table documentos drop constraint documentos_tipo_check;
+alter table documentos add constraint documentos_tipo_check check (tipo in ('relatorio_periodo','relatorio_comissao','catalogo','catalogo_geral'));
