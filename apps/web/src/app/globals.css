@@ -220,3 +220,10 @@ a.btn { text-decoration: none; display: inline-block; }
 .enviar-catalogo { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
 .enviar-catalogo.compacto { display: inline-flex; align-items: center; }
 .barra-larga { height: 10px; max-width: 420px; }
+
+/* Fase 3b: abas e dashboards de representada/cliente */
+.abas-app { margin: 4px 0 16px; }
+.painel dd { font-size: 1.3rem; }
+.alertas li a { text-decoration: none; }
+.alertas li a:hover { text-decoration: underline; }
+.historico li:target { outline: 2px solid var(--accent); }

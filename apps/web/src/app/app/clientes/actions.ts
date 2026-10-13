@@ -17,7 +17,7 @@ const dados = (fd: FormData) => Object.fromEntries(fd);
 
 export async function criarClienteAction(fd: FormData) {
   await executarAcao((ctx) => criarCliente(ctx, dados(fd)), {
-    ok: (c) => `${BASE}/${c.id}`,
+    ok: (c) => `${BASE}/${c.id}/representadas`,
     erro: BASE,
     mensagem: "Cliente criado. Vincule-o às representadas abaixo.",
   });
@@ -41,45 +41,45 @@ export async function excluirClienteAction(id: string) {
 
 export async function vincularUmaAction(id: string, representadaId: string) {
   await executarAcao((ctx) => vincular(ctx, id, representadaId), {
-    ok: `${BASE}/${id}`,
-    erro: `${BASE}/${id}`,
+    ok: `${BASE}/${id}/representadas`,
+    erro: `${BASE}/${id}/representadas`,
     mensagem: "Representada vinculada",
   });
 }
 
 export async function desvincularAction(id: string, representadaId: string) {
   await executarAcao((ctx) => desvincular(ctx, id, representadaId), {
-    ok: `${BASE}/${id}`,
-    erro: `${BASE}/${id}`,
+    ok: `${BASE}/${id}/representadas`,
+    erro: `${BASE}/${id}/representadas`,
     mensagem: "Representada desvinculada",
   });
 }
 
 export async function criarVisitaAction(id: string, fd: FormData) {
   await executarAcao((ctx) => criarVisita(ctx, id, dados(fd)), {
-    ok: `${BASE}/${id}#visitas`,
-    erro: `${BASE}/${id}`,
+    ok: `${BASE}/${id}/visitas`,
+    erro: `${BASE}/${id}/visitas`,
     mensagem: "Visita registrada",
   });
 }
 
 export async function atualizarVisitaAction(id: string, visitaId: string, fd: FormData) {
   await executarAcao((ctx) => atualizarVisita(ctx, visitaId, dados(fd)), {
-    ok: `${BASE}/${id}#visitas`,
-    erro: `${BASE}/${id}`,
+    ok: `${BASE}/${id}/visitas`,
+    erro: `${BASE}/${id}/visitas`,
     mensagem: "Visita salva",
   });
 }
 
 export async function excluirVisitaAction(id: string, visitaId: string) {
   await executarAcao((ctx) => excluirVisita(ctx, visitaId), {
-    ok: `${BASE}/${id}#visitas`,
-    erro: `${BASE}/${id}`,
+    ok: `${BASE}/${id}/visitas`,
+    erro: `${BASE}/${id}/visitas`,
     mensagem: "Visita excluída",
   });
 }
 
-const OPS = (id: string) => `${BASE}/${id}#oportunidades`;
+const OPS = (id: string) => `${BASE}/${id}/oportunidades`;
 const PLANO = (id: string, opId: string) => `${BASE}/${id}/oportunidades/${opId}`;
 
 export async function criarOportunidadeAction(id: string, fd: FormData) {

@@ -25,17 +25,6 @@ async function enviarE(fn: (ctx: Contexto) => Promise<Envio>, voltar: string, me
   );
 }
 
-export async function enviarCatalogoAction(representadaId: string, voltar: string, fd: FormData) {
-  const clienteId = String(fd.get("cliente_id") ?? "");
-  const o = await origem();
-  await enviarE((ctx) => enviarCatalogo(ctx, clienteId, representadaId, o), voltar, "Catálogo enviado pelo WhatsApp");
-}
-
-export async function enviarCatalogoClienteAction(representadaId: string, clienteId: string) {
-  const o = await origem();
-  await enviarE((ctx) => enviarCatalogo(ctx, clienteId, representadaId, o), `/app/clientes/${clienteId}#representadas`, "Catálogo enviado pelo WhatsApp");
-}
-
 export async function followUpAction(tarefaId: string) {
   await enviarE((ctx) => enviarFollowUp(ctx, tarefaId), "/app", "Follow-up enviado pelo WhatsApp");
 }

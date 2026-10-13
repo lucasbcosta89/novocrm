@@ -59,7 +59,7 @@ export default async function NovoPedidoPage({
           <h2>2. Itens — {rep.nome}</h2>
           {ativos.length === 0 ? (
             <p className="vazio">
-              Nenhum produto ativo. Cadastre no <Link href={`/app/representadas/${rep.id}#catalogo`}>catálogo da representada</Link>.
+              Nenhum produto ativo. Cadastre no <Link href={`/app/representadas/${rep.id}/catalogo`}>catálogo da representada</Link>.
             </p>
           ) : (
             <form action={criarPedidoAction}>

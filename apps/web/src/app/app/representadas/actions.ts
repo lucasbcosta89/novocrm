@@ -35,8 +35,8 @@ export async function excluirRepresentadaAction(id: string) {
 
 export async function criarProdutoAction(representadaId: string, fd: FormData) {
   await executarAcao((ctx) => criarProduto(ctx, representadaId, dados(fd)), {
-    ok: `${BASE}/${representadaId}`,
-    erro: `${BASE}/${representadaId}`,
+    ok: `${BASE}/${representadaId}/catalogo`,
+    erro: `${BASE}/${representadaId}/catalogo`,
     mensagem: "Produto adicionado",
   });
 }
@@ -45,24 +45,24 @@ export async function atualizarProdutoAction(representadaId: string, produtoId: 
   // Checkbox desmarcado não é enviado: ausência = inativo.
   const input = { ...dados(fd), ativo: fd.get("ativo") === "on" };
   await executarAcao((ctx) => atualizarProduto(ctx, produtoId, input), {
-    ok: `${BASE}/${representadaId}`,
-    erro: `${BASE}/${representadaId}`,
+    ok: `${BASE}/${representadaId}/catalogo`,
+    erro: `${BASE}/${representadaId}/catalogo`,
     mensagem: "Produto salvo",
   });
 }
 
 export async function excluirProdutoAction(representadaId: string, produtoId: string) {
   await executarAcao((ctx) => excluirProduto(ctx, produtoId), {
-    ok: `${BASE}/${representadaId}`,
-    erro: `${BASE}/${representadaId}`,
+    ok: `${BASE}/${representadaId}/catalogo`,
+    erro: `${BASE}/${representadaId}/catalogo`,
     mensagem: "Produto excluído",
   });
 }
 
 export async function imagemProdutoAction(representadaId: string, produtoId: string, fd: FormData) {
   await executarAcao((ctx) => salvarImagemProduto(ctx, produtoId, fd.get("imagem")), {
-    ok: `${BASE}/${representadaId}#catalogo`,
-    erro: `${BASE}/${representadaId}#catalogo`,
+    ok: `${BASE}/${representadaId}/catalogo`,
+    erro: `${BASE}/${representadaId}/catalogo`,
     mensagem: "Imagem atualizada",
   });
 }

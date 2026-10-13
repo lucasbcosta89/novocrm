@@ -15,8 +15,8 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
   return (
     <>
       <p className="trilha">
-        {p.cliente && <><Link href={`/app/clientes/${p.cliente.id}#pedidos`}>{p.cliente.nome}</Link> / </>}
-        {p.representada && <Link href={`/app/representadas/${p.representada.id}#pedidos`}>{p.representada.nome}</Link>}
+        {p.cliente && <><Link href={`/app/clientes/${p.cliente.id}/pedidos`}>{p.cliente.nome}</Link> / </>}
+        {p.representada && <Link href={`/app/representadas/${p.representada.id}/pedidos`}>{p.representada.nome}</Link>}
       </p>
       <h1>Pedido {p.numero} <span className={`etiqueta etiqueta-${p.status}`}>{ROTULO_STATUS_PEDIDO[p.status] ?? p.status}</span></h1>
       <Mensagens erro={erro} ok={ok} />

@@ -24,6 +24,11 @@ Toda fase termina com commit + tag no GitHub.
   - [x] CRUD de visitas (UI + /api/clientes/:id/visitas, /api/visitas/:id)
   - [x] RLS por dono em todas as tabelas (billing/quota só leitura; webhook_events só service role)
   - [x] Critério verificado (cria cliente, abre, vincula a 2 representadas, registra visita)
+- [ ] Fase 3b — Dashboards e subpáginas de Representadas e Clientes
+  - [x] Representada: layout com nome + abas (Início, Catálogo, Tabela de preços, Pedidos, Oportunidades), cada aba é uma rota
+  - [x] Cliente: layout com nome + abas (Início, Visitas, Pedidos, Oportunidades, Representadas)
+  - [x] Dashboards: vendas (total e mês), visitas e alertas clicáveis dos próximos 7 dias (tarefas + visitas com data futura)
+  - [ ] Critério verificado (nome + dashboard; abas mudam URL e persistem; catálogo/WhatsApp na subpágina; alerta leva ao item)
 - [x] Fase 4 — Oportunidades e desafios por cliente + plano de ação
   - [x] Bloco "Oportunidades e Desafios" na página do cliente (+ Novo, tabela tipo/título/prioridade/status/data/ações)
   - [x] Plano de ação em /app/clientes/:id/oportunidades/:opId (adicionar, concluir, editar, excluir ações)

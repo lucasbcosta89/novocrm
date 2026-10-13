@@ -52,7 +52,7 @@ export async function cancelarPedidoAction(id: string) {
 
 export async function excluirPedidoAction(id: string, clienteId: string) {
   await executarAcao((ctx) => excluirPedido(ctx, id), {
-    ok: `/app/clientes/${clienteId}#pedidos`,
+    ok: `/app/clientes/${clienteId}/pedidos`,
     erro: `${BASE}/${id}`,
     mensagem: "Rascunho excluído",
   });

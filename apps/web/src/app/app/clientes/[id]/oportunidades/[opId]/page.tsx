@@ -49,7 +49,7 @@ export default async function PlanoAcaoPage({
   return (
     <>
       <p className="trilha">
-        <Link href="/app/clientes">Clientes</Link> / <Link href={`/app/clientes/${cliente.id}#oportunidades`}>{cliente.nome}</Link> /
+        <Link href={`/app/clientes/${cliente.id}/oportunidades`}>Oportunidades</Link> /
       </p>
       <h1>
         <span className={`etiqueta etiqueta-${o.tipo}`}>{ROTULO_TIPO_OPORTUNIDADE[o.tipo]}</span> {o.titulo}
