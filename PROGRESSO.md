@@ -75,12 +75,12 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Rodapé em todas as páginas: "Feito com" + logo (base64 no build, sem margem, 256 px) no canto inferior direito; data e paginação à esquerda
   - [x] Cache dos PDFs invalidado (VERSAO_LAYOUT 2) para regenerar no novo template
   - [x] Critério verificado (comissões e catálogo com cabeçalho, título e rodapé)
-- [ ] Fase 7c — Reorganização de relatórios e catálogos
+- [x] Fase 7c — Reorganização de relatórios e catálogos
   - [x] /app/relatorios removida (rota, UI e sidebar); endpoints, worker, cache e quota pdf_mes intactos
   - [x] Representada: "Gerar Catálogo (PDF)" + "Enviar Catálogo por WhatsApp" em NOVA ABA (também na página do cliente)
   - [x] Representadas: Relatório Mensal (Geral), Relatório de Comissões (Geral) e Catálogo Geral (seção por representada + totais gerais)
   - [x] Meus dados: "X de Y PDFs este mês" com barra e upgrade perto do limite
-  - [ ] Critério verificado (sem /app/relatorios; catálogo + WhatsApp em nova aba; 3 documentos gerais; X de Y; quota bloqueia)
+  - [x] Critério verificado (sem /app/relatorios; catálogo + WhatsApp em nova aba; 3 documentos gerais; X de Y; quota bloqueia)
 - [x] Fase 8 — WhatsApp, catálogo público e app offline
   - [x] Catálogo público /c/[slug] (abas por marca, categorias, carrinho) → pedido origem catalogo_web (rascunho no CRM)
   - [x] Meta Cloud API: webhook (hub.challenge + X-Hub-Signature-256), templates, janela 24h, conversas_whatsapp → quota conversas_mes
