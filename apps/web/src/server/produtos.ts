@@ -15,6 +15,7 @@ export type Produto = {
   desconto_max: number;
   comissao: number;
   categoria: string | null;
+  ncm: string | null;
   imagem_url: string | null;
   ativo: boolean;
 };
@@ -25,7 +26,7 @@ type ProdutoRow = Omit<Produto, "desconto_max"> & {
 
 // Preço padrão = linha de tabelas_preco com cliente_id null.
 const CAMPOS =
-  "id, representada_id, sku, nome, descricao, unidade, preco, comissao, categoria, imagem_url, ativo, tabelas_preco(preco, desconto_max)";
+  "id, representada_id, sku, nome, descricao, unidade, preco, comissao, categoria, ncm, imagem_url, ativo, tabelas_preco(preco, desconto_max)";
 const DUPLICADO = "Já existe produto com este SKU nesta representada";
 
 function mapear({ tabelas_preco, ...p }: ProdutoRow): Produto {

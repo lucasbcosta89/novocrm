@@ -1,50 +1,41 @@
-import { DocumentosRecentes } from "@/components/documentos-recentes";
+import { BotaoCatalogoPdf, BotaoCatalogoWeb } from "@/components/catalogo-acoes";
 import { EnviarCatalogo } from "@/components/enviar-catalogo";
 import { Campo, Mensagens, type Busca } from "@/components/form";
 import { AvisoLimite } from "@/components/limite";
 import { formatarMoeda, formatarPercentual } from "@/lib/formato";
 import { carregar } from "@/server/acao";
 import { listarClientesDaRepresentada } from "@/server/consultas";
-import { listarDocumentos } from "@/server/documentos";
 import { listarProdutos } from "@/server/produtos";
 import { obterUso } from "@/server/quota";
 import { obterRepresentada } from "@/server/representadas";
 import { atualizarProdutoAction, criarProdutoAction, excluirProdutoAction, imagemProdutoAction } from "../../actions";
-import { gerarDocumentoAction } from "../../documentos-actions";
 
 /** Catálogo: produtos + Gerar Catálogo (PDF) e Enviar por WhatsApp (Fase 7c). */
 export default async function RepresentadaCatalogo({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Busca }) {
   const [{ id }, { erro, ok }] = await Promise.all([params, searchParams]);
-  const [r, produtos, vinculados, documentos, uso] = await carregar((ctx) =>
+  const [r, produtos, vinculados, uso] = await carregar((ctx) =>
     Promise.all([
       obterRepresentada(ctx, id),
       listarProdutos(ctx, id),
       listarClientesDaRepresentada(ctx, id),
-      listarDocumentos(ctx, { representada_id: id }, 5),
       obterUso(ctx),
     ]),
   );
-  const aqui = `/app/representadas/${r.id}/catalogo`;
 
   return (
     <>
       <Mensagens erro={erro} ok={ok} />
       <section className="card">
-        <h2>Catálogo</h2>
         <AvisoLimite uso={uso} recurso="pdf_mes" />
-        <div className="acoes-linha">
-          <form action={gerarDocumentoAction.bind(null, aqui)}>
-            <input type="hidden" name="tipo" value="catalogo" />
-            <input type="hidden" name="representada_id" value={r.id} />
-            <button className="btn btn-peq" type="submit" disabled={uso.recursos.pdf_mes.atingido}>Gerar Catálogo (PDF)</button>
-          </form>
-          {r.catalogo_publico && vinculados.length > 0 ? (
-            <EnviarCatalogo representadaId={r.id} clientes={vinculados} />
+        <div className="barra-acoes">
+          <BotaoCatalogoPdf representadaId={r.id} desabilitado={uso.recursos.pdf_mes.atingido} />
+          <BotaoCatalogoWeb slug={r.slug} publico={r.catalogo_publico} />
+          {vinculados.length > 0 ? (
+            <EnviarCatalogo representadaId={r.id} clientes={vinculados} icone />
           ) : (
-            <small className="dica">{r.catalogo_publico ? "Vincule clientes para enviar o catálogo." : "Ative o catálogo digital (Início → Editar dados) para enviar por WhatsApp."}</small>
+            <small className="dica">Vincule clientes para enviar o catálogo por WhatsApp.</small>
           )}
         </div>
-        <DocumentosRecentes documentos={documentos} />
       </section>
 
       <section className="card">
@@ -55,7 +46,7 @@ export default async function RepresentadaCatalogo({ params, searchParams }: { p
           <div className="tabela-wrap">
             <table className="tabela">
               <thead>
-                <tr><th></th><th>SKU</th><th>Nome</th><th>Categoria</th><th>Un.</th><th>Preço padrão</th><th>Desc. máx.</th><th>Comissão</th><th>Ativo</th><th></th></tr>
+                <tr><th></th><th>SKU</th><th>Nome</th><th>Categoria</th><th>NCM</th><th>Un.</th><th>Preço padrão</th><th>Desc. máx.</th><th>Comissão</th><th>Ativo</th><th></th></tr>
               </thead>
               <tbody>
                 {produtos.map((p) => (
@@ -71,6 +62,7 @@ export default async function RepresentadaCatalogo({ params, searchParams }: { p
                     <td><code>{p.sku}</code></td>
                     <td>{p.nome}</td>
                     <td>{p.categoria ?? "—"}</td>
+                    <td>{p.ncm ?? "—"}</td>
                     <td>{p.unidade ?? "—"}</td>
                     <td>{formatarMoeda(p.preco)}</td>
                     <td>{formatarPercentual(p.desconto_max)}</td>
@@ -84,6 +76,7 @@ export default async function RepresentadaCatalogo({ params, searchParams }: { p
                           <Campo label="Nome *" name="nome" required defaultValue={p.nome} />
                           <Campo label="Unidade" name="unidade" defaultValue={p.unidade ?? ""} />
                           <Campo label="Categoria" name="categoria" defaultValue={p.categoria ?? ""} />
+                          <Campo label="NCM" name="ncm" inputMode="numeric" maxLength={10} placeholder="8 dígitos" defaultValue={p.ncm ?? ""} />
                           <Campo label="Preço *" name="preco" type="number" step="0.01" min="0" required defaultValue={p.preco} />
                           <Campo label="Desc. máx. (%)" name="desconto_max" type="number" step="0.01" min="0" max="100" defaultValue={p.desconto_max} />
                           <Campo label="Comissão (%)" name="comissao" type="number" step="0.01" min="0" max="100" defaultValue={p.comissao} />
@@ -116,6 +109,7 @@ export default async function RepresentadaCatalogo({ params, searchParams }: { p
           <Campo label="Nome *" name="nome" required minLength={2} />
           <Campo label="Unidade" name="unidade" placeholder="un, cx, kg" />
           <Campo label="Categoria" name="categoria" placeholder="Ex.: Linha escolar" />
+          <Campo label="NCM" name="ncm" inputMode="numeric" maxLength={10} placeholder="8 dígitos (opcional)" />
           <Campo label="Preço padrão *" name="preco" type="number" step="0.01" min="0" required />
           <Campo label="Desc. máx. (%)" name="desconto_max" type="number" step="0.01" min="0" max="100" defaultValue="0" />
           <Campo label="Comissão (%)" name="comissao" type="number" step="0.01" min="0" max="100" defaultValue="0" />

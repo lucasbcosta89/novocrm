@@ -51,3 +51,11 @@ describe("resumirComissoes", () => {
     expect(res[1]!.totais).toEqual({ a_receber: 30.3, recebida: 0, atrasada: 5 });
   });
 });
+
+describe("NCM do produto (Fase 3d-2)", () => {
+  it("opcional; 8 dígitos quando preenchido", () => {
+    expect(produtoSchema.parse({ sku: "A", nome: "Prod A", preco: 10, ncm: "4820.10.00" }).ncm).toBe("48201000");
+    expect(produtoSchema.parse({ sku: "A", nome: "Prod A", preco: 10, ncm: "" }).ncm).toBeNull();
+    expect(produtoSchema.safeParse({ sku: "A", nome: "Prod A", preco: 10, ncm: "1234" }).success).toBe(false);
+  });
+});

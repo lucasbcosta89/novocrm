@@ -238,3 +238,8 @@ a.btn { text-decoration: none; display: inline-block; }
 .quadro h2 { font-size: 1rem; }
 .numero-grande { font-size: 2.2rem; font-weight: 700; margin: 0; }
 .lista-compacta li { padding: 4px 10px; }
+
+/* Fase 3d-2: botões do catálogo */
+.acao-catalogo { display: grid; gap: 4px; justify-items: start; }
+.btn svg { vertical-align: -3px; margin-right: 4px; }
+.btn-whatsapp { background: #1fa855; }

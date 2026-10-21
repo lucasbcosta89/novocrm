@@ -96,6 +96,7 @@ export const produtoSchema = z.object({
   descricao: textoOpcional(2000),
   unidade: textoOpcional(20),
   categoria: textoOpcional(60),
+  ncm: digitosOpcional([8], "NCM deve ter 8 dígitos"),
   preco: numero(0, 99_999_999, "Preço inválido"),
   desconto_max: numero(0, 100, "Desconto máximo deve estar entre 0 e 100").default(0),
   /** % de comissão do produto; se omitido, usa a comissão padrão da representada. */

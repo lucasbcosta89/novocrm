@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { enviarCatalogoNovaAbaAction } from "@/app/app/whatsapp-actions";
+import { IconeWhatsApp } from "./catalogo-acoes";
 
 /**
  * Envia o catálogo por WhatsApp abrindo o wa.me em NOVA ABA (o usuário não sai da plataforma).
@@ -13,12 +14,14 @@ export function EnviarCatalogo({
   clientes,
   rotulo = "Enviar Catálogo por WhatsApp",
   compacto,
+  icone,
 }: {
   representadaId: string;
   clienteId?: string;
   clientes?: { id: string; nome: string }[];
   rotulo?: string;
   compacto?: boolean;
+  icone?: boolean;
 }) {
   const [escolhido, setEscolhido] = useState(clienteId ?? "");
   const [msg, setMsg] = useState<{ ok?: string; erro?: string } | null>(null);
@@ -52,8 +55,8 @@ export function EnviarCatalogo({
           </select>
         </label>
       )}
-      <button type="button" className={compacto ? "btn-link" : "btn btn-peq"} onClick={enviar} disabled={enviando}>
-        {enviando ? "Abrindo…" : rotulo}
+      <button type="button" className={compacto ? "btn-link" : icone ? "btn btn-whatsapp" : "btn btn-peq"} onClick={enviar} disabled={enviando}>
+        {icone && <IconeWhatsApp />} {enviando ? "Abrindo…" : rotulo}
       </button>
       {msg?.erro && <small className="erro-campo">{msg.erro}</small>}
       {msg?.ok && <small className="txt-ok">{msg.ok}</small>}
