@@ -640,3 +640,74 @@ h1.titulo-icone .icone, h2.titulo-icone .icone, h3.titulo-icone .icone { color: 
 .alerta-card { display: inline-flex; color: var(--danger-texto); cursor: help; }
 .dica-alerta::after { left: auto; right: 0; bottom: auto; top: calc(100% + 6px); transform: none; white-space: pre-line; width: max-content; max-width: 240px; }
 .kanban-cartao > .btn-suave { justify-self: start; margin-top: 2px; }
+
+/* ===== Fase 4e: calendário (react-big-calendar no estilo da plataforma) ===== */
+:root {
+  --ev-visita: #2563EB; --ev-visita-suave: #EFF6FF; --ev-visita-texto: #1D4ED8;
+  --ev-subtarefa: #7C3AED; --ev-subtarefa-suave: #F5F3FF; --ev-subtarefa-texto: #6D28D9;
+  --ev-tarefa: #0891B2; --ev-tarefa-suave: #ECFEFF; --ev-tarefa-texto: #0E7490;
+}
+:root[data-tema="escuro"] {
+  --ev-visita-suave: rgba(37, 99, 235, 0.22); --ev-visita-texto: #93C5FD;
+  --ev-subtarefa-suave: rgba(124, 58, 237, 0.22); --ev-subtarefa-texto: #C4B5FD;
+  --ev-tarefa-suave: rgba(8, 145, 178, 0.22); --ev-tarefa-texto: #67E8F9;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-tema="sistema"] {
+    --ev-visita-suave: rgba(37, 99, 235, 0.22); --ev-visita-texto: #93C5FD;
+    --ev-subtarefa-suave: rgba(124, 58, 237, 0.22); --ev-subtarefa-texto: #C4B5FD;
+    --ev-tarefa-suave: rgba(8, 145, 178, 0.22); --ev-tarefa-texto: #67E8F9;
+  }
+}
+.calendario-topo { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+.legenda-calendario { margin: 0; font-size: .85rem; }
+.legenda-calendario .icone { color: var(--danger-texto); }
+.filtro-tipos { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip-filtro { border: 1px solid var(--borda-suave); background: var(--surface); color: var(--muted); border-radius: 999px; padding: 6px 14px; font: inherit; font-size: .88rem; font-weight: 500; cursor: pointer; }
+.chip-filtro:hover { background: var(--bg); color: var(--text); }
+.chip-filtro.ativo { background: var(--accent-suave); color: var(--accent-fg); border-color: transparent; }
+.chip-filtro.chip-visita.ativo { background: var(--ev-visita-suave); color: var(--ev-visita-texto); }
+.chip-filtro.chip-subtarefa.ativo { background: var(--ev-subtarefa-suave); color: var(--ev-subtarefa-texto); }
+.chip-filtro.chip-tarefa.ativo { background: var(--ev-tarefa-suave); color: var(--ev-tarefa-texto); }
+.calendario { padding: 16px; overflow-x: auto; }
+.calendario.carregando { opacity: .7; }
+.calendario .rbc-calendar { min-width: 640px; color: var(--text); font-size: .88rem; }
+.calendario .rbc-toolbar { gap: 8px; margin-bottom: 12px; }
+.calendario .rbc-toolbar .rbc-toolbar-label { font-weight: 500; font-size: 1.05rem; text-transform: capitalize; }
+.calendario .rbc-toolbar button { color: var(--text); border: 1px solid var(--borda-suave); background: var(--surface); padding: 6px 12px; font: inherit; font-size: .88rem; cursor: pointer; }
+.calendario .rbc-toolbar button:hover, .calendario .rbc-toolbar button:focus { background: var(--bg); color: var(--text); border-color: var(--border); }
+.calendario .rbc-toolbar button.rbc-active, .calendario .rbc-toolbar button.rbc-active:hover { background: var(--accent-suave); color: var(--accent-fg); border-color: transparent; box-shadow: none; }
+.calendario .rbc-btn-group > button:first-child:not(:last-child) { border-radius: 10px 0 0 10px; }
+.calendario .rbc-btn-group > button:last-child:not(:first-child) { border-radius: 0 10px 10px 0; }
+.calendario .rbc-month-view, .calendario .rbc-time-view { border: 1px solid var(--borda-suave); border-radius: 14px; overflow: hidden; background: var(--surface); }
+.calendario .rbc-month-row + .rbc-month-row, .calendario .rbc-day-bg + .rbc-day-bg, .calendario .rbc-header + .rbc-header,
+.calendario .rbc-time-header-content, .calendario .rbc-time-content > * + * > *, .calendario .rbc-timeslot-group, .calendario .rbc-time-content { border-color: var(--borda-suave); }
+.calendario .rbc-header { padding: 8px 4px; font-weight: 500; font-size: .78rem; color: var(--muted); text-transform: capitalize; background: var(--bg); border-bottom: 1px solid var(--borda-suave); }
+.calendario .rbc-off-range-bg { background: var(--bg); }
+.calendario .rbc-off-range { color: var(--muted); }
+.calendario .rbc-today { background: color-mix(in srgb, var(--accent-suave) 70%, transparent); }
+.calendario .rbc-date-cell { padding: 4px 6px; font-size: .8rem; }
+.calendario .rbc-date-cell.rbc-now { font-weight: 600; color: var(--accent-fg); }
+.calendario .rbc-show-more { color: var(--accent-fg); background: transparent; font-size: .78rem; }
+.calendario .rbc-time-slot, .calendario .rbc-label { color: var(--muted); font-size: .75rem; }
+.calendario .rbc-current-time-indicator { background: var(--danger); }
+.calendario .rbc-event, .calendario .rbc-day-slot .rbc-background-event {
+  border: 0; border-radius: 8px; padding: 2px 6px; font-size: .78rem; cursor: pointer; box-shadow: none;
+}
+.calendario .rbc-event:focus { outline: none; box-shadow: var(--foco); }
+.calendario .rbc-event.ev-visita { background: var(--ev-visita-suave); color: var(--ev-visita-texto); }
+.calendario .rbc-event.ev-subtarefa { background: var(--ev-subtarefa-suave); color: var(--ev-subtarefa-texto); }
+.calendario .rbc-event.ev-tarefa { background: var(--ev-tarefa-suave); color: var(--ev-tarefa-texto); }
+.calendario .rbc-event.ev-atrasado { box-shadow: inset 4px 0 0 var(--danger); padding-left: 9px; }
+.calendario .rbc-event.ev-concluido .ev-titulo { text-decoration: line-through; opacity: .75; }
+.calendario .rbc-event.rbc-selected { filter: brightness(.96); }
+.calendario .rbc-day-slot .rbc-event { border: 0; }
+.ev-conteudo { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.ev-tipo { flex: none; font-size: .66rem; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; padding: 1px 5px; border-radius: 999px; background: var(--surface); }
+.ev-titulo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.calendario .rbc-addons-dnd .rbc-addons-dnd-drag-preview { opacity: .8; }
+.calendario .rbc-overlay { background: var(--surface); border: 1px solid var(--borda-suave); border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, .15); }
+@media (max-width: 767px) {
+  .calendario { padding: 10px; }
+  .calendario .rbc-toolbar { flex-direction: column; align-items: stretch; }
+}

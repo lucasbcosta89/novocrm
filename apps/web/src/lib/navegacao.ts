@@ -7,6 +7,7 @@ export const SECOES = [
   { slug: "representadas", titulo: "Representadas", icone: "predio" },
   { slug: "clientes", titulo: "Clientes", icone: "pessoas" },
   { slug: "oportunidades", titulo: "Oportunidades", icone: "funil" },
+  { slug: "calendario", titulo: "Calendário", icone: "calendario" },
   { slug: "comissoes", titulo: "Comissões", icone: "cifrao" },
   { slug: "configurar", titulo: "Configurar", icone: "engrenagem" },
 ] as const satisfies readonly { slug: string; titulo: string; icone: NomeIcone }[];
