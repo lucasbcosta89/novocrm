@@ -112,3 +112,16 @@ describe("funis (fase 4d-1)", () => {
     expect(emAberto({ arquivada: false, status: "concluido" })).toBe(false);
   });
 });
+
+describe("kanban do funil (fase 4d-2)", () => {
+  it("valida nome de etapa e aceita etapa no movimento e na conclusão", async () => {
+    const { etapaSchema, oportunidadeUpdateSchema, resultadoSchema, novaOportunidadeSchema } = await import("@/lib/validacao");
+    expect(etapaSchema.parse({ nome: "  Visita técnica " })).toEqual({ nome: "Visita técnica" });
+    expect(etapaSchema.safeParse({ nome: "" }).success).toBe(false);
+    expect(etapaSchema.safeParse({ nome: "x".repeat(61) }).success).toBe(false);
+    expect(oportunidadeUpdateSchema.parse({ etapa_id: P })).toEqual({ etapa_id: P });
+    expect(oportunidadeUpdateSchema.safeParse({ etapa_id: "x" }).success).toBe(false);
+    expect(resultadoSchema.parse({ resultado: "perdeu", observacoes_resultado: "Preço", etapa_id: P })).toEqual({ resultado: "perdeu", observacoes_resultado: "Preço", etapa_id: P });
+    expect(novaOportunidadeSchema.parse({ titulo: "Op", representada_id: R1, funil_id: R2 }).funil_id).toBe(R2);
+  });
+});

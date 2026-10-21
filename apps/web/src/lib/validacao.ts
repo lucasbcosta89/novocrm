@@ -162,7 +162,8 @@ export const oportunidadeSchema = z.object({
     z.string().refine((uf) => SIGLAS_UF.includes(uf), "Estado inválido").nullable().optional(),
   ),
 });
-export const oportunidadeUpdateSchema = parcial(oportunidadeSchema);
+/** Atualização parcial; etapa_id = mover o card no kanban do funil (Fase 4d-2). */
+export const oportunidadeUpdateSchema = parcial(oportunidadeSchema).extend({ etapa_id: idSchema.optional() });
 
 export const acaoSchema = z.object({
   descricao: z.string().trim().min(2, "Descreva a ação").max(1000),
@@ -266,12 +267,18 @@ export const novaOportunidadeSchema = oportunidadeSchema.extend({
     .default([])
     .refine((ps) => new Set(ps.map((p) => p.produto_id)).size === ps.length, "Produto repetido"),
   acoes: z.array(acaoSchema).max(100).default([]),
+  /** funil do kanban em que foi criada (oculto no formulário) */
+  funil_id: z.preprocess(vazioParaNull, idSchema.nullable().optional()),
 });
 
 export const resultadoSchema = z.object({
   resultado: z.enum(RESULTADOS, "Selecione Ganhou ou Perdeu"),
   observacoes_resultado: textoOpcional(2000),
+  /** etapa de fechamento para onde o card foi movido (kanban do funil) */
+  etapa_id: idSchema.optional(),
 });
+
+export const etapaSchema = z.object({ nome: z.string().trim().min(1, "Informe o nome da etapa").max(60, "Nome muito longo (máx. 60)") });
 
 export const produtoOportunidadeSchema = z.object({
   produto_id: idSchema,

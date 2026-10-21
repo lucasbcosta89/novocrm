@@ -42,7 +42,7 @@ export default async function OportunidadesInicio({
               <tbody>
                 {funis.map((f) => (
                   <tr key={f.id}>
-                    <td><Link href={`/app/oportunidades/funis?funil=${f.id}`}>{f.nome}</Link></td>
+                    <td><Link href={`/app/oportunidades/funis/${f.id}`}>{f.nome}</Link></td>
                     <td><span className="etiqueta etiqueta-rascunho">{ROTULO_MODELO_FUNIL[f.modelo]}</span></td>
                     <td className="dica">{f.etapas.map((e) => e.nome).join(" → ")}</td>
                     <td className="num"><strong>{f.emAberto}</strong></td>

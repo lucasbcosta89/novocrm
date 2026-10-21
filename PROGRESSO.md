@@ -49,6 +49,12 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Sidebar com ícone de funil; /app/oportunidades com abas Início, Funis (kanban) e Arquivo
   - [x] Início: primeiro uso com mensagem + "Criar Funil de Vendas" (popup: nome + modelo); tabela de funis com oportunidades em aberto; log filtrável por funil
   - [ ] Critério verificado (3 modelos com etapas corretas; contagem em aberto; filtro do log; oportunidades antigas no funil Vendas; ícone de funil)
+- [ ] Fase 4d-2 — Kanban do funil e personalização de etapas
+  - [x] /app/oportunidades/funis/[id]: colunas = etapas do funil; arrastar (ou seletor do card) grava etapa_id; filtros e agrupamento mantidos
+  - [x] Topo: dropdown para trocar de funil + "Personalizar Funil" (adicionar, renomear, excluir etapa; fechamento protegido; cards da etapa excluída vão para a 1ª etapa)
+  - [x] Card na etapa de fechamento abre popup Ganhou/Perdeu com Notas (resultado, observacoes_resultado, data_conclusao, status concluido)
+  - [x] Clique simples abre o detalhe da Fase 4c (arraste não dispara o clique)
+  - [ ] Critério verificado (etapas por funil; troca de funil; personalizar; popup no fechamento; clique abre detalhe)
 - [x] Fase 4 — Oportunidades e desafios por cliente + plano de ação
   - [x] Bloco "Oportunidades e Desafios" na página do cliente (+ Novo, tabela tipo/título/prioridade/status/data/ações)
   - [x] Plano de ação em /app/clientes/:id/oportunidades/:opId (adicionar, concluir, editar, excluir ações)

@@ -6,8 +6,8 @@ import { ETAPAS_MODELO, ROTULO_MODELO_FUNIL } from "@/lib/funis";
 import { MODELOS_FUNIL } from "@/lib/validacao";
 import { criarFunilAction } from "./actions";
 
-/** Botão "Criar Funil de Vendas" + popup com nome e modelo (as etapas do modelo aparecem como dica). */
-export function CriarFunil() {
+/** Botão "Criar Funil de Vendas" + popup com nome e modelo (as etapas do modelo aparecem como dica). voltar="kanban": abre o funil criado. */
+export function CriarFunil({ voltar }: { voltar?: "kanban" } = {}) {
   const ref = useRef<HTMLDialogElement>(null);
   return (
     <>
@@ -16,6 +16,7 @@ export function CriarFunil() {
       </button>
       <dialog ref={ref} className="modal modal-estreito" aria-labelledby="titulo-criar-funil" onClick={(e) => e.target === ref.current && ref.current?.close()}>
         <form action={criarFunilAction} className="grade-1">
+          {voltar && <input type="hidden" name="voltar" value={voltar} />}
           <div className="cabecalho">
             <h2 id="titulo-criar-funil" className="titulo-icone"><Icone nome="funil" tamanho={20} /> Criar Funil de Vendas</h2>
             <button type="button" className="btn-link" onClick={() => ref.current?.close()} aria-label="Fechar">

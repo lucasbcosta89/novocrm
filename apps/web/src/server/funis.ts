@@ -1,8 +1,8 @@
 import "server-only";
 import { emAberto, type ModeloFunil } from "@/lib/funis";
-import { funilSchema } from "@/lib/validacao";
+import { etapaSchema, funilSchema, idSchema } from "@/lib/validacao";
 import type { Contexto } from "./contexto";
-import { erroBanco } from "./erros";
+import { AppError, erroBanco } from "./erros";
 
 export type Etapa = { id: string; nome: string; ordem: number; e_fechamento: boolean };
 export type Funil = { id: string; nome: string; modelo: ModeloFunil; criado_em: string; etapas: Etapa[]; emAberto: number };
@@ -40,4 +40,66 @@ export async function listarResultados({ supabase }: Contexto): Promise<{ funil_
     .returns<{ funil_id: string | null; resultado: string | null }[]>();
   if (error) throw erroBanco(error);
   return data;
+}
+
+/* ---------- Personalizar funil (etapas) ---------- */
+
+async function etapasDoFunil({ supabase }: Contexto, funilId: string): Promise<Etapa[]> {
+  const { data, error } = await supabase
+    .from("funil_etapas")
+    .select("id, nome, ordem, e_fechamento")
+    .eq("funil_id", idSchema.parse(funilId))
+    .order("ordem")
+    .returns<Etapa[]>();
+  if (error) throw erroBanco(error);
+  if (data.length === 0) throw new AppError(404, "Funil não encontrado", "nao_encontrado");
+  return data;
+}
+
+async function etapaComFunil({ supabase }: Contexto, etapaId: string) {
+  const { data, error } = await supabase
+    .from("funil_etapas")
+    .select("id, funil_id, e_fechamento")
+    .eq("id", idSchema.parse(etapaId))
+    .maybeSingle<{ id: string; funil_id: string; e_fechamento: boolean }>();
+  if (error) throw erroBanco(error);
+  if (!data) throw new AppError(404, "Etapa não encontrada", "nao_encontrado");
+  return data;
+}
+
+/** Nova etapa entra antes da etapa de fechamento (que segue sendo a última). */
+export async function adicionarEtapa(ctx: Contexto, funilId: string, input: unknown): Promise<void> {
+  const { nome } = etapaSchema.parse(input);
+  const etapas = await etapasDoFunil(ctx, funilId);
+  const fechamento = etapas.find((e) => e.e_fechamento);
+  const ultima = etapas[etapas.length - 1]!.ordem;
+  let ordem = ultima + 1;
+  if (fechamento) {
+    ordem = fechamento.ordem;
+    const { error } = await ctx.supabase.from("funil_etapas").update({ ordem: ultima + 1 }).eq("id", fechamento.id);
+    if (error) throw erroBanco(error);
+  }
+  const { error } = await ctx.supabase.from("funil_etapas").insert({ funil_id: funilId, nome, ordem });
+  if (error) throw erroBanco(error);
+}
+
+export async function renomearEtapa(ctx: Contexto, etapaId: string, input: unknown): Promise<void> {
+  const { nome } = etapaSchema.parse(input);
+  const etapa = await etapaComFunil(ctx, etapaId);
+  if (etapa.e_fechamento) throw new AppError(400, "A etapa de fechamento não pode ser renomeada", "regra");
+  const { error } = await ctx.supabase.from("funil_etapas").update({ nome }).eq("id", etapa.id);
+  if (error) throw erroBanco(error);
+}
+
+/** Exclui etapa; as oportunidades dela vão para a primeira etapa restante do funil. */
+export async function excluirEtapa(ctx: Contexto, etapaId: string): Promise<void> {
+  const etapa = await etapaComFunil(ctx, etapaId);
+  if (etapa.e_fechamento) throw new AppError(400, "A etapa de fechamento não pode ser excluída", "regra");
+  const restantes = (await etapasDoFunil(ctx, etapa.funil_id)).filter((e) => e.id !== etapa.id);
+  const destino = restantes.find((e) => !e.e_fechamento);
+  if (!destino) throw new AppError(400, "O funil precisa de ao menos uma etapa além do fechamento", "regra");
+  const mover = await ctx.supabase.from("oportunidades_desafios").update({ etapa_id: destino.id }).eq("etapa_id", etapa.id);
+  if (mover.error) throw erroBanco(mover.error);
+  const { error } = await ctx.supabase.from("funil_etapas").delete().eq("id", etapa.id);
+  if (error) throw erroBanco(error);
 }

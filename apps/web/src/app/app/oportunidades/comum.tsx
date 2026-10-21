@@ -77,10 +77,16 @@ export function BuscaProdutos({ representadaId, escolhidos, onAdicionar }: { rep
 /** Regra de conclusão: Ganhou/Perdeu; Observações só em Ganhou. */
 export function ResultadoModal({
   oportunidade,
+  etapaId,
+  comNotas = false,
   onFechar,
   onConcluida,
 }: {
   oportunidade: { id: string; titulo: string };
+  /** etapa de fechamento para onde o card foi movido (kanban do funil) */
+  etapaId?: string;
+  /** campo "Notas" para Ganhou e Perdeu (no kanban do funil) */
+  comNotas?: boolean;
   onFechar: () => void;
   onConcluida: (c: Pick<CartaoKanban, "resultado" | "observacoes_resultado" | "data_conclusao">) => void;
 }) {
@@ -95,7 +101,7 @@ export function ResultadoModal({
     try {
       const r = await api<CartaoKanban>(`/api/oportunidades/${oportunidade.id}/concluir`, {
         method: "POST",
-        body: JSON.stringify({ resultado, observacoes_resultado: resultado === "ganhou" ? obs : "" }),
+        body: JSON.stringify({ resultado, observacoes_resultado: comNotas || resultado === "ganhou" ? obs : "", ...(etapaId ? { etapa_id: etapaId } : {}) }),
       });
       onConcluida({ resultado: r.resultado, observacoes_resultado: r.observacoes_resultado, data_conclusao: r.data_conclusao });
     } catch (e) {
@@ -116,7 +122,9 @@ export function ResultadoModal({
             <option value="perdeu">Perdeu</option>
           </select>
         </label>
-        {resultado === "ganhou" && (
+        {comNotas ? (
+          <label className="campo"><span>Notas</span><textarea rows={3} value={obs} onChange={(e) => setObs(e.target.value)} /></label>
+        ) : resultado === "ganhou" && (
           <label className="campo"><span>Observações</span><textarea rows={3} value={obs} onChange={(e) => setObs(e.target.value)} /></label>
         )}
         {erro && <p className="aviso aviso-erro">{erro}</p>}

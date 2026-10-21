@@ -220,6 +220,7 @@ export async function concluirOportunidade(ctx: Contexto, id: string, input: unk
     .update(
       {
         status: "concluido",
+        ...(r.etapa_id ? { etapa_id: r.etapa_id } : {}),
         resultado: r.resultado,
         observacoes_resultado: r.observacoes_resultado ?? null,
         data_conclusao: new Date().toISOString(),
