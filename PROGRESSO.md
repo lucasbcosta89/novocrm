@@ -29,6 +29,11 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Cliente: layout com nome + abas (Início, Visitas, Pedidos, Oportunidades, Representadas)
   - [x] Dashboards: vendas (total e mês), visitas e alertas clicáveis dos próximos 7 dias (tarefas + visitas com data futura)
   - [x] Critério verificado (nome + dashboard; abas mudam URL e persistem; catálogo/WhatsApp na subpágina; alerta leva ao item)
+- [ ] Fase 3d-1 — Representadas: estrutura, cadastro e pontos de faturamento
+  - [x] Migration: endereço/contato na representada (UF com check), comissao_padrao removida, pontos_faturamento (RLS), documentos em uploads (tipo documento_representada)
+  - [x] /app/representadas: "Adicionar Representada" inline (matriz + documentos), Lista de Representadas (SKUs, editar/excluir), quadros Empresas Representadas e SKUs Cadastrados; botões de relatórios gerais removidos (endpoints mantidos)
+  - [x] Início da representada: quadro da empresa (editável, documentos) → vendas → alertas → pontos de faturamento (adicionar/editar/excluir)
+  - [ ] Critério verificado (cadastra com endereço e documentos; dashboard; quadro editável; ponto de faturamento)
 - [x] Fase 4 — Oportunidades e desafios por cliente + plano de ação
   - [x] Bloco "Oportunidades e Desafios" na página do cliente (+ Novo, tabela tipo/título/prioridade/status/data/ações)
   - [x] Plano de ação em /app/clientes/:id/oportunidades/:opId (adicionar, concluir, editar, excluir ações)

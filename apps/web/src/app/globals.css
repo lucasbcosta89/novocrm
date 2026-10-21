@@ -227,3 +227,14 @@ a.btn { text-decoration: none; display: inline-block; }
 .alertas li a { text-decoration: none; }
 .alertas li a:hover { text-decoration: underline; }
 .historico li:target { outline: 2px solid var(--accent); }
+
+/* Fase 3d-1: representadas */
+.novo-inline > summary { display: inline-block; list-style: none; width: fit-content; cursor: pointer; }
+.novo-inline > summary::-webkit-details-marker { display: none; }
+.novo-inline[open] > summary { margin-bottom: 12px; }
+.secao-form { border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px 14px; margin: 0; }
+.secao-form legend { font-weight: 600; padding: 0 6px; }
+.quadros { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0 16px; }
+.quadro h2 { font-size: 1rem; }
+.numero-grande { font-size: 2.2rem; font-weight: 700; margin: 0; }
+.lista-compacta li { padding: 4px 10px; }

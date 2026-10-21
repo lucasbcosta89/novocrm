@@ -1,79 +1,86 @@
 import Link from "next/link";
-import { Campo, Mensagens, type Busca } from "@/components/form";
-import { formatarDocumento, formatarPercentual } from "@/lib/formato";
+import { BotaoConfirmar } from "@/components/botao-confirmar";
+import { Mensagens, type Busca } from "@/components/form";
 import { AvisoLimite } from "@/components/limite";
+import { formatarDocumento } from "@/lib/formato";
 import { carregar } from "@/server/acao";
 import { obterUso } from "@/server/quota";
-import { listarRepresentadas } from "@/server/representadas";
-import { criarRepresentadaAction } from "./actions";
-import { DocumentosRecentes } from "@/components/documentos-recentes";
-import { mesAtual } from "@/lib/planos";
-import { listarDocumentos } from "@/server/documentos";
-import { gerarDocumentoAction } from "./documentos-actions";
+import { listarRepresentadasComSkus } from "@/server/representadas";
+import { criarRepresentadaAction, excluirRepresentadaAction } from "./actions";
+import { CamposEmpresa } from "./campos-empresa";
 
 export default async function RepresentadasPage({ searchParams }: { searchParams: Busca }) {
-  const [{ erro, ok }, [representadas, uso, documentos]] = await Promise.all([
+  const [{ erro, ok }, [representadas, uso]] = await Promise.all([
     searchParams,
-    carregar((ctx) => Promise.all([listarRepresentadas(ctx), obterUso(ctx), listarDocumentos(ctx, { geral: true }, 8)])),
+    carregar((ctx) => Promise.all([listarRepresentadasComSkus(ctx), obterUso(ctx)])),
   ]);
-  const semPdf = uso.recursos.pdf_mes.atingido || representadas.length === 0;
   const bloqueado = uso.recursos.representadas.atingido;
+  const skus = representadas.reduce((s, r) => s + r.skus, 0);
 
   return (
     <>
       <h1>Representadas</h1>
       <Mensagens erro={erro} ok={ok} />
 
-      {/* Documentos gerais: todas as representadas em um único PDF (quota pdf_mes por documento) */}
-      <section className="card" id="documentos">
-        <h2>Relatórios e catálogos gerais</h2>
-        <AvisoLimite uso={uso} recurso="pdf_mes" />
-        <form action={gerarDocumentoAction.bind(null, "/app/representadas#documentos")} className="barra-acoes">
-          <input type="hidden" name="representada_id" value="todas" />
-          <label className="campo">
-            <span>Período (relatórios)</span>
-            <input type="month" name="periodo" defaultValue={mesAtual()} required />
-          </label>
-          <button className="btn" type="submit" name="tipo" value="relatorio_periodo" disabled={semPdf}>Relatório Mensal (Geral)</button>
-          <button className="btn" type="submit" name="tipo" value="relatorio_comissao" disabled={semPdf}>Relatório de Comissões (Geral)</button>
-          <button className="btn" type="submit" name="tipo" value="catalogo_geral" disabled={semPdf}>Catálogo Geral</button>
-          <span className="dica">PDFs este mês: {uso.recursos.pdf_mes.usado}{uso.recursos.pdf_mes.limite != null ? ` de ${uso.recursos.pdf_mes.limite}` : ""}</span>
+      {/* Cadastro inline expansível (não modal) */}
+      <details className="card novo-inline" open={representadas.length === 0 || undefined}>
+        <summary className="btn">Adicionar Representada</summary>
+        <AvisoLimite uso={uso} recurso="representadas" />
+        <form action={criarRepresentadaAction} className="grade-1">
+          <CamposEmpresa />
+          <fieldset className="secao-form">
+            <legend>Documentos</legend>
+            <label className="campo">
+              <span>Contrato, cartão CNPJ, tabelas… (até 10 arquivos de 10 MB: PDF, imagens, Office, CSV)</span>
+              <input type="file" name="documentos" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt" />
+            </label>
+          </fieldset>
+          <div className="acoes-linha"><button className="btn" type="submit" disabled={bloqueado}>Cadastrar representada</button></div>
         </form>
-        <DocumentosRecentes documentos={documentos} />
-      </section>
-
-      {representadas.length === 0 ? (
-        <div className="vazio">Nenhuma representada cadastrada.</div>
-      ) : (
-        <div className="tabela-wrap">
-          <table className="tabela">
-            <thead>
-              <tr><th>Nome</th><th>CNPJ</th><th>Comissão padrão</th><th>Slug</th></tr>
-            </thead>
-            <tbody>
-              {representadas.map((r) => (
-                <tr key={r.id}>
-                  <td><Link href={`/app/representadas/${r.id}`}>{r.nome}</Link></td>
-                  <td>{formatarDocumento(r.cnpj)}</td>
-                  <td>{formatarPercentual(r.comissao_padrao)}</td>
-                  <td><code>{r.slug}</code></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      </details>
 
       <section className="card">
-        <h2>Nova representada</h2>
-        <AvisoLimite uso={uso} recurso="representadas" />
-        <form action={criarRepresentadaAction} className="grade">
-          <Campo label="Nome *" name="nome" required minLength={2} />
-          <Campo label="CNPJ" name="cnpj" inputMode="numeric" placeholder="00.000.000/0000-00" />
-          <Campo label="Comissão padrão (%)" name="comissao_padrao" type="number" step="0.01" min="0" max="100" defaultValue="0" />
-          <div className="acoes"><button className="btn" type="submit" disabled={bloqueado}>Criar</button></div>
-        </form>
+        <h2>Lista de Representadas</h2>
+        {representadas.length === 0 ? (
+          <div className="vazio">Nenhuma representada cadastrada.</div>
+        ) : (
+          <div className="tabela-wrap">
+            <table className="tabela">
+              <thead>
+                <tr><th>Nome</th><th>CNPJ</th><th>Município/UF</th><th>SKUs</th><th>Ações</th></tr>
+              </thead>
+              <tbody>
+                {representadas.map((r) => (
+                  <tr key={r.id}>
+                    <td><Link href={`/app/representadas/${r.id}`}>{r.nome}</Link></td>
+                    <td>{formatarDocumento(r.cnpj)}</td>
+                    <td>{[r.municipio, r.estado].filter(Boolean).join("/") || "—"}</td>
+                    <td>{r.skus}</td>
+                    <td className="acoes-linha">
+                      <Link href={`/app/representadas/${r.id}?editar=1`}>Editar</Link>
+                      <form action={excluirRepresentadaAction.bind(null, r.id)}>
+                        <BotaoConfirmar texto="Excluir" pergunta={`Excluir “${r.nome}”? Produtos, preços, pontos de faturamento e documentos dela também serão removidos.`} />
+                      </form>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </section>
+
+      <div className="quadros">
+        <section className="card quadro">
+          <h2>Empresas Representadas</h2>
+          <p className="numero-grande">{representadas.length}</p>
+        </section>
+        <section className="card quadro">
+          <h2>SKUs Cadastrados</h2>
+          <p className="numero-grande">{skus}</p>
+          <p className="dica">Produtos ativos em todas as representadas.</p>
+        </section>
+      </div>
     </>
   );
 }

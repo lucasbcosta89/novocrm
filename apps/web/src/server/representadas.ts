@@ -7,7 +7,14 @@ export type Representada = {
   id: string;
   nome: string;
   cnpj: string | null;
-  comissao_padrao: number;
+  rua: string | null;
+  numero: string | null;
+  complemento: string | null;
+  cep: string | null;
+  municipio: string | null;
+  estado: string | null;
+  email: string | null;
+  telefone: string | null;
   slug: string;
   catalogo_publico: boolean;
   criar_pedido_publico: boolean;
@@ -15,12 +22,25 @@ export type Representada = {
   criado_em: string;
 };
 
-const CAMPOS = "id, nome, cnpj, comissao_padrao, slug, catalogo_publico, criar_pedido_publico, status, criado_em";
+const CAMPOS =
+  "id, nome, cnpj, rua, numero, complemento, cep, municipio, estado, email, telefone, slug, catalogo_publico, criar_pedido_publico, status, criado_em";
 
 export async function listarRepresentadas({ supabase }: Contexto): Promise<Representada[]> {
   const { data, error } = await supabase.from("representadas").select(CAMPOS).order("nome");
   if (error) throw erroBanco(error);
   return data;
+}
+
+/** Lista com nº de SKUs ativos por representada (página inicial de Representadas). */
+export async function listarRepresentadasComSkus(ctx: Contexto): Promise<(Representada & { skus: number })[]> {
+  const [reps, produtos] = await Promise.all([
+    listarRepresentadas(ctx),
+    ctx.supabase.from("produtos").select("representada_id").eq("ativo", true).returns<{ representada_id: string }[]>(),
+  ]);
+  if (produtos.error) throw erroBanco(produtos.error);
+  const porRep = new Map<string, number>();
+  for (const p of produtos.data) porRep.set(p.representada_id, (porRep.get(p.representada_id) ?? 0) + 1);
+  return reps.map((r) => ({ ...r, skus: porRep.get(r.id) ?? 0 }));
 }
 
 export async function obterRepresentada({ supabase }: Contexto, id: string): Promise<Representada> {

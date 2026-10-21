@@ -37,14 +37,37 @@ function parcial<T extends z.ZodRawShape>(schema: z.ZodObject<T>): z.ZodObject<S
 
 export const idSchema = z.uuid("ID inválido");
 
+/** Endereço e contato (matriz da representada e pontos de faturamento). */
+const enderecoContato = {
+  rua: textoOpcional(160),
+  numero: textoOpcional(20),
+  complemento: textoOpcional(120),
+  cep: digitosOpcional([8], "CEP deve ter 8 dígitos"),
+  municipio: textoOpcional(80),
+  estado: z.preprocess(
+    (v) => (typeof v === "string" ? vazioParaNull(v.trim().toUpperCase()) : v),
+    z.string().refine((uf) => SIGLAS_UF.includes(uf), "Estado inválido").nullable().optional(),
+  ),
+  email: z.preprocess(vazioParaNull, z.email("E-mail inválido").trim().toLowerCase().nullable().optional()),
+  telefone: textoOpcional(30),
+};
+
 export const representadaSchema = z.object({
   nome: z.string().trim().min(2, "Informe o nome").max(120),
   cnpj: digitosOpcional([14], "CNPJ deve ter 14 dígitos"),
-  comissao_padrao: numero(0, 100, "Comissão deve estar entre 0 e 100").default(0),
+  ...enderecoContato,
   catalogo_publico: z.boolean().optional(),
   criar_pedido_publico: z.boolean().optional(),
 });
 export const representadaUpdateSchema = parcial(representadaSchema);
+
+export const pontoFaturamentoSchema = z.object({
+  nome: z.string().trim().min(2, "Informe o nome").max(160),
+  cnpj: digitosOpcional([14], "CNPJ deve ter 14 dígitos"),
+  ...enderecoContato,
+  status: z.enum(["ativo", "inativo"], "Status inválido").default("ativo"),
+});
+export const pontoFaturamentoUpdateSchema = parcial(pontoFaturamentoSchema);
 
 export const clienteSchema = z.object({
   nome: z.string().trim().min(2, "Informe o nome").max(160),

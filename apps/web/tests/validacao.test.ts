@@ -11,14 +11,15 @@ describe("slugify", () => {
 });
 
 describe("representadaSchema", () => {
-  it("normaliza CNPJ e converte comissão", () => {
-    const r = representadaSchema.parse({ nome: "Alfa", cnpj: "12.345.678/0001-90", comissao_padrao: "5,5" });
-    expect(r).toEqual({ nome: "Alfa", cnpj: "12345678000190", comissao_padrao: 5.5 });
+  it("normaliza CNPJ, CEP, UF e e-mail (sem comissão: Fase 3d-1)", () => {
+    const r = representadaSchema.parse({ nome: "Alfa", cnpj: "12.345.678/0001-90", cep: "74000-000", estado: "go", email: "A@B.COM", numero: "" });
+    expect(r).toMatchObject({ nome: "Alfa", cnpj: "12345678000190", cep: "74000000", estado: "GO", email: "a@b.com", numero: null });
   });
-  it("campo vazio vira null; rejeita CNPJ curto e comissão > 100", () => {
+  it("campo vazio vira null; rejeita CNPJ curto, UF e CEP inválidos", () => {
     expect(representadaSchema.parse({ nome: "Alfa", cnpj: "" }).cnpj).toBeNull();
     expect(representadaSchema.safeParse({ nome: "Alfa", cnpj: "123" }).success).toBe(false);
-    expect(representadaSchema.safeParse({ nome: "Alfa", comissao_padrao: 101 }).success).toBe(false);
+    expect(representadaSchema.safeParse({ nome: "Alfa", estado: "XX" }).success).toBe(false);
+    expect(representadaSchema.safeParse({ nome: "Alfa", cep: "123" }).success).toBe(false);
   });
 });
 
@@ -44,3 +45,12 @@ describe("produto e vínculo", () => {
   });
 });
 
+
+describe("ponto de faturamento (Fase 3d-1)", () => {
+  it("mesmos campos da representada + status", async () => {
+    const { pontoFaturamentoSchema, pontoFaturamentoUpdateSchema } = await import("@/lib/validacao");
+    expect(pontoFaturamentoSchema.parse({ nome: "Filial GO", estado: "GO" })).toMatchObject({ nome: "Filial GO", estado: "GO", status: "ativo" });
+    expect(pontoFaturamentoSchema.safeParse({ nome: "X" }).success).toBe(false);
+    expect(pontoFaturamentoUpdateSchema.parse({ status: "inativo" })).toEqual({ status: "inativo" });
+  });
+});

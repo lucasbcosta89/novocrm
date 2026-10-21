@@ -118,7 +118,7 @@ export default async function RepresentadaCatalogo({ params, searchParams }: { p
           <Campo label="Categoria" name="categoria" placeholder="Ex.: Linha escolar" />
           <Campo label="Preço padrão *" name="preco" type="number" step="0.01" min="0" required />
           <Campo label="Desc. máx. (%)" name="desconto_max" type="number" step="0.01" min="0" max="100" defaultValue="0" />
-          <Campo label="Comissão (%)" name="comissao" type="number" step="0.01" min="0" max="100" defaultValue={r.comissao_padrao} />
+          <Campo label="Comissão (%)" name="comissao" type="number" step="0.01" min="0" max="100" defaultValue="0" />
           <Campo label="Descrição" name="descricao" />
           <div className="acoes"><button className="btn" type="submit">Adicionar produto</button></div>
         </form>
