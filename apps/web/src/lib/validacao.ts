@@ -206,6 +206,30 @@ export const pedidoSchema = z
   .transform((p) => (p.prazo_tipo === "a_vista" ? { ...p, prazo_dias: null } : p));
 export type PedidoInput = z.infer<typeof pedidoSchema>;
 
+/** Edição de pedido (rascunho ou confirmado): o preço unitário passa a ser informado pelo usuário. */
+export const edicaoPedidoSchema = z
+  .object({
+    forma_pagamento: z.preprocess(vazioParaNull, z.enum(FORMAS_PAGAMENTO, "Forma de pagamento inválida").nullable().optional()),
+    prazo_tipo: z.enum(PRAZOS_PAGAMENTO, "Prazo de pagamento inválido").default("a_vista"),
+    prazo_dias: z.preprocess(
+      (v) => (v === "" || v == null ? null : Number(v)),
+      z.number("Prazo inválido").int("Prazo deve ser em dias inteiros").min(1, "Prazo mínimo de 1 dia").max(365, "Prazo máximo de 365 dias").nullable().optional(),
+    ),
+    itens: z
+      .array(
+        z.object({
+          produto_id: idSchema,
+          quantidade: numero(0.001, 1_000_000, "Quantidade inválida"),
+          preco_unitario: numero(0, 99_999_999, "Preço inválido"),
+          desconto_percentual: numero(0, 100, "Desconto deve estar entre 0% e 100%").default(0),
+        }),
+      )
+      .min(1, "Adicione ao menos um item")
+      .max(500),
+  })
+  .refine((p) => p.prazo_tipo === "a_vista" || p.prazo_dias != null, { message: "Informe o prazo em dias", path: ["prazo_dias"] })
+  .transform((p) => (p.prazo_tipo === "a_vista" ? { ...p, prazo_dias: null } : p));
+
 /** Subtotal do item = quantidade × preço × (1 − desconto%/100), arredondado em centavos (igual ao banco). */
 export const subtotalItem = (quantidade: number, preco: number, descontoPercentual: number) =>
   Math.round(quantidade * preco * (1 - descontoPercentual / 100) * 100) / 100;

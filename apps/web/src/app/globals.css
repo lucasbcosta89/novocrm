@@ -609,3 +609,9 @@ h1.titulo-icone .icone, h2.titulo-icone .icone, h3.titulo-icone .icone { color: 
 /* links: cor de acento sem sublinhado; sublinha só no hover/foco */
 .conteudo a:not(.btn):not(.aba):not(.nav-item):not(.btn-suave):not(.btn-secundario) { text-decoration: none; }
 .conteudo a:not(.btn):not(.aba):not(.nav-item):not(.btn-suave):not(.btn-secundario):hover { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+
+/* Pedido: dados do cliente no cabeçalho */
+.cliente-pedido-topo { display: flex; align-items: center; gap: 12px; }
+.cliente-pedido-topo .avatar { width: 44px; height: 44px; font-size: .9rem; }
+.cliente-pedido-nome { font-size: 1.1rem; font-weight: 500; }
+.cliente-pedido .resumo dd { font-weight: 400; overflow-wrap: anywhere; }

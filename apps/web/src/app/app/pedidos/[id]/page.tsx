@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { Avatar } from "@/components/avatar";
 import { Mensagens, type Busca } from "@/components/form";
 import { Icone } from "@/components/icones";
 import { StatusPedido } from "@/components/status";
-import { formatarData, formatarDataHora, formatarMoeda, formatarPercentual } from "@/lib/formato";
+import { formatarData, formatarDataHora, formatarDocumento, formatarMoeda, formatarPercentual } from "@/lib/formato";
 import { ROTULO_FORMA_PAGAMENTO, ROTULO_STATUS_COMISSAO } from "@/lib/rotulos";
 import { carregar } from "@/server/acao";
+import { obterCliente } from "@/server/clientes";
 import { obterPedido } from "@/server/pedidos";
 import { cancelarPedidoAction, confirmarPedidoAction, excluirPedidoAction } from "../actions";
 import { confirmacaoPedidoAction } from "../../whatsapp-actions";
@@ -12,7 +14,9 @@ import { confirmacaoPedidoAction } from "../../whatsapp-actions";
 export default async function PedidoPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Busca }) {
   const [{ id }, { erro, ok }] = await Promise.all([params, searchParams]);
   const p = await carregar((ctx) => obterPedido(ctx, id));
+  const cliente = p.cliente ? await carregar((ctx) => obterCliente(ctx, p.cliente!.id)) : null;
   const comissao = p.comissao[0];
+  const editavel = p.status !== "cancelado" && comissao?.status !== "recebida";
   const descontoAcima = p.itens.some((i) => i.desconto_acima_max);
 
   return (
@@ -21,9 +25,30 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
         {p.cliente && <><Link href={`/app/clientes/${p.cliente.id}/pedidos`}>{p.cliente.nome}</Link> / </>}
         {p.representada && <Link href={`/app/representadas/${p.representada.id}/pedidos`}>{p.representada.nome}</Link>}
       </p>
-      <h1 className="titulo-icone"><Icone nome="carrinho" tamanho={24} /> Pedido {p.numero} <StatusPedido status={p.status} /></h1>
+      <div className="cabecalho-pagina">
+        <h1 className="titulo-icone"><Icone nome="carrinho" tamanho={24} /> Pedido {p.numero} <StatusPedido status={p.status} /></h1>
+        {editavel && <Link className="btn-suave" href={`/app/pedidos/${p.id}/editar`}><Icone nome="lapis" tamanho={16} /> Editar</Link>}
+      </div>
       <Mensagens erro={erro} ok={ok} />
       {descontoAcima && <p className="aviso aviso-alerta" role="alert"><span className="circulo-icone"><Icone nome="alerta" tamanho={16} /></span>Desconto Acima do Máximo Permitido</p>}
+
+      {cliente && (
+        <section className="card cliente-pedido">
+          <div className="cliente-pedido-topo">
+            <Avatar nome={cliente.nome} />
+            <div>
+              <Link className="cliente-pedido-nome" href={`/app/clientes/${cliente.id}`}>{cliente.nome}</Link>
+              <p className="subtitulo">{[cliente.segmento, p.representada?.nome && `via ${p.representada.nome}`].filter(Boolean).join(" · ") || "Cliente"}</p>
+            </div>
+          </div>
+          <dl className="resumo">
+            <div><dt className="com-icone"><Icone nome="identidade" tamanho={16} /> CPF/CNPJ</dt><dd>{formatarDocumento(cliente.documento)}</dd></div>
+            <div><dt className="com-icone"><Icone nome="whatsapp" tamanho={16} /> WhatsApp</dt><dd>{cliente.whatsapp ?? cliente.celular ?? "—"}</dd></div>
+            <div><dt className="com-icone"><Icone nome="email" tamanho={16} /> E-mail</dt><dd>{cliente.email ?? "—"}</dd></div>
+            <div><dt className="com-icone"><Icone nome="mapa" tamanho={16} /> Cidade/UF</dt><dd>{[cliente.cidade, cliente.uf].filter(Boolean).join("/") || "—"}</dd></div>
+          </dl>
+        </section>
+      )}
 
       <section className="card">
         <dl className="resumo">

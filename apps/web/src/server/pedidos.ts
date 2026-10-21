@@ -1,4 +1,4 @@
-import { idSchema, pedidoSchema } from "@/lib/validacao";
+import { edicaoPedidoSchema, idSchema, pedidoSchema } from "@/lib/validacao";
 import type { Contexto } from "./contexto";
 import { AppError, erroBanco } from "./erros";
 
@@ -59,6 +59,20 @@ export async function criarPedido(ctx: Contexto, input: unknown): Promise<Pedido
   });
   if (error) throw erroBanco(error, "Número de pedido em uso; tente novamente");
   return obterPedido(ctx, data as string);
+}
+
+/** Edita itens (produtos, quantidades, preços, descontos), pagamento e prazo; confirmado recalcula a comissão (função SQL editar_pedido). */
+export async function editarPedido(ctx: Contexto, id: string, input: unknown): Promise<Pedido> {
+  const p = edicaoPedidoSchema.parse(input);
+  const { error } = await ctx.supabase.rpc("editar_pedido", {
+    p_pedido_id: idSchema.parse(id),
+    p_itens: p.itens,
+    p_forma_pagamento: p.forma_pagamento ?? null,
+    p_prazo_tipo: p.prazo_tipo,
+    p_prazo_dias: p.prazo_dias,
+  });
+  if (error) throw erroBanco(error);
+  return obterPedido(ctx, id);
 }
 
 /** Confirma rascunho: grava snapshot de comissão por item e a linha em comissoes. */

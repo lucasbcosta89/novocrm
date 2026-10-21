@@ -1,7 +1,7 @@
 "use server";
 
 import { executarAcao } from "@/server/acao";
-import { cancelarPedido, confirmarPedido, criarPedido, excluirPedido } from "@/server/pedidos";
+import { cancelarPedido, confirmarPedido, criarPedido, editarPedido, excluirPedido } from "@/server/pedidos";
 
 const BASE = "/app/pedidos";
 
@@ -37,6 +37,21 @@ export async function criarPedidoAction(fd: FormData) {
       erro: `${BASE}/novo?representada=${representada_id}&cliente=${cliente_id}`,
       mensagem: confirmar ? "Pedido confirmado e comissão lançada" : "Rascunho salvo",
     },
+  );
+}
+
+/** Edição: além de qtd_/desc_, cada item traz preco_<produtoId>. */
+export async function editarPedidoAction(id: string, fd: FormData) {
+  const itens = itensDoForm(fd).map((i) => ({ ...i, preco_unitario: String(fd.get(`preco_${i.produto_id}`) ?? "") }));
+  await executarAcao(
+    (ctx) =>
+      editarPedido(ctx, id, {
+        forma_pagamento: fd.get("forma_pagamento"),
+        prazo_tipo: fd.get("prazo_tipo") ?? "a_vista",
+        prazo_dias: fd.get("prazo_dias"),
+        itens,
+      }),
+    { ok: `${BASE}/${id}`, erro: `${BASE}/${id}/editar`, mensagem: "Pedido atualizado" },
   );
 }
 
