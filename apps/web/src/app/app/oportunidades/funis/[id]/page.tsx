@@ -22,6 +22,7 @@ export default async function FunilKanbanPage({ params, searchParams }: { params
         funis={funis.map((f) => ({ id: f.id, nome: f.nome }))}
         inicial={itens.filter((o) => o.funil_id === funil.id)}
         representadas={representadas.map((r) => ({ id: r.id, nome: r.nome }))}
+        hoje={new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" })}
       />
     </>
   );

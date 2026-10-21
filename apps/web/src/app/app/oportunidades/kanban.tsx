@@ -6,6 +6,7 @@ import { Icone } from "@/components/icones";
 import { useRouter } from "next/navigation";
 import { useMemo, useRef, useState } from "react";
 import { formatarMoeda } from "@/lib/formato";
+import { alertaTarefas } from "@/lib/oportunidades";
 import { ROTULO_PRIORIDADE, ROTULO_RESULTADO, ROTULO_STATUS_OPORTUNIDADE, ROTULO_TIPO_OPORTUNIDADE } from "@/lib/rotulos";
 import { PRIORIDADES, STATUS_OPORTUNIDADE } from "@/lib/validacao";
 import type { CartaoKanban } from "@/server/oportunidades";
@@ -34,8 +35,10 @@ const valorGrupo = (o: CartaoKanban, g: Agrupar) =>
  * Kanban de um funil: colunas = etapas (ordem). Arrastar (ou o seletor do card) grava etapa_id;
  * cair na etapa de fechamento abre o popup Ganhou/Perdeu. Clique simples abre o detalhe (Fase 4c).
  */
-export function Kanban({ funil, funis, inicial, representadas }: {
+export function Kanban({ funil, funis, inicial, representadas, hoje }: {
   funil: FunilKanban; funis: { id: string; nome: string }[]; inicial: CartaoKanban[]; representadas: Rep[];
+  /** data de hoje (AAAA-MM-DD, Brasília) para os alertas de tarefas */
+  hoje: string;
 }) {
   const router = useRouter();
   const [itens, setItens] = useState(inicial);
@@ -85,6 +88,20 @@ export function Kanban({ funil, funis, inicial, representadas }: {
     } catch (e) {
       atualizarLocal(id, { etapa_id: atual.etapa_id, status: atual.status, resultado: atual.resultado, observacoes_resultado: atual.observacoes_resultado, data_conclusao: atual.data_conclusao });
       setErro(e instanceof Error ? e.message : "Falha ao salvar");
+    }
+  }
+
+  /** Arquivar (só concluídas): sai do kanban e vai para a página Arquivo. */
+  async function arquivar(id: string) {
+    const atual = itens.find((o) => o.id === id);
+    if (!atual) return;
+    setErro(null);
+    setItens((xs) => xs.filter((o) => o.id !== id));
+    try {
+      await api(`/api/oportunidades/${id}`, { method: "PATCH", body: JSON.stringify({ arquivada: true }) });
+    } catch (e) {
+      setItens((xs) => [atual, ...xs]);
+      setErro(e instanceof Error ? e.message : "Falha ao arquivar");
     }
   }
 
@@ -178,7 +195,7 @@ export function Kanban({ funil, funis, inicial, representadas }: {
                     <span className="dica">{coluna.length}</span>
                   </h3>
                   {coluna.map((o) => (
-                    <Cartao key={o.id} o={o} etapas={funil.etapas} onDrag={setArrastando} onMover={mover} onAbrir={setDetalhe} />
+                    <Cartao key={o.id} o={o} etapas={funil.etapas} hoje={hoje} onDrag={setArrastando} onMover={mover} onAbrir={setDetalhe} onArquivar={arquivar} />
                   ))}
                 </div>
               );
@@ -230,14 +247,16 @@ export function Kanban({ funil, funis, inicial, representadas }: {
   );
 }
 
-function Cartao({ o, etapas, onDrag, onMover, onAbrir }: {
-  o: CartaoKanban; etapas: EtapaKanban[]; onDrag: (id: string | null) => void; onMover: (id: string, etapaId: string) => void; onAbrir: (id: string) => void;
+function Cartao({ o, etapas, hoje, onDrag, onMover, onAbrir, onArquivar }: {
+  o: CartaoKanban; etapas: EtapaKanban[]; hoje: string; onDrag: (id: string | null) => void; onMover: (id: string, etapaId: string) => void;
+  onAbrir: (id: string) => void; onArquivar: (id: string) => void;
 }) {
   const feitas = o.acoes.filter((a) => a.status === "concluido").length;
+  const alerta = alertaTarefas(o.acoes, hoje);
   const fimArraste = useRef(0);
   return (
     <article
-      className={`kanban-cartao ${o.resultado ? `resultado-${o.resultado}` : ""}`}
+      className={`kanban-cartao ${o.resultado ? `resultado-${o.resultado}` : ""} ${alerta ? `faixa-${alerta.nivel}` : ""}`}
       draggable
       role="button"
       tabIndex={0}
@@ -261,7 +280,15 @@ function Cartao({ o, etapas, onDrag, onMover, onAbrir }: {
     >
       <div className="cartao-topo">
         <span className={`etiqueta etiqueta-${o.tipo}`}>{ROTULO_TIPO_OPORTUNIDADE[o.tipo]}</span>
-        <span className="dica">{ROTULO_PRIORIDADE[o.prioridade] ?? o.prioridade}</span>
+        <span className="cartao-topo-dir">
+          <span className="dica">{ROTULO_PRIORIDADE[o.prioridade] ?? o.prioridade}</span>
+          {alerta?.nivel === "vermelho" && (
+            <span className="alerta-card com-dica dica-alerta" data-dica={alerta.mensagem} role="img" aria-label={alerta.mensagem} tabIndex={0}
+              onClick={(e) => e.stopPropagation()}>
+              <Icone nome="alerta" tamanho={16} />
+            </span>
+          )}
+        </span>
       </div>
       <strong>{o.titulo}</strong>
       <span className="dica">{o.representada?.nome ?? "Sem representada"}</span>
@@ -285,6 +312,12 @@ function Cartao({ o, etapas, onDrag, onMover, onAbrir }: {
       <select aria-label={`Mover ${o.titulo} para a etapa`} value={o.etapa_id ?? ""} onClick={(e) => e.stopPropagation()} onChange={(e) => onMover(o.id, e.target.value)}>
         {etapas.map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}
       </select>
+      {o.status === "concluido" && (
+        <button type="button" className="btn-suave btn-peq" draggable={false}
+          onClick={(e) => { e.stopPropagation(); onArquivar(o.id); }}>
+          <Icone nome="arquivo" tamanho={16} /> Arquivar
+        </button>
+      )}
     </article>
   );
 }

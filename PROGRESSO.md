@@ -55,6 +55,11 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Card na etapa de fechamento abre popup Ganhou/Perdeu com Notas (resultado, observacoes_resultado, data_conclusao, status concluido)
   - [x] Clique simples abre o detalhe da Fase 4c (arraste não dispara o clique)
   - [ ] Critério verificado (etapas por funil; troca de funil; personalizar; popup no fechamento; clique abre detalhe)
+- [ ] Fase 4d-3 — Alertas nos cards e Arquivo
+  - [x] Faixa no card pelas sub-tarefas: vermelha + ícone com tooltip (tarefa vencida), amarela (vence em até 7 dias), verde (todas em dia), sem faixa (sem tarefas)
+  - [x] Botão "Arquivar" nos cards concluídos (sai do kanban)
+  - [x] /app/oportunidades/arquivo: filtro por funil e "Desarquivar" (volta ao kanban na mesma etapa)
+  - [ ] Critério verificado (faixas vermelha/amarela/verde/sem faixa; tooltip; arquivar; desarquivar na etapa correta)
 - [x] Fase 4 — Oportunidades e desafios por cliente + plano de ação
   - [x] Bloco "Oportunidades e Desafios" na página do cliente (+ Novo, tabela tipo/título/prioridade/status/data/ações)
   - [x] Plano de ação em /app/clientes/:id/oportunidades/:opId (adicionar, concluir, editar, excluir ações)

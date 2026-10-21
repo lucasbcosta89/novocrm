@@ -630,3 +630,13 @@ h1.titulo-icone .icone, h2.titulo-icone .icone, h3.titulo-icone .icone { color: 
 .input-etapa { flex: 1; min-width: 160px; padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--raio-controle); background: var(--surface); color: var(--text); font: inherit; }
 .input-etapa:focus { outline: none; border-color: var(--accent); box-shadow: var(--foco); }
 .etapa-protegida { display: grid; gap: 2px; }
+
+/* Fase 4d-3: faixa de alerta nos cards (sub-tarefas) */
+.kanban-cartao.faixa-vermelho { box-shadow: inset 4px 0 0 var(--danger), var(--sombra-card); }
+.kanban-cartao.faixa-amarelo { box-shadow: inset 4px 0 0 var(--atencao), var(--sombra-card); }
+.kanban-cartao.faixa-verde { box-shadow: inset 4px 0 0 var(--ok), var(--sombra-card); }
+.kanban-cartao[class*="faixa-"] { padding-left: 14px; }
+.cartao-topo-dir { display: inline-flex; align-items: center; gap: 6px; }
+.alerta-card { display: inline-flex; color: var(--danger-texto); cursor: help; }
+.dica-alerta::after { left: auto; right: 0; bottom: auto; top: calc(100% + 6px); transform: none; white-space: pre-line; width: max-content; max-width: 240px; }
+.kanban-cartao > .btn-suave { justify-self: start; margin-top: 2px; }

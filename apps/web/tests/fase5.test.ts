@@ -125,3 +125,17 @@ describe("kanban do funil (fase 4d-2)", () => {
     expect(novaOportunidadeSchema.parse({ titulo: "Op", representada_id: R1, funil_id: R2 }).funil_id).toBe(R2);
   });
 });
+
+describe("alertas dos cards (fase 4d-3)", () => {
+  it("vermelho com tarefa vencida, amarelo vencendo em até 7 dias, verde em dia, sem faixa sem tarefas", async () => {
+    const { alertaTarefas } = await import("@/lib/oportunidades");
+    const hoje = "2026-10-21";
+    const v = alertaTarefas([{ status: "nao_iniciado", descricao: "Ligar", prazo: "2026-10-18" }, { status: "concluido", descricao: "X", prazo: "2026-10-01" }], hoje);
+    expect(v).toEqual({ nivel: "vermelho", mensagem: 'Tarefa "Ligar" vencida em 18/10' });
+    expect(alertaTarefas([{ status: "em_progresso", descricao: "Visita", prazo: "2026-10-26" }], hoje)?.nivel).toBe("amarelo");
+    expect(alertaTarefas([{ status: "em_progresso", descricao: "Visita", prazo: "2026-10-28" }], hoje)?.nivel).toBe("amarelo");
+    expect(alertaTarefas([{ status: "em_progresso", descricao: "Visita", prazo: "2026-10-29" }], hoje)?.nivel).toBe("verde");
+    expect(alertaTarefas([{ status: "concluido", descricao: "Ok", prazo: "2026-10-01" }, { status: "nao_iniciado", descricao: "Sem prazo", prazo: null }], hoje)?.nivel).toBe("verde");
+    expect(alertaTarefas([], hoje)).toBeNull();
+  });
+});

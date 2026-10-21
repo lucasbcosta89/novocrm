@@ -163,7 +163,7 @@ export const oportunidadeSchema = z.object({
   ),
 });
 /** Atualização parcial; etapa_id = mover o card no kanban do funil (Fase 4d-2). */
-export const oportunidadeUpdateSchema = parcial(oportunidadeSchema).extend({ etapa_id: idSchema.optional() });
+export const oportunidadeUpdateSchema = parcial(oportunidadeSchema).extend({ etapa_id: idSchema.optional(), arquivada: z.boolean().optional() });
 
 export const acaoSchema = z.object({
   descricao: z.string().trim().min(2, "Descreva a ação").max(1000),

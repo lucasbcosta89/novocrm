@@ -158,7 +158,8 @@ export async function excluirAcao({ supabase }: Contexto, id: string): Promise<v
 /* ---------- Página global (kanban) ---------- */
 
 export type CartaoKanban = Omit<Oportunidade, "acoes"> & {
-  acoes: { status: string }[];
+  /** sub-tarefas (plano_acao) com o necessário para os alertas do card */
+  acoes: { status: string; descricao?: string; prazo?: string | null }[];
   produtos: { quantidade: number; produto: { sku: string; nome: string } | null }[];
 };
 
@@ -166,7 +167,7 @@ export type CartaoKanban = Omit<Oportunidade, "acoes"> & {
 export async function listarKanban({ supabase }: Contexto, arquivadas = false): Promise<CartaoKanban[]> {
   const { data, error } = await supabase
     .from("oportunidades_desafios")
-    .select(`${CAMPOS}, acoes:plano_acao(status), produtos:oportunidade_produtos(quantidade, produto:produtos(sku, nome))`)
+    .select(`${CAMPOS}, acoes:plano_acao(status, descricao, prazo), produtos:oportunidade_produtos(quantidade, produto:produtos(sku, nome))`)
     .eq("arquivada", arquivadas)
     .order("atualizado_em", { ascending: false })
     .limit(1000)
@@ -205,7 +206,7 @@ export async function criarOportunidadeGlobal(ctx: Contexto, input: unknown): Pr
 
   const { data, error: e2 } = await supabase
     .from("oportunidades_desafios")
-    .select(`${CAMPOS}, acoes:plano_acao(status), produtos:oportunidade_produtos(quantidade, produto:produtos(sku, nome))`)
+    .select(`${CAMPOS}, acoes:plano_acao(status, descricao, prazo), produtos:oportunidade_produtos(quantidade, produto:produtos(sku, nome))`)
     .eq("id", op.id)
     .single<CartaoKanban>();
   if (e2) throw erroBanco(e2);
