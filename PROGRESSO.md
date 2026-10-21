@@ -29,16 +29,16 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Cliente: layout com nome + abas (Início, Visitas, Pedidos, Oportunidades, Representadas)
   - [x] Dashboards: vendas (total e mês), visitas e alertas clicáveis dos próximos 7 dias (tarefas + visitas com data futura)
   - [x] Critério verificado (nome + dashboard; abas mudam URL e persistem; catálogo/WhatsApp na subpágina; alerta leva ao item)
-- [ ] Fase 3d-1 — Representadas: estrutura, cadastro e pontos de faturamento
+- [x] Fase 3d-1 — Representadas: estrutura, cadastro e pontos de faturamento
   - [x] Migration: endereço/contato na representada (UF com check), comissao_padrao removida, pontos_faturamento (RLS), documentos em uploads (tipo documento_representada)
   - [x] /app/representadas: "Adicionar Representada" inline (matriz + documentos), Lista de Representadas (SKUs, editar/excluir), quadros Empresas Representadas e SKUs Cadastrados; botões de relatórios gerais removidos (endpoints mantidos)
   - [x] Início da representada: quadro da empresa (editável, documentos) → vendas → alertas → pontos de faturamento (adicionar/editar/excluir)
   - [ ] Critério verificado (cadastra com endereço e documentos; dashboard; quadro editável; ponto de faturamento)
-- [ ] Fase 3d-2 — Catálogo: 3 botões + NCM
+- [x] Fase 3d-2 — Catálogo: 3 botões + NCM
   - [x] Catálogo: "Gerar Catálogo PDF" (gera e baixa direto), "Gerar Catálogo Web" (copia /c/slug), "Enviar Catálogo por WhatsApp" (nova aba), com ícones; tabela de PDFs gerados removida
   - [x] produtos.ncm (8 dígitos, check no banco) no cadastro, edição e lista
   - [ ] Critério verificado (PDF baixa; Web copia com mensagem; WhatsApp em nova aba; NCM salva)
-- [ ] Fase 3d-3 — Preços editáveis + Pedidos (desconto %, pagamento e prazo)
+- [x] Fase 3d-3 — Preços editáveis + Pedidos (desconto %, pagamento e prazo)
   - [x] pedido_itens.desconto_percentual (descontos antigos convertidos); pedidos com forma_pagamento padronizada (texto antigo → observações), prazo_tipo e prazo_dias; criar_pedido atualizado
   - [x] Tabela de preços editável (Editar → células → Salvar com confirmação "As alterações serão permanentes. Deseja salvar?")
   - [x] Pedido: Desconto (%), Forma de Pagamento, Prazo de Pagamento e Prazo (dias)
