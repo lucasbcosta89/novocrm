@@ -8,6 +8,8 @@ import { obterUso } from "@/server/quota";
 import { listarRepresentadasComSkus } from "@/server/representadas";
 import { criarRepresentadaAction, excluirRepresentadaAction } from "./actions";
 import { CamposEmpresa } from "./campos-empresa";
+import { Avatar } from "@/components/avatar";
+import { Icone } from "@/components/icones";
 
 export default async function RepresentadasPage({ searchParams }: { searchParams: Busca }) {
   const [{ erro, ok }, [representadas, uso]] = await Promise.all([
@@ -19,12 +21,12 @@ export default async function RepresentadasPage({ searchParams }: { searchParams
 
   return (
     <>
-      <h1>Representadas</h1>
+      <h1 className="titulo-icone"><Icone nome="predio" tamanho={24} /> Representadas</h1>
       <Mensagens erro={erro} ok={ok} />
 
       {/* Cadastro inline expansível (não modal) */}
       <details className="card novo-inline" open={representadas.length === 0 || undefined}>
-        <summary className="btn">Adicionar Representada</summary>
+        <summary className="btn"><Icone nome="mais" tamanho={16} /> Adicionar Representada</summary>
         <AvisoLimite uso={uso} recurso="representadas" />
         <form action={criarRepresentadaAction} className="grade-1">
           <CamposEmpresa />
@@ -40,7 +42,7 @@ export default async function RepresentadasPage({ searchParams }: { searchParams
       </details>
 
       <section className="card">
-        <h2>Lista de Representadas</h2>
+        <h2 className="titulo-icone"><Icone nome="predio" tamanho={20} /> Lista de Representadas</h2>
         {representadas.length === 0 ? (
           <div className="vazio">Nenhuma representada cadastrada.</div>
         ) : (
@@ -52,12 +54,12 @@ export default async function RepresentadasPage({ searchParams }: { searchParams
               <tbody>
                 {representadas.map((r) => (
                   <tr key={r.id}>
-                    <td><Link href={`/app/representadas/${r.id}`}>{r.nome}</Link></td>
+                    <td><span className="com-avatar"><Avatar nome={r.nome} /><Link href={`/app/representadas/${r.id}`}>{r.nome}</Link></span></td>
                     <td>{formatarDocumento(r.cnpj)}</td>
-                    <td>{[r.municipio, r.estado].filter(Boolean).join("/") || "—"}</td>
+                    <td>{r.municipio || r.estado ? <span className="com-icone"><Icone nome="mapa" tamanho={16} /> {[r.municipio, r.estado].filter(Boolean).join("/")}</span> : "—"}</td>
                     <td>{r.skus}</td>
                     <td className="acoes-linha">
-                      <Link href={`/app/representadas/${r.id}?editar=1`}>Editar</Link>
+                      <Link className="com-icone" href={`/app/representadas/${r.id}?editar=1`}><Icone nome="lapis" tamanho={16} /> Editar</Link>
                       <form action={excluirRepresentadaAction.bind(null, r.id)}>
                         <BotaoConfirmar texto="Excluir" pergunta={`Excluir “${r.nome}”? Produtos, preços, pontos de faturamento e documentos dela também serão removidos.`} />
                       </form>
@@ -72,11 +74,11 @@ export default async function RepresentadasPage({ searchParams }: { searchParams
 
       <div className="quadros">
         <section className="card quadro">
-          <h2>Empresas Representadas</h2>
+          <h2 className="titulo-icone"><Icone nome="predio" tamanho={20} /> Empresas Representadas</h2>
           <p className="numero-grande">{representadas.length}</p>
         </section>
         <section className="card quadro">
-          <h2>SKUs Cadastrados</h2>
+          <h2 className="titulo-icone"><Icone nome="pacote" tamanho={20} /> SKUs Cadastrados</h2>
           <p className="numero-grande">{skus}</p>
           <p className="dica">Produtos ativos em todas as representadas.</p>
         </section>

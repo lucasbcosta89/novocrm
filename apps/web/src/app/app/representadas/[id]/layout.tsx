@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Abas } from "@/components/abas";
+import { Icone } from "@/components/icones";
 import { carregar } from "@/server/acao";
 import { obterRepresentada } from "@/server/representadas";
 
@@ -10,15 +11,15 @@ export default async function RepresentadaLayout({ children, params }: { childre
   return (
     <>
       <p className="trilha"><Link href="/app/representadas">Representadas</Link> /</p>
-      <h1>{r.nome}</h1>
+      <h1 className="titulo-icone"><Icone nome="predio" tamanho={24} /> {r.nome}</h1>
       <Abas
         base={`/app/representadas/${r.id}`}
         abas={[
-          { href: "", rotulo: "Início" },
-          { href: "catalogo", rotulo: "Catálogo" },
-          { href: "precos", rotulo: "Tabela de preços" },
-          { href: "pedidos", rotulo: "Pedidos" },
-          { href: "oportunidades", rotulo: "Oportunidades" },
+          { href: "", rotulo: "Início", icone: "painel" },
+          { href: "catalogo", rotulo: "Catálogo", icone: "pacote" },
+          { href: "precos", rotulo: "Tabela de preços", icone: "etiqueta" },
+          { href: "pedidos", rotulo: "Pedidos", icone: "carrinho" },
+          { href: "oportunidades", rotulo: "Oportunidades", icone: "documento" },
         ]}
       />
       {children}

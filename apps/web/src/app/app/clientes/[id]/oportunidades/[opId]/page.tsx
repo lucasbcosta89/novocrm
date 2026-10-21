@@ -19,6 +19,7 @@ import {
   excluirOportunidadeAction,
 } from "../../../actions";
 import { CamposOportunidade, OPCOES_STATUS, Selecao } from "../../../campos-oportunidade";
+import { Icone } from "@/components/icones";
 
 function CamposAcao({ a }: { a?: Acao }) {
   return (
@@ -82,7 +83,7 @@ export default async function PlanoAcaoPage({
       </section>
 
       <section className="card">
-        <h2>Plano de ação ({concluidas}/{o.acoes.length} concluídas)</h2>
+        <h2 className="titulo-icone"><Icone nome="alvo" tamanho={20} /> Plano de ação ({concluidas}/{o.acoes.length} concluídas)</h2>
         {o.acoes.length === 0 ? (
           <div className="vazio">Nenhuma ação ainda.</div>
         ) : (
@@ -131,7 +132,7 @@ export default async function PlanoAcaoPage({
           </div>
         )}
 
-        <h3>Adicionar ação</h3>
+        <h3 className="titulo-icone"><Icone nome="mais" tamanho={18} /> Adicionar ação</h3>
         <form action={criarAcaoAction.bind(null, cliente.id, o.id)} className="grade">
           <CamposAcao />
           <div className="acoes"><button className="btn" type="submit">Adicionar</button></div>

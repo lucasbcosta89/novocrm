@@ -6,6 +6,7 @@ import { useState } from "react";
 import { formatarMoeda, formatarPercentual } from "@/lib/formato";
 import type { PrecoTabela } from "@/server/consultas";
 import { salvarPrecosAction } from "../../actions";
+import { Icone } from "@/components/icones";
 
 type Valores = Record<string, { preco: string; desconto_max: string }>;
 
@@ -50,7 +51,7 @@ export function TabelaPrecosEditavel({ representadaId, precos }: { representadaI
   return (
     <>
       <div className="cabecalho">
-        <h2>Tabela de preços</h2>
+        <h2 className="titulo-icone"><Icone nome="etiqueta" tamanho={20} /> Tabela de preços</h2>
         <span className="acoes-linha">
           {editando ? (
             <>

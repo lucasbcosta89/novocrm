@@ -9,6 +9,7 @@ import { listarOportunidades } from "@/server/oportunidades";
 import { obterUso } from "@/server/quota";
 import { atualizarOportunidadeAction, criarOportunidadeAction, excluirOportunidadeAction } from "../../actions";
 import { CamposOportunidade, OPCOES_STATUS, Selecao } from "../../campos-oportunidade";
+import { Icone } from "@/components/icones";
 
 /** Oportunidades e desafios do cliente (Fase 4) — plano de ação em /oportunidades/[opId]. */
 export default async function ClienteOportunidades({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Busca }) {
@@ -19,7 +20,7 @@ export default async function ClienteOportunidades({ params, searchParams }: { p
     <>
       <Mensagens erro={erro} ok={ok} />
       <section className="card">
-        <h2>Oportunidades e desafios</h2>
+        <h2 className="titulo-icone"><Icone nome="documento" tamanho={20} /> Oportunidades e desafios</h2>
         <AvisoLimite uso={uso} recurso="oportunidades" />
         <details className="novo">
           <summary className="btn btn-peq" title="Novo item">+ Novo</summary>

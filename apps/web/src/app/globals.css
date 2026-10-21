@@ -454,3 +454,33 @@ section[id] { scroll-margin-top: 16px; }
 .tabela tr.alterada td { background: color-mix(in srgb, var(--accent) 10%, transparent); }
 /* Fase 3d-3: alerta de desconto acima do máximo */
 .txt-alerta { color: var(--atencao-texto); font-weight: 700; }
+
+/* ===== Design etapa 3: ícones e apoio visual nas telas ===== */
+h1.titulo-icone .icone, h2.titulo-icone .icone, h3.titulo-icone .icone { color: var(--accent-fg); flex: none; }
+h1.titulo-icone { flex-wrap: wrap; }
+.com-icone { display: inline-flex; align-items: center; gap: 6px; }
+.com-icone .icone { flex: none; }
+dt.com-icone { display: flex; }
+.com-avatar { display: inline-flex; align-items: center; gap: 10px; }
+.aviso.com-icone { display: flex; }
+.item-icone { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.item-icone > .icone { color: var(--muted); }
+.lista li.item-atrasado { border-color: var(--danger); background: var(--danger-suave); }
+.txt-perigo { color: var(--danger-texto); display: inline-flex; }
+.alertas li a { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.alertas li a .icone { color: var(--muted); }
+.marcador-tempo { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--accent-suave); color: var(--accent-fg); flex: none; }
+.etiqueta-icone::before { display: none; }
+.etiqueta-icone { gap: 4px; }
+.tom-ok { background: var(--ok-suave); color: var(--ok-texto); }
+.tom-perigo { background: var(--danger-suave); color: var(--danger-texto); }
+.tom-neutro { background: var(--bg); color: var(--muted); }
+.kanban-coluna h3 { align-items: center; }
+.kanban-coluna h3 .icone { color: var(--muted); }
+.coluna-atrasado h3 .icone { color: var(--danger-texto); }
+.coluna-concluido h3 .icone { color: var(--ok-texto); }
+.coluna-em_progresso h3 .icone { color: var(--accent-fg); }
+.kanban-cartao .com-avatar { gap: 6px; }
+.btn-whatsapp svg { margin-right: 0; }
+summary { cursor: pointer; }
+summary > .icone { vertical-align: -3px; margin-right: 4px; color: var(--muted); }

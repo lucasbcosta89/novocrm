@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Abas } from "@/components/abas";
+import { Avatar } from "@/components/avatar";
 import { carregar } from "@/server/acao";
 import { obterCliente } from "@/server/clientes";
 
@@ -10,15 +11,15 @@ export default async function ClienteLayout({ children, params }: { children: Re
   return (
     <>
       <p className="trilha"><Link href="/app/clientes">Clientes</Link> /</p>
-      <h1>{c.nome}</h1>
+      <h1 className="titulo-icone"><Avatar nome={c.nome} /> {c.nome}</h1>
       <Abas
         base={`/app/clientes/${c.id}`}
         abas={[
-          { href: "", rotulo: "Início" },
-          { href: "visitas", rotulo: "Visitas" },
-          { href: "pedidos", rotulo: "Pedidos" },
-          { href: "oportunidades", rotulo: "Oportunidades" },
-          { href: "representadas", rotulo: "Representadas" },
+          { href: "", rotulo: "Início", icone: "painel" },
+          { href: "visitas", rotulo: "Visitas", icone: "calendario" },
+          { href: "pedidos", rotulo: "Pedidos", icone: "carrinho" },
+          { href: "oportunidades", rotulo: "Oportunidades", icone: "documento" },
+          { href: "representadas", rotulo: "Representadas", icone: "predio" },
         ]}
       />
       {children}

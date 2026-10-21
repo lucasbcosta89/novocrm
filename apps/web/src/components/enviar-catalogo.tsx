@@ -56,7 +56,7 @@ export function EnviarCatalogo({
         </label>
       )}
       <button type="button" className={compacto ? "btn-link" : icone ? "btn btn-whatsapp" : "btn btn-peq"} onClick={enviar} disabled={enviando}>
-        {icone && <IconeWhatsApp />} {enviando ? "Abrindo…" : rotulo}
+        <IconeWhatsApp /> {enviando ? "Abrindo…" : rotulo}
       </button>
       {msg?.erro && <small className="erro-campo">{msg.erro}</small>}
       {msg?.ok && <small className="txt-ok">{msg.ok}</small>}

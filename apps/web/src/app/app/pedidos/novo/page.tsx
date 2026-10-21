@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Mensagens } from "@/components/form";
+import { Icone } from "@/components/icones";
 import { formatarMoeda, formatarPercentual } from "@/lib/formato";
 import { carregar } from "@/server/acao";
 import { listarClientes } from "@/server/clientes";
@@ -31,11 +32,11 @@ export default async function NovoPedidoPage({
 
   return (
     <>
-      <h1>Novo pedido</h1>
+      <h1 className="titulo-icone"><Icone nome="carrinho" tamanho={24} /> Novo pedido</h1>
       <Mensagens erro={erro} />
 
       <section className="card">
-        <h2>1. Representada e cliente</h2>
+        <h2 className="titulo-icone"><Icone nome="pessoas" tamanho={20} /> 1. Representada e cliente</h2>
         <form method="get" className="grade">
           <label className="campo">
             <span>Representada *</span>
@@ -57,7 +58,7 @@ export default async function NovoPedidoPage({
 
       {rep && cli && (
         <section className="card">
-          <h2>2. Itens — {rep.nome}</h2>
+          <h2 className="titulo-icone"><Icone nome="pacote" tamanho={20} /> 2. Itens — {rep.nome}</h2>
           {ativos.length === 0 ? (
             <p className="vazio">
               Nenhum produto ativo. Cadastre no <Link href={`/app/representadas/${rep.id}/catalogo`}>catálogo da representada</Link>.
@@ -95,7 +96,7 @@ export default async function NovoPedidoPage({
               <div className="grade" style={{ marginTop: 12 }}>
                 <PagamentoPedido />
                 <div className="acoes acoes-linha">
-                  <button className="btn" type="submit" name="confirmar" value="1">Confirmar pedido</button>
+                  <button className="btn" type="submit" name="confirmar" value="1"><Icone nome="check" tamanho={16} /> Confirmar pedido</button>
                   <button className="btn-link" type="submit" name="confirmar" value="0">Salvar rascunho</button>
                 </div>
               </div>

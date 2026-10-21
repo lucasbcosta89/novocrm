@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Mensagens, type Busca } from "@/components/form";
+import { Icone } from "@/components/icones";
+import { StatusPedido } from "@/components/status";
 import { formatarData, formatarDataHora, formatarMoeda, formatarPercentual } from "@/lib/formato";
-import { ROTULO_FORMA_PAGAMENTO, ROTULO_STATUS_COMISSAO, ROTULO_STATUS_PEDIDO } from "@/lib/rotulos";
+import { ROTULO_FORMA_PAGAMENTO, ROTULO_STATUS_COMISSAO } from "@/lib/rotulos";
 import { carregar } from "@/server/acao";
 import { obterPedido } from "@/server/pedidos";
 import { cancelarPedidoAction, confirmarPedidoAction, excluirPedidoAction } from "../actions";
@@ -19,9 +21,9 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
         {p.cliente && <><Link href={`/app/clientes/${p.cliente.id}/pedidos`}>{p.cliente.nome}</Link> / </>}
         {p.representada && <Link href={`/app/representadas/${p.representada.id}/pedidos`}>{p.representada.nome}</Link>}
       </p>
-      <h1>Pedido {p.numero} <span className={`etiqueta etiqueta-${p.status}`}>{ROTULO_STATUS_PEDIDO[p.status] ?? p.status}</span></h1>
+      <h1 className="titulo-icone"><Icone nome="carrinho" tamanho={24} /> Pedido {p.numero} <StatusPedido status={p.status} /></h1>
       <Mensagens erro={erro} ok={ok} />
-      {descontoAcima && <p className="aviso aviso-alerta" role="alert">⚠ Desconto Acima do Máximo Permitido</p>}
+      {descontoAcima && <p className="aviso aviso-alerta com-icone" role="alert"><Icone nome="alerta" /> Desconto Acima do Máximo Permitido</p>}
 
       <section className="card">
         <dl className="resumo">
@@ -45,31 +47,31 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
         <div className="acoes-linha">
           {p.status !== "cancelado" && (
             <form action={confirmacaoPedidoAction.bind(null, p.id)}>
-              <button className="btn-link" type="submit">Enviar confirmação via WhatsApp</button>
+              <button className="btn btn-whatsapp btn-peq" type="submit"><Icone nome="whatsapp" tamanho={16} /> Enviar confirmação via WhatsApp</button>
             </form>
           )}
           {p.status === "rascunho" && (
             <>
               <form action={confirmarPedidoAction.bind(null, p.id)}>
-                <button className="btn" type="submit">Confirmar pedido</button>
+                <button className="btn" type="submit"><Icone nome="check" tamanho={16} /> Confirmar pedido</button>
               </form>
               {p.cliente && (
                 <form action={excluirPedidoAction.bind(null, p.id, p.cliente.id)}>
-                  <button className="btn-link perigo" type="submit">Excluir rascunho</button>
+                  <button className="btn-link perigo" type="submit"><Icone nome="lixeira" tamanho={16} /> Excluir rascunho</button>
                 </form>
               )}
             </>
           )}
           {p.status !== "rascunho" && p.status !== "cancelado" && (
             <form action={cancelarPedidoAction.bind(null, p.id)}>
-              <button className="btn-perigo btn-peq" type="submit">Cancelar pedido</button>
+              <button className="btn-perigo btn-peq" type="submit"><Icone nome="cancelado" tamanho={16} /> Cancelar pedido</button>
             </form>
           )}
         </div>
       </section>
 
       <section className="card">
-        <h2>Itens</h2>
+        <h2 className="titulo-icone"><Icone nome="pacote" tamanho={20} /> Itens</h2>
         <div className="tabela-wrap">
           <table className="tabela">
             <thead>
@@ -84,7 +86,7 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
                   <td>{formatarMoeda(i.preco_unitario)}</td>
                   <td>
                     {formatarPercentual(i.desconto_percentual)}
-                    {i.desconto_acima_max && <span className="txt-alerta" title="Desconto Acima do Máximo Permitido"> ⚠</span>}
+                    {i.desconto_acima_max && <span className="txt-alerta com-dica" data-dica="Desconto Acima do Máximo Permitido" role="img" aria-label="Desconto Acima do Máximo Permitido"> <Icone nome="alerta" tamanho={14} /></span>}
                   </td>
                   <td>{formatarMoeda(i.subtotal)}</td>
                   <td>{formatarPercentual(i.comissao_percentual)}</td>

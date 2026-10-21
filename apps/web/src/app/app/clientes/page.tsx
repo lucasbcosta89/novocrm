@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { Avatar } from "@/components/avatar";
 import { Mensagens, type Busca } from "@/components/form";
+import { Icone } from "@/components/icones";
 import { formatarDocumento } from "@/lib/formato";
 import { AvisoLimite } from "@/components/limite";
 import { carregar } from "@/server/acao";
@@ -17,7 +19,7 @@ export default async function ClientesPage({ searchParams }: { searchParams: Bus
 
   return (
     <>
-      <h1>Clientes</h1>
+      <h1 className="titulo-icone"><Icone nome="pessoas" tamanho={24} /> Clientes</h1>
       <Mensagens erro={erro} ok={ok} />
 
       {clientes.length === 0 ? (
@@ -31,9 +33,9 @@ export default async function ClientesPage({ searchParams }: { searchParams: Bus
             <tbody>
               {clientes.map((c) => (
                 <tr key={c.id}>
-                  <td><Link href={`/app/clientes/${c.id}`}>{c.nome}</Link></td>
+                  <td><span className="com-avatar"><Avatar nome={c.nome} /><Link href={`/app/clientes/${c.id}`}>{c.nome}</Link></span></td>
                   <td>{formatarDocumento(c.documento)}</td>
-                  <td>{[c.cidade, c.uf].filter(Boolean).join("/") || "—"}</td>
+                  <td>{c.cidade || c.uf ? <span className="com-icone"><Icone nome="mapa" tamanho={16} /> {[c.cidade, c.uf].filter(Boolean).join("/")}</span> : "—"}</td>
                   <td>{c.representadas.map((r) => r.nome).join(", ") || "—"}</td>
                 </tr>
               ))}
@@ -43,7 +45,7 @@ export default async function ClientesPage({ searchParams }: { searchParams: Bus
       )}
 
       <section className="card">
-        <h2>Novo cliente</h2>
+        <h2 className="titulo-icone"><Icone nome="mais" tamanho={20} /> Novo cliente</h2>
         <AvisoLimite uso={uso} recurso="clientes" />
         <form action={criarClienteAction} className="grade">
           <CamposCliente />

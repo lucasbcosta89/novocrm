@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ROTULO_PRIORIDADE, ROTULO_RESULTADO, ROTULO_STATUS_OPORTUNIDADE, ROTULO_TIPO_OPORTUNIDADE } from "@/lib/rotulos";
 import { carregar } from "@/server/acao";
 import { oportunidadesDaRepresentada } from "@/server/dashboards";
+import { Icone } from "@/components/icones";
 
 /** Oportunidades/desafios vinculados à representada (edição no kanban ou na página do cliente). */
 export default async function RepresentadaOportunidades({ params }: { params: Promise<{ id: string }> }) {
@@ -10,7 +11,7 @@ export default async function RepresentadaOportunidades({ params }: { params: Pr
   return (
     <section className="card">
       <div className="cabecalho">
-        <h2>Oportunidades</h2>
+        <h2 className="titulo-icone"><Icone nome="documento" tamanho={20} /> Oportunidades</h2>
         <Link className="btn btn-peq" href="/app/oportunidades">Abrir kanban</Link>
       </div>
       {itens.length === 0 ? (

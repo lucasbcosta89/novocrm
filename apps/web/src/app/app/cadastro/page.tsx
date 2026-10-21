@@ -5,6 +5,7 @@ import { carregar } from "@/server/acao";
 import { obterAssinatura } from "@/server/assinaturas";
 import { cadastroCompleto, obterPerfil } from "@/server/perfil";
 import { concluirCadastroAction } from "../perfil/actions";
+import { Icone } from "@/components/icones";
 
 /** Cadastro exibido somente após o checkout concluído (assinatura ativa). */
 export default async function CadastroPage() {
@@ -12,7 +13,7 @@ export default async function CadastroPage() {
   if (assinatura?.status !== "active") {
     return (
       <>
-        <h1>Cadastro</h1>
+        <h1 className="titulo-icone"><Icone nome="identidade" tamanho={24} /> Cadastro</h1>
         <div className="vazio">O cadastro é liberado após a confirmação da assinatura. <Link href="/app/configurar">Ver planos</Link></div>
       </>
     );
@@ -21,7 +22,7 @@ export default async function CadastroPage() {
 
   return (
     <>
-      <h1>Concluir cadastro</h1>
+      <h1 className="titulo-icone"><Icone nome="identidade" tamanho={24} /> Concluir cadastro</h1>
       <p className="dica">Assinatura confirmada. Precisamos destes dados para emissão de documentos e cumprimento da LGPD.</p>
       <section className="card">
         <FormDadosUsuario acao={concluirCadastroAction} modo="cadastro" iniciais={{ ...perfil, cpf_oculto: null, cnpj_oculto: null }} />

@@ -8,6 +8,7 @@ import { conciliarAssinatura, obterAssinatura } from "@/server/assinaturas";
 import { obterContexto } from "@/server/contexto";
 import { verificarPagamentoAction } from "./actions";
 import { obterUso } from "@/server/quota";
+import { Icone } from "@/components/icones";
 
 const ROTULO_ASSINATURA: Record<string, string> = {
   pending: "Aguardando pagamento",
@@ -41,7 +42,7 @@ export default async function ConfigurarPage({
 
   return (
     <>
-      <h1>Configurar</h1>
+      <h1 className="titulo-icone"><Icone nome="engrenagem" tamanho={24} /> Configurar</h1>
       <Mensagens erro={erro} ok={ok} />
       {retorno === "mp" && (
         <p className="aviso aviso-ok">
@@ -56,7 +57,7 @@ export default async function ConfigurarPage({
       )}
 
       <section className="card">
-        <h2>Plano atual: {uso.plano.nome}</h2>
+        <h2 className="titulo-icone"><Icone nome="cartao" tamanho={20} /> Plano atual: {uso.plano.nome}</h2>
         <dl className="resumo">
           <div><dt>Mensalidade</dt><dd>{formatarMoeda(uso.plano.preco)}</dd></div>
           <div><dt>Assinatura</dt><dd>{assinatura ? ROTULO_ASSINATURA[assinatura.status] ?? assinatura.status : "Sem assinatura"}</dd></div>
@@ -71,7 +72,7 @@ export default async function ConfigurarPage({
       </section>
 
       <section className="card">
-        <h2>Uso e limites</h2>
+        <h2 className="titulo-icone"><Icone nome="grafico" tamanho={20} /> Uso e limites</h2>
         <div className="tabela-wrap">
           <table className="tabela">
             <thead>
@@ -100,7 +101,7 @@ export default async function ConfigurarPage({
       </section>
 
       <section className="card" id="planos">
-        <h2>Planos</h2>
+        <h2 className="titulo-icone"><Icone nome="pacote" tamanho={20} /> Planos</h2>
         <OpcoesPlano atual={uso.plano.codigo} />
       </section>
     </>

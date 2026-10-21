@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { EnviarCatalogo } from "@/components/enviar-catalogo";
 import { Mensagens, type Busca } from "@/components/form";
+import { Icone } from "@/components/icones";
 import { carregar } from "@/server/acao";
 import { obterCliente } from "@/server/clientes";
 import { listarRepresentadas } from "@/server/representadas";
@@ -17,14 +18,14 @@ export default async function ClienteRepresentadas({ params, searchParams }: { p
     <>
       <Mensagens erro={erro} ok={ok} />
       <section className="card">
-        <h2>Representadas</h2>
+        <h2 className="titulo-icone"><Icone nome="predio" tamanho={20} /> Representadas</h2>
         {todas.length === 0 ? (
           <p className="vazio">Cadastre uma <Link href="/app/representadas">representada</Link> primeiro.</p>
         ) : (
           <ul className="lista">
             {c.representadas.map((r) => (
               <li key={r.id}>
-                <Link href={`/app/representadas/${r.id}`}>{r.nome}</Link>
+                <span className="com-icone"><Icone nome="predio" tamanho={16} /><Link href={`/app/representadas/${r.id}`}>{r.nome}</Link></span>
                 <span className="acoes-linha">
                   <EnviarCatalogo representadaId={r.id} clienteId={c.id} rotulo="Enviar catálogo" compacto />
                   <form action={desvincularAction.bind(null, c.id, r.id)}>
@@ -37,7 +38,7 @@ export default async function ClienteRepresentadas({ params, searchParams }: { p
               <li key={r.id} className="inativo">
                 <span>{r.nome}</span>
                 <form action={vincularUmaAction.bind(null, c.id, r.id)}>
-                  <button className="btn btn-peq" type="submit">Vincular</button>
+                  <button className="btn btn-peq" type="submit"><Icone nome="link" tamanho={16} /> Vincular</button>
                 </form>
               </li>
             ))}

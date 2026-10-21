@@ -9,6 +9,7 @@ import { listarProdutos } from "@/server/produtos";
 import { obterUso } from "@/server/quota";
 import { obterRepresentada } from "@/server/representadas";
 import { atualizarProdutoAction, criarProdutoAction, excluirProdutoAction, imagemProdutoAction } from "../../actions";
+import { Icone } from "@/components/icones";
 
 /** Catálogo: produtos + Gerar Catálogo (PDF) e Enviar por WhatsApp (Fase 7c). */
 export default async function RepresentadaCatalogo({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Busca }) {
@@ -39,7 +40,7 @@ export default async function RepresentadaCatalogo({ params, searchParams }: { p
       </section>
 
       <section className="card">
-        <h2>Produtos</h2>
+        <h2 className="titulo-icone"><Icone nome="pacote" tamanho={20} /> Produtos</h2>
         {produtos.length === 0 ? (
           <div className="vazio">Nenhum produto.</div>
         ) : (
@@ -103,7 +104,7 @@ export default async function RepresentadaCatalogo({ params, searchParams }: { p
           </div>
         )}
 
-        <h3>Novo produto</h3>
+        <h3 className="titulo-icone"><Icone nome="mais" tamanho={18} /> Novo produto</h3>
         <form action={criarProdutoAction.bind(null, r.id)} className="grade">
           <Campo label="SKU *" name="sku" required />
           <Campo label="Nome *" name="nome" required minLength={2} />

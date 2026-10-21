@@ -7,6 +7,7 @@ import { ROTULO_PRIORIDADE, ROTULO_RESULTADO, ROTULO_STATUS_OPORTUNIDADE, ROTULO
 import { PRIORIDADES, STATUS_OPORTUNIDADE, TIPOS_OPORTUNIDADE } from "@/lib/validacao";
 import type { Acao, CartaoKanban, OportunidadeDetalhe } from "@/server/oportunidades";
 import { api, BuscaProdutos, ConfirmarModal, Modal, ResultadoModal, SelectEstado } from "./comum";
+import { Icone } from "@/components/icones";
 
 type Rep = { id: string; nome: string };
 type Status = (typeof STATUS_OPORTUNIDADE)[number];
@@ -174,7 +175,7 @@ export function DetalheOportunidade({
         </details>
 
         {/* produtos */}
-        <h3>Produtos</h3>
+        <h3 className="titulo-icone"><Icone nome="pacote" tamanho={18} /> Produtos</h3>
         {o.produtos.length > 0 ? (
           <div className="tabela-wrap">
             <table className="tabela">
@@ -215,7 +216,7 @@ export function DetalheOportunidade({
 
         {/* ações */}
         <div className="cabecalho">
-          <h3>Ações necessárias</h3>
+          <h3 className="titulo-icone"><Icone nome="alvo" tamanho={18} /> Ações necessárias</h3>
           <button className="btn btn-peq" type="button"
             onClick={() => setAcoes([...acoes, { id: null, descricao: "", status: "nao_iniciado", prazo: "", data_entrega: "", observacoes: "" }])}>
             Adicionar Ação Necessária

@@ -17,6 +17,7 @@ import {
   excluirRepresentadaAction,
 } from "../actions";
 import { CamposEmpresa, enderecoTexto } from "../campos-empresa";
+import { Icone } from "@/components/icones";
 
 /** Início da representada: quadro da empresa → vendas → alertas → pontos de faturamento. */
 export default async function RepresentadaInicio({
@@ -37,18 +38,18 @@ export default async function RepresentadaInicio({
 
       <section className="card" id="empresa">
         <div className="cabecalho">
-          <h2>{r.nome}</h2>
+          <h2 className="titulo-icone"><Icone nome="predio" tamanho={20} /> {r.nome}</h2>
         </div>
         <dl className="resumo">
-          <div><dt>CNPJ</dt><dd>{formatarDocumento(r.cnpj)}</dd></div>
-          <div><dt>Endereço</dt><dd>{enderecoTexto(r)}</dd></div>
-          <div><dt>E-mail</dt><dd>{r.email ?? "—"}</dd></div>
-          <div><dt>Telefone</dt><dd>{r.telefone ?? "—"}</dd></div>
+          <div><dt className="com-icone"><Icone nome="identidade" tamanho={16} /> CNPJ</dt><dd>{formatarDocumento(r.cnpj)}</dd></div>
+          <div><dt className="com-icone"><Icone nome="mapa" tamanho={16} /> Endereço</dt><dd>{enderecoTexto(r)}</dd></div>
+          <div><dt className="com-icone"><Icone nome="email" tamanho={16} /> E-mail</dt><dd>{r.email ?? "—"}</dd></div>
+          <div><dt className="com-icone"><Icone nome="telefone" tamanho={16} /> Telefone</dt><dd>{r.telefone ?? "—"}</dd></div>
         </dl>
         <div>
           {r.catalogo_publico ? (
             <>
-              <a className="btn btn-peq" href={`/c/${r.slug}`} target="_blank" rel="noopener noreferrer">Abrir catálogo digital</a>
+              <a className="btn btn-peq" href={`/c/${r.slug}`} target="_blank" rel="noopener noreferrer"><Icone nome="link" tamanho={16} /> Abrir catálogo digital</a>
               <small className="dica"> /c/{r.slug} · {r.criar_pedido_publico ? "aceitando pedidos" : "somente vitrine"}</small>
             </>
           ) : (
@@ -56,7 +57,7 @@ export default async function RepresentadaInicio({
           )}
         </div>
         <details id="documentos">
-          <summary>Documentos anexados ({documentos.length})</summary>
+          <summary><Icone nome="clipe" tamanho={16} /> Documentos anexados ({documentos.length})</summary>
           {documentos.length === 0 ? (
             <p className="dica">Nenhum documento.</p>
           ) : (
@@ -90,7 +91,7 @@ export default async function RepresentadaInicio({
           </form>
         </details>
         <details open={editar === "1" || undefined}>
-          <summary>Editar dados</summary>
+          <summary><Icone nome="lapis" tamanho={16} /> Editar dados</summary>
           <form action={atualizarRepresentadaAction.bind(null, r.id)} className="grade-1">
             <CamposEmpresa e={r} />
             <label className="check"><input type="checkbox" name="catalogo_publico" defaultChecked={r.catalogo_publico} /> Catálogo digital público</label>
@@ -107,13 +108,13 @@ export default async function RepresentadaInicio({
 
       <section className="card" id="pontos">
         <details className="novo-inline">
-          <summary className="btn btn-peq">Adicionar Ponto de Faturamento</summary>
+          <summary className="btn btn-peq"><Icone nome="mais" tamanho={16} /> Adicionar Ponto de Faturamento</summary>
           <form action={criarPontoAction.bind(null, r.id)} className="grade-1">
             <CamposEmpresa tituloEndereco="Endereço" />
             <div className="acoes-linha"><button className="btn" type="submit">Cadastrar ponto</button></div>
           </form>
         </details>
-        <h2>Pontos de Faturamento</h2>
+        <h2 className="titulo-icone"><Icone nome="mapa" tamanho={20} /> Pontos de Faturamento</h2>
         {pontos.length === 0 ? (
           <div className="vazio">Nenhum ponto de faturamento.</div>
         ) : (

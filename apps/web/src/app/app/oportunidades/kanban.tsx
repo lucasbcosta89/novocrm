@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { Avatar } from "@/components/avatar";
+import { Icone, type NomeIcone } from "@/components/icones";
 import { useMemo, useRef, useState } from "react";
 import { formatarMoeda } from "@/lib/formato";
 import { resumoOportunidades } from "@/lib/oportunidades";
@@ -24,6 +26,9 @@ const valorGrupo = (o: CartaoKanban, g: Agrupar) =>
   : g === "estado" ? (o.estado ?? "Sem estado")
   : g === "prioridade" ? (ROTULO_PRIORIDADE[o.prioridade] ?? o.prioridade)
   : "";
+
+/** Ícone do cabeçalho de cada coluna do kanban. */
+const ICONE_COLUNA: Record<string, NomeIcone> = { nao_iniciado: "circulo", em_progresso: "progresso", atrasado: "alerta", cancelado: "cancelado", concluido: "concluido" };
 
 export function Kanban({ inicial, representadas }: { inicial: CartaoKanban[]; representadas: Rep[] }) {
   const [itens, setItens] = useState(inicial);
@@ -107,7 +112,7 @@ export function Kanban({ inicial, representadas }: { inicial: CartaoKanban[]; re
           )}
           <button className="btn" type="button" onClick={() => setNovo(true)} disabled={representadas.length === 0}
             title={representadas.length === 0 ? "Cadastre uma representada primeiro" : undefined}>
-            Nova Oportunidade
+            <Icone nome="mais" tamanho={16} /> Nova Oportunidade
           </button>
         </div>
       </div>
@@ -136,7 +141,7 @@ export function Kanban({ inicial, representadas }: { inicial: CartaoKanban[]; re
                     if (id) void mover(id, status);
                   }}
                 >
-                  <h3>{ROTULO_STATUS_OPORTUNIDADE[status]} <span className="dica">{coluna.length}</span></h3>
+                  <h3><span className="com-icone"><Icone nome={ICONE_COLUNA[status] ?? "circulo"} tamanho={16} /> {ROTULO_STATUS_OPORTUNIDADE[status]}</span> <span className="dica">{coluna.length}</span></h3>
                   {coluna.map((o) => (
                     <Cartao key={o.id} o={o} onDrag={setArrastando} onMover={mover} onAbrir={setDetalhe} />
                   ))}
@@ -148,7 +153,7 @@ export function Kanban({ inicial, representadas }: { inicial: CartaoKanban[]; re
       ))}
 
       <section className="card kanban-log">
-        <h2>Log de oportunidades</h2>
+        <h2 className="titulo-icone"><Icone nome="grafico" tamanho={20} /> Log de oportunidades</h2>
         <dl className="resumo">
           <div><dt>Total inseridas</dt><dd>{resumo.total}</dd></div>
           <div><dt>Ganhas</dt><dd className="txt-ok">{resumo.ganhas}</dd></div>
@@ -231,8 +236,8 @@ function Cartao({ o, onDrag, onMover, onAbrir }: {
       <strong>{o.titulo}</strong>
       <span className="dica">{o.representada?.nome ?? "Sem representada"}</span>
       {o.cliente && (
-        <span className="dica">
-          Cliente: <Link href={`/app/clientes/${o.cliente.id}`} onClick={(e) => e.stopPropagation()}>{o.cliente.nome}</Link>
+        <span className="dica com-avatar">
+          <Avatar nome={o.cliente.nome} pequeno /> <Link href={`/app/clientes/${o.cliente.id}`} onClick={(e) => e.stopPropagation()}>{o.cliente.nome}</Link>
         </span>
       )}
       {(o.cidade || o.estado) && <span className="dica">{[o.cidade, o.estado].filter(Boolean).join("/")}</span>}
@@ -313,7 +318,7 @@ function NovaOportunidade({ representadas, onFechar, onCriada }: { representadas
           </label>
         </div>
 
-        <h3>Produtos</h3>
+        <h3 className="titulo-icone"><Icone nome="pacote" tamanho={18} /> Produtos</h3>
         <BuscaProdutos
           representadaId={repId}
           escolhidos={selecionados.map((s) => s.produto.id)}
@@ -341,7 +346,7 @@ function NovaOportunidade({ representadas, onFechar, onCriada }: { representadas
         )}
 
         <div className="cabecalho">
-          <h3>Próximos passos</h3>
+          <h3 className="titulo-icone"><Icone nome="alvo" tamanho={18} /> Próximos passos</h3>
           <button className="btn btn-peq" type="button"
             onClick={() => setAcoes([...acoes, { descricao: "", status: "nao_iniciado", prazo: "", data_entrega: "", observacoes: "" }])}>
             Adicionar Ação Necessária

@@ -1,4 +1,5 @@
 import { Campo, Mensagens, type Busca } from "@/components/form";
+import { Icone, type NomeIcone } from "@/components/icones";
 import { formatarDataHora, paraInputDataHora } from "@/lib/formato";
 import { TIPOS_VISITA } from "@/lib/validacao";
 import { carregar } from "@/server/acao";
@@ -7,6 +8,7 @@ import { listarVisitas, type Visita } from "@/server/visitas";
 import { atualizarVisitaAction, criarVisitaAction, excluirVisitaAction } from "../../actions";
 
 const ROTULO_TIPO: Record<string, string> = { presencial: "Presencial", telefone: "Telefone", whatsapp: "WhatsApp", video: "Vídeo" };
+const ICONE_TIPO: Record<string, NomeIcone> = { presencial: "mapa", telefone: "telefone", whatsapp: "whatsapp", video: "monitor" };
 
 function CamposVisita({ v, representadas }: { v?: Visita; representadas: { id: string; nome: string }[] }) {
   return (
@@ -43,7 +45,7 @@ export default async function ClienteVisitas({ params, searchParams }: { params:
     <>
       <Mensagens erro={erro} ok={ok} />
       <section className="card">
-        <h2>Registrar visita</h2>
+        <h2 className="titulo-icone"><Icone nome="mais" tamanho={20} /> Registrar visita</h2>
         <p className="dica">Visita com data futura aparece como agendada nos alertas da página inicial.</p>
         <form action={criarVisitaAction.bind(null, c.id)} className="grade">
           <CamposVisita representadas={c.representadas} />
@@ -52,14 +54,15 @@ export default async function ClienteVisitas({ params, searchParams }: { params:
       </section>
 
       <section className="card">
-        <h2>Histórico</h2>
+        <h2 className="titulo-icone"><Icone nome="historico" tamanho={20} /> Histórico</h2>
         {visitas.length === 0 ? (
           <div className="vazio">Nenhuma visita registrada.</div>
         ) : (
           <ul className="historico">
             {visitas.map((v) => (
               <li key={v.id} id={`visita-${v.id}`}>
-                <div>
+                <div className="com-icone">
+                  <span className="marcador-tempo"><Icone nome={ICONE_TIPO[v.tipo] ?? "calendario"} tamanho={16} /></span>
                   <strong>{formatarDataHora(v.data)}</strong> · {ROTULO_TIPO[v.tipo] ?? v.tipo}
                   {v.representada && <> · {v.representada.nome}</>}
                   {paraInputDataHora(v.data) > agora && <> · <span className="etiqueta etiqueta-a_receber">Agendada</span></>}
@@ -73,7 +76,7 @@ export default async function ClienteVisitas({ params, searchParams }: { params:
                     <div className="acoes"><button className="btn" type="submit">Salvar</button></div>
                   </form>
                   <form action={excluirVisitaAction.bind(null, c.id, v.id)}>
-                    <button className="btn-perigo btn-peq" type="submit">Excluir visita</button>
+                    <button className="btn-perigo btn-peq" type="submit"><Icone nome="lixeira" tamanho={16} /> Excluir visita</button>
                   </form>
                 </details>
               </li>

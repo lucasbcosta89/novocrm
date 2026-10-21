@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Mensagens } from "@/components/form";
+import { Icone } from "@/components/icones";
+import { Status } from "@/components/status";
 import { formatarData, formatarMoeda, formatarPercentual } from "@/lib/formato";
 import { ROTULO_STATUS_COMISSAO } from "@/lib/rotulos";
 import { comParam } from "@/lib/url";
@@ -7,6 +9,8 @@ import { carregar } from "@/server/acao";
 import { listarComissoes, resumirComissoes, type TotaisComissao } from "@/server/comissoes";
 import { listarRepresentadas } from "@/server/representadas";
 import { marcarComissaoAction } from "./actions";
+
+const ICONE_STATUS: Record<string, "relogio" | "concluido" | "alerta" | "cancelado"> = { a_receber: "relogio", recebida: "concluido", atrasada: "alerta", cancelada: "cancelado" };
 
 const somar = (lista: { totais: TotaisComissao }[]): TotaisComissao =>
   lista.reduce(
@@ -20,10 +24,10 @@ const somar = (lista: { totais: TotaisComissao }[]): TotaisComissao =>
 
 function Totais({ t }: { t: TotaisComissao }) {
   return (
-    <dl className="resumo">
-      <div><dt>A receber</dt><dd>{formatarMoeda(t.a_receber)}</dd></div>
-      <div><dt>Recebida</dt><dd className="txt-ok">{formatarMoeda(t.recebida)}</dd></div>
-      <div><dt>Atrasada</dt><dd className={t.atrasada > 0 ? "atrasada" : undefined}>{formatarMoeda(t.atrasada)}</dd></div>
+    <dl className="kpis">
+      <div className="kpi"><span className="kpi-icone tom-azul"><Icone nome="relogio" tamanho={20} /></span><div><dt>A receber</dt><dd>{formatarMoeda(t.a_receber)}</dd></div></div>
+      <div className="kpi"><span className="kpi-icone tom-ok"><Icone nome="concluido" tamanho={20} /></span><div><dt>Recebida</dt><dd className="txt-ok">{formatarMoeda(t.recebida)}</dd></div></div>
+      <div className="kpi"><span className={`kpi-icone ${t.atrasada > 0 ? "tom-perigo" : "tom-neutro"}`}><Icone nome="alerta" tamanho={20} /></span><div><dt>Atrasada</dt><dd className={t.atrasada > 0 ? "atrasada" : undefined}>{formatarMoeda(t.atrasada)}</dd></div></div>
     </dl>
   );
 }
@@ -47,17 +51,17 @@ export default async function ComissoesPage({
 
   return (
     <>
-      <h1>Comissões</h1>
+      <h1 className="titulo-icone"><Icone nome="cifrao" tamanho={24} /> Comissões</h1>
       <Mensagens erro={erro} ok={ok} />
       {atrasadas.length > 0 && (
-        <p className="aviso aviso-erro alerta">
-          ⚠ {atrasadas.length} comissão(ões) atrasada(s), total {formatarMoeda(atrasadas.reduce((s, c) => s + Number(c.valor), 0))}.{" "}
+        <p className="aviso aviso-erro alerta com-icone">
+          <Icone nome="alerta" /> {atrasadas.length} comissão(ões) atrasada(s), total {formatarMoeda(atrasadas.reduce((s, c) => s + Number(c.valor), 0))}.{" "}
           <Link href="/app/comissoes?status=atrasada">Ver atrasadas</Link>
         </p>
       )}
 
       <section className="card">
-        <h2>Resumo geral</h2>
+        <h2 className="titulo-icone"><Icone nome="grafico" tamanho={20} /> Resumo geral</h2>
         <Totais t={somar(resumo)} />
       </section>
 
@@ -65,7 +69,7 @@ export default async function ComissoesPage({
         <div className="cards-resumo">
           {resumo.map((r) => (
             <section key={r.representada.id} className={`card ${r.totais.atrasada > 0 ? "card-alerta" : ""}`}>
-              <h3><Link href={`/app/comissoes?representada=${r.representada.id}`}>{r.representada.nome}</Link></h3>
+              <h3 className="titulo-icone"><Icone nome="predio" tamanho={18} /><Link href={`/app/comissoes?representada=${r.representada.id}`}>{r.representada.nome}</Link></h3>
               <Totais t={r.totais} />
             </section>
           ))}
@@ -73,7 +77,7 @@ export default async function ComissoesPage({
       )}
 
       <section className="card">
-        <h2>Lançamentos</h2>
+        <h2 className="titulo-icone"><Icone nome="recibo" tamanho={20} /> Lançamentos</h2>
         <form method="get" className="inline">
           <label className="campo">
             <span>Representada</span>
@@ -89,7 +93,7 @@ export default async function ComissoesPage({
               {Object.entries(ROTULO_STATUS_COMISSAO).map(([v, r]) => <option key={v} value={v}>{r}</option>)}
             </select>
           </label>
-          <button className="btn btn-peq" type="submit">Filtrar</button>
+          <button className="btn-secundario btn-peq" type="submit"><Icone nome="filtro" tamanho={16} /> Filtrar</button>
         </form>
 
         {lista.length === 0 ? (
@@ -110,11 +114,11 @@ export default async function ComissoesPage({
                     <td>{formatarPercentual(c.percentual)}</td>
                     <td><strong>{formatarMoeda(c.valor)}</strong></td>
                     <td>{c.data_prevista ? formatarData(c.data_prevista) : "—"}</td>
-                    <td><span className={`etiqueta etiqueta-${c.status}`}>{ROTULO_STATUS_COMISSAO[c.status]}</span></td>
+                    <td><Status classe={c.status} icone={ICONE_STATUS[c.status] ?? "circulo"} rotulo={ROTULO_STATUS_COMISSAO[c.status] ?? c.status} /></td>
                     <td className="acoes-linha">
                       {c.status !== "recebida" && c.status !== "cancelada" && (
                         <form action={marcarComissaoAction.bind(null, c.id, "recebida", voltar)}>
-                          <button className="btn btn-peq" type="submit">Marcar recebida</button>
+                          <button className="btn btn-peq" type="submit"><Icone nome="check" tamanho={16} /> Marcar recebida</button>
                         </form>
                       )}
                       {c.status === "a_receber" && (

@@ -6,6 +6,7 @@ import { obterPerfil } from "@/server/perfil";
 import { obterUso } from "@/server/quota";
 import { BotaoUpgrade } from "@/components/upgrade";
 import { revelarDocumentosAction, salvarPerfilAction } from "./actions";
+import { Icone } from "@/components/icones";
 
 export default async function PerfilPage({ searchParams }: { searchParams: Busca }) {
   const [{ ok, erro }, [perfil, uso]] = await Promise.all([searchParams, carregar((ctx) => Promise.all([obterPerfil(ctx), obterUso(ctx)]))]);
@@ -15,11 +16,11 @@ export default async function PerfilPage({ searchParams }: { searchParams: Busca
 
   return (
     <>
-      <h1>Meus dados</h1>
+      <h1 className="titulo-icone"><Icone nome="usuario" tamanho={24} /> Meus dados</h1>
       <Mensagens erro={erro} ok={ok} />
 
       <section className="card">
-        <h2>Conta</h2>
+        <h2 className="titulo-icone"><Icone nome="usuario" tamanho={20} /> Conta</h2>
         <dl className="resumo">
           <div><dt>E-mail</dt><dd>{perfil.email}</dd></div>
         </dl>
@@ -27,12 +28,12 @@ export default async function PerfilPage({ searchParams }: { searchParams: Busca
       </section>
 
       <section className="card">
-        <h2>Dados cadastrais</h2>
+        <h2 className="titulo-icone"><Icone nome="identidade" tamanho={20} /> Dados cadastrais</h2>
         <FormDadosUsuario acao={salvarPerfilAction} modo="edicao" iniciais={perfil} revelar={revelarDocumentosAction} />
       </section>
 
       <section className="card">
-        <h2>Relatórios e catálogos</h2>
+        <h2 className="titulo-icone"><Icone nome="documento" tamanho={20} /> Relatórios e catálogos</h2>
         <p><strong>{pdf.usado}{pdf.limite != null ? ` de ${pdf.limite}` : ""} PDFs este mês</strong>{pdf.limite == null && " (ilimitado no seu plano)"}</p>
         {pdf.limite != null && (
           <div className="barra barra-larga" aria-label={`${pct}% do limite`}><span style={{ width: `${pct}%` }} className={pct >= 80 ? "cheia" : undefined} /></div>
@@ -47,7 +48,7 @@ export default async function PerfilPage({ searchParams }: { searchParams: Busca
       </section>
 
       <section className="card">
-        <h2>Consentimentos</h2>
+        <h2 className="titulo-icone"><Icone nome="escudo" tamanho={20} /> Consentimentos</h2>
         <dl className="resumo">
           <div><dt>Consentimento LGPD</dt><dd>{aceite(perfil.consentimento_lgpd_aceito_em, perfil.consentimento_lgpd_versao)}</dd></div>
           <div><dt>Política de Privacidade</dt><dd>{aceite(perfil.politica_privacidade_aceita_em, perfil.politica_privacidade_versao)}</dd></div>
