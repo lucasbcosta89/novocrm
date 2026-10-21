@@ -105,7 +105,7 @@ export async function gerarPdf(
 ): Promise<Uint8Array> {
   const geradoEm = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", dateStyle: "short", timeStyle: "short" }).format(new Date());
   const doc: TDocumentDefinitions = {
-    info: { title: opts.titulo, creator: "CRM Multimarcas" },
+    info: { title: opts.titulo, creator: "Plurima" },
     pageSize: "A4",
     pageOrientation: opts.paisagem ? "landscape" : "portrait",
     pageMargins: [36, 36, 36, 62],

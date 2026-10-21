@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Markdown } from "@/components/markdown";
 import { POLITICA_MD, VERSAO_POLITICA } from "@/conteudo/politica-privacidade.gerado";
 
-export const metadata: Metadata = { title: "Política de Privacidade — CRM Multimarcas" };
+export const metadata: Metadata = { title: "Política de Privacidade — Plurima" };
 
 /** Rota pública: conteúdo de docs/politica-privacidade.md (versionado). */
 export default function PoliticaPage() {

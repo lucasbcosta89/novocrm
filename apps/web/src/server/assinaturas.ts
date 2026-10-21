@@ -60,7 +60,7 @@ export async function iniciarAssinatura(ctx: Contexto, planoInput: unknown, orig
   const pre = await mp<MpPreapproval>("/preapproval", {
     method: "POST",
     body: {
-      reason: `CRM Multimarcas — Plano ${plano.nome}`,
+      reason: `Plurima — Plano ${plano.nome}`,
       external_reference: externa,
       payer_email: MP_TEST_PAYER_EMAIL ?? usuario.email,
       auto_recurring: { frequency: 1, frequency_type: "months", transaction_amount: Number(plano.preco), currency_id: "BRL" },

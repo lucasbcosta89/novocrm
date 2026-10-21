@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { COOKIE_SIDEBAR, SECOES } from "@/lib/navegacao";
+import { BotaoTema } from "./botao-tema";
 import { Icone, type NomeIcone } from "./icones";
 import { LogoSimbolo } from "./logo";
 
@@ -63,16 +64,16 @@ export function Shell({ nome, colapsadaInicial, children }: { nome: string | nul
         <button type="button" className="botao-icone" aria-label="Abrir menu" aria-expanded={gavetaAberta} aria-controls="sidebar" onClick={() => setGavetaAberta(true)}>
           <Icone nome="menu" tamanho={22} />
         </button>
-        <Link href="/app" className="barra-topo-marca"><LogoSimbolo tamanho={28} /> CRM Multimarcas</Link>
+        <Link href="/app" className="barra-topo-marca"><LogoSimbolo tamanho={28} /> Plurima</Link>
       </header>
 
       <div className="overlay" aria-hidden="true" onClick={() => setGavetaAberta(false)} />
 
       <aside className="sidebar" id="sidebar" aria-label="Menu principal">
         <div className="sidebar-topo">
-          <Link href="/app" className="marca" aria-label="CRM Multimarcas — Dashboard">
+          <Link href="/app" className="marca" aria-label="Plurima — Dashboard">
             <LogoSimbolo />
-            <span className="rotulo">CRM Multimarcas</span>
+            <span className="rotulo">Plurima</span>
           </Link>
           <button
             type="button"
@@ -96,6 +97,7 @@ export function Shell({ nome, colapsadaInicial, children }: { nome: string | nul
         <div className="sidebar-rodape">
           {link(CONFIGURAR)}
           {link(MEUS_DADOS)}
+          <BotaoTema />
           <form action="/auth/signout" method="post">
             <button type="submit" className="nav-item" aria-label="Sair" data-dica="Sair">
               <Icone nome="sair" />
