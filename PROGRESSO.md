@@ -43,23 +43,23 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Tabela de preços editável (Editar → células → Salvar com confirmação "As alterações serão permanentes. Deseja salvar?")
   - [x] Pedido: Desconto (%), Forma de Pagamento, Prazo de Pagamento e Prazo (dias); desconto acima do máximo gera alerta (não bloqueia)
   - [x] Critério verificado (preços só gravam após confirmar; 10% em R$ 100 = R$ 90; pagamento e prazo salvam)
-- [ ] Fase 4d-1 — Funis: estrutura, migração e página inicial
+- [x] Fase 4d-1 — Funis: estrutura, migração e página inicial
   - [x] Migration: funis, funil_etapas (RLS), oportunidades_desafios.funil_id/etapa_id/arquivada; criar_funil; gatilho garante funil/etapa em toda oportunidade
   - [x] Dados migrados: 1 funil "Vendas" por usuário com oportunidades (concluídas → Fechamento; demais → 1ª etapa)
   - [x] Sidebar com ícone de funil; /app/oportunidades com abas Início, Funis (kanban) e Arquivo
   - [x] Início: primeiro uso com mensagem + "Criar Funil de Vendas" (popup: nome + modelo); tabela de funis com oportunidades em aberto; log filtrável por funil
-  - [ ] Critério verificado (3 modelos com etapas corretas; contagem em aberto; filtro do log; oportunidades antigas no funil Vendas; ícone de funil)
-- [ ] Fase 4d-2 — Kanban do funil e personalização de etapas
+  - [x] Critério verificado (3 modelos com etapas corretas; contagem em aberto; filtro do log; oportunidades antigas no funil Vendas; ícone de funil)
+- [x] Fase 4d-2 — Kanban do funil e personalização de etapas
   - [x] /app/oportunidades/funis/[id]: colunas = etapas do funil; arrastar (ou seletor do card) grava etapa_id; filtros e agrupamento mantidos
   - [x] Topo: dropdown para trocar de funil + "Personalizar Funil" (adicionar, renomear, excluir etapa; fechamento protegido; cards da etapa excluída vão para a 1ª etapa)
   - [x] Card na etapa de fechamento abre popup Ganhou/Perdeu com Notas (resultado, observacoes_resultado, data_conclusao, status concluido)
   - [x] Clique simples abre o detalhe da Fase 4c (arraste não dispara o clique)
-  - [ ] Critério verificado (etapas por funil; troca de funil; personalizar; popup no fechamento; clique abre detalhe)
-- [ ] Fase 4d-3 — Alertas nos cards e Arquivo
+  - [x] Critério verificado (etapas por funil; troca de funil; personalizar; popup no fechamento; clique abre detalhe)
+- [x] Fase 4d-3 — Alertas nos cards e Arquivo
   - [x] Faixa no card pelas sub-tarefas: vermelha + ícone com tooltip (tarefa vencida), amarela (vence em até 7 dias), verde (todas em dia), sem faixa (sem tarefas)
   - [x] Botão "Arquivar" nos cards concluídos (sai do kanban)
   - [x] /app/oportunidades/arquivo: filtro por funil e "Desarquivar" (volta ao kanban na mesma etapa)
-  - [ ] Critério verificado (faixas vermelha/amarela/verde/sem faixa; tooltip; arquivar; desarquivar na etapa correta)
+  - [x] Critério verificado (faixas vermelha/amarela/verde/sem faixa; tooltip; arquivar; desarquivar na etapa correta)
 - [x] Fase 4 — Oportunidades e desafios por cliente + plano de ação
   - [x] Bloco "Oportunidades e Desafios" na página do cliente (+ Novo, tabela tipo/título/prioridade/status/data/ações)
   - [x] Plano de ação em /app/clientes/:id/oportunidades/:opId (adicionar, concluir, editar, excluir ações)
