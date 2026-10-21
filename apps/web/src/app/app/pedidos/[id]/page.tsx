@@ -11,6 +11,7 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
   const [{ id }, { erro, ok }] = await Promise.all([params, searchParams]);
   const p = await carregar((ctx) => obterPedido(ctx, id));
   const comissao = p.comissao[0];
+  const descontoAcima = p.itens.some((i) => i.desconto_acima_max);
 
   return (
     <>
@@ -20,6 +21,7 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
       </p>
       <h1>Pedido {p.numero} <span className={`etiqueta etiqueta-${p.status}`}>{ROTULO_STATUS_PEDIDO[p.status] ?? p.status}</span></h1>
       <Mensagens erro={erro} ok={ok} />
+      {descontoAcima && <p className="aviso aviso-alerta" role="alert">⚠ Desconto Acima do Máximo Permitido</p>}
 
       <section className="card">
         <dl className="resumo">
@@ -80,7 +82,10 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
                   <td>{i.descricao}</td>
                   <td>{String(i.quantidade).replace(".", ",")}</td>
                   <td>{formatarMoeda(i.preco_unitario)}</td>
-                  <td>{formatarPercentual(i.desconto_percentual)}</td>
+                  <td>
+                    {formatarPercentual(i.desconto_percentual)}
+                    {i.desconto_acima_max && <span className="txt-alerta" title="Desconto Acima do Máximo Permitido"> ⚠</span>}
+                  </td>
                   <td>{formatarMoeda(i.subtotal)}</td>
                   <td>{formatarPercentual(i.comissao_percentual)}</td>
                   <td>{p.status === "rascunho" ? <span className="dica">ao confirmar</span> : formatarMoeda(i.comissao_valor)}</td>

@@ -9,6 +9,7 @@ export type PedidoItem = {
   quantidade: number;
   preco_unitario: number;
   desconto_percentual: number;
+  desconto_acima_max: boolean;
   subtotal: number;
   comissao_percentual: number;
   comissao_valor: number;
@@ -35,7 +36,7 @@ export type Pedido = {
 
 const CAMPOS = `id, numero, data, status, valor_total, comissao_total, forma_pagamento, prazo_tipo, prazo_dias, origem, observacoes,
   cliente:clientes(id, nome), representada:representadas(id, nome),
-  itens:pedido_itens(id, produto_id, descricao, quantidade, preco_unitario, desconto_percentual, subtotal, comissao_percentual, comissao_valor, produto:produtos(sku)),
+  itens:pedido_itens(id, produto_id, descricao, quantidade, preco_unitario, desconto_percentual, desconto_acima_max, subtotal, comissao_percentual, comissao_valor, produto:produtos(sku)),
   comissao:comissoes(id, status, valor, percentual, data_prevista)`;
 
 export async function obterPedido({ supabase }: Contexto, id: string): Promise<Pedido> {

@@ -248,3 +248,6 @@ a.btn { text-decoration: none; display: inline-block; }
 .planilha td { padding: 4px 6px; }
 .planilha input { min-width: 90px; }
 .tabela tr.alterada td { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+/* Fase 3d-3: alerta de desconto acima do máximo */
+.aviso-alerta { color: #a16207; border-color: #f59e0b; background: #fffbeb; font-weight: 600; }
+.txt-alerta { color: #d97706; font-weight: 700; }

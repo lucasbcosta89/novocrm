@@ -85,7 +85,7 @@ export default async function NovoPedidoPage({
                           <td>{formatarPercentual(p.comissao)}</td>
                           <td>{formatarPercentual(especifico?.desconto_max ?? p.desconto_max)}</td>
                           <td><input className="input-num" name={`qtd_${p.id}`} type="number" min="0" step="any" defaultValue="0" /></td>
-                          <td><input className="input-num" name={`desc_${p.id}`} type="number" min="0" max={especifico?.desconto_max ?? p.desconto_max} step="0.01" defaultValue="0" aria-label={`Desconto em % de ${p.nome}`} /></td>
+                          <td><input className="input-num" name={`desc_${p.id}`} type="number" min="0" max="100" step="0.01" defaultValue="0" aria-label={`Desconto em % de ${p.nome}`} /></td>
                         </tr>
                       );
                     })}
