@@ -64,7 +64,7 @@ export function BuscaProdutos({ representadaId, escolhidos, onAdicionar }: { rep
           {resultados.map((p) => (
             <li key={p.id}>
               <span><code>{p.sku}</code> {p.nome} · {formatarMoeda(p.preco)}</span>
-              <button className="btn btn-peq" type="button" onClick={() => { onAdicionar(p); setBusca(""); }}>Adicionar</button>
+              <button className="btn-suave btn-peq" type="button" onClick={() => { onAdicionar(p); setBusca(""); }}>Adicionar</button>
             </li>
           ))}
         </ul>

@@ -9,11 +9,22 @@ import { concluirTarefaAction, followUpAction } from "./whatsapp-actions";
 export default async function Dashboard({ searchParams }: { searchParams: Busca }) {
   const [{ erro, ok }, tarefas] = await Promise.all([searchParams, carregar(listarTarefasPendentes)]);
 
-  const hoje = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }); // AAAA-MM-DD
+  const agora = new Date();
+  const hoje = agora.toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }); // AAAA-MM-DD
+  const dataExtenso = agora.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "long", day: "numeric", month: "long" })
+    .replace(/^./, (c) => c.toUpperCase());
 
   return (
     <>
-      <h1 className="titulo-icone"><Icone nome="painel" tamanho={24} /> Dashboard</h1>
+      <div className="cabecalho-pagina">
+        <div>
+          <h1>Dashboard</h1>
+          <p className="subtitulo">
+            {dataExtenso} · {tarefas.length === 0 ? "nenhuma tarefa pendente" : `${tarefas.length} ${tarefas.length === 1 ? "tarefa pendente" : "tarefas pendentes"}`}
+          </p>
+        </div>
+        <Link className="btn" href="/app/pedidos/novo"><Icone nome="mais" tamanho={16} /> Novo pedido</Link>
+      </div>
       <Mensagens erro={erro} ok={ok} />
 
       <section className="card">
@@ -28,13 +39,17 @@ export default async function Dashboard({ searchParams }: { searchParams: Busca 
               return (
               <li key={t.id} className={atrasada ? "item-atrasado" : undefined}>
                 <span className="item-icone">
-                  {atrasada ? (
-                    <span className="txt-perigo com-dica" data-dica="Atrasada" aria-label="Atrasada" role="img"><Icone nome="alerta" /></span>
-                  ) : (
-                    <Icone nome={t.tipo === "follow_up_whatsapp" ? "whatsapp" : "relogio"} />
-                  )}
-                  {t.cliente ? <Link href={`/app/clientes/${t.cliente.id}`}>{t.titulo}</Link> : t.titulo}
-                  {t.data && <span className="dica"> · {formatarData(`${t.data}T12:00:00Z`)}</span>}
+                  <span className={`circulo-icone ${atrasada ? "tom-perigo" : "tom-azul"}`}>
+                    <Icone nome={atrasada ? "alerta" : t.tipo === "follow_up_whatsapp" ? "whatsapp" : "relogio"} tamanho={16} />
+                  </span>
+                  <span className="item-titulo">
+                    {t.cliente ? <Link href={`/app/clientes/${t.cliente.id}`}>{t.titulo}</Link> : <span>{t.titulo}</span>}
+                    {t.data && (
+                      <span className={atrasada ? "item-sub atrasada" : "item-sub"}>
+                        {atrasada ? "Atrasada · " : ""}{formatarData(`${t.data}T12:00:00Z`)}
+                      </span>
+                    )}
+                  </span>
                 </span>
                 <span className="acoes-linha">
                   {t.tipo === "follow_up_whatsapp" && (

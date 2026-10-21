@@ -484,3 +484,128 @@ dt.com-icone { display: flex; }
 .btn-whatsapp svg { margin-right: 0; }
 summary { cursor: pointer; }
 summary > .icone { vertical-align: -3px; margin-right: 4px; color: var(--muted); }
+
+/* ===== Design etapa 4: suavização da área de conteúdo =====
+   Menos bordas e mais respiro; dois pesos de fonte (400/500); status em tons claros;
+   um único botão azul cheio por tela. Estas regras sobrepõem as anteriores. */
+:root {
+  --borda-suave: rgba(17, 24, 39, 0.07);
+  --sombra-card: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.03);
+  --raio-card: 16px;
+  --raio-controle: 10px;
+  --whatsapp-suave: rgba(37, 211, 102, 0.14);
+  --whatsapp-suave-texto: #0B6B33;
+}
+:root[data-tema="escuro"] { --borda-suave: rgba(255, 255, 255, 0.08); --sombra-card: none; --whatsapp-suave: rgba(37, 211, 102, 0.16); --whatsapp-suave-texto: #4ADE80; }
+@media (prefers-color-scheme: dark) {
+  :root[data-tema="sistema"] { --borda-suave: rgba(255, 255, 255, 0.08); --sombra-card: none; --whatsapp-suave: rgba(37, 211, 102, 0.16); --whatsapp-suave-texto: #4ADE80; }
+}
+
+/* tipografia: hierarquia por tamanho e cor, não por peso */
+.conteudo { font-size: .95rem; }
+.conteudo h1 { font-size: 1.6rem; font-weight: 500; letter-spacing: -0.01em; margin: 0 0 4px; }
+.conteudo h2, .card h2 { font-size: 1.05rem; font-weight: 500; }
+.conteudo h3, .card h3 { font-size: .98rem; font-weight: 500; }
+.conteudo strong, .conteudo b { font-weight: 500; }
+h1.titulo-icone .icone, h2.titulo-icone .icone, h3.titulo-icone .icone { color: var(--muted); }
+.subtitulo { margin: 0; color: var(--muted); font-size: .9rem; }
+.trilha { font-size: .85rem; }
+
+/* cabeçalho de página: título + contexto à esquerda, ação principal à direita */
+.cabecalho-pagina { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+
+/* cards: borda quase invisível, cantos 16px, mais respiro */
+.card { border-color: var(--borda-suave); border-radius: var(--raio-card); box-shadow: var(--sombra-card); padding: 24px; gap: 16px; }
+.card-alerta { border-color: color-mix(in srgb, var(--danger) 30%, transparent); }
+
+/* indicadores: sem borda, fundo um tom abaixo do card, número em destaque */
+.kpi { border: 0; background: var(--bg); border-radius: 14px; padding: 16px; }
+.kpi-icone { width: 36px; height: 36px; border-radius: 10px; }
+.kpi dd { font-size: 1.35rem; font-weight: 500; }
+.resumo dd { font-weight: 500; }
+.numero-grande { font-weight: 500; }
+
+/* tabelas em contêiner arredondado: cabeçalho tingido, linhas altas, só divisores finos */
+.tabela-wrap { border: 1px solid var(--borda-suave); border-radius: 14px; overflow: auto; background: var(--surface); }
+.tabela { border: 0; border-radius: 0; border-collapse: separate; border-spacing: 0; }
+.tabela th { font-weight: 500; font-size: .78rem; color: var(--muted); background: var(--bg); padding: 11px 16px; border-bottom: 1px solid var(--borda-suave); white-space: nowrap; }
+.tabela td { padding: 13px 16px; border-bottom: 1px solid var(--borda-suave); vertical-align: middle; }
+.tabela tbody tr:last-child td { border-bottom: 0; }
+.tabela tbody tr:hover td { background: color-mix(in srgb, var(--accent-suave) 45%, transparent); }
+.tabela tfoot th { background: var(--bg); border-top: 1px solid var(--borda-suave); border-bottom: 0; font-weight: 500; }
+.tabela td.num, .tabela th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.planilha td { padding: 6px 10px; }
+
+/* status: pílulas claras com ponto, peso médio */
+.etiqueta { font-weight: 500; font-size: .75rem; padding: 3px 10px; }
+
+/* avisos: fundo claro, sem moldura forte, ícone em círculo */
+.aviso { border: 0; border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-weight: 400; }
+.aviso.alerta, .aviso-alerta { font-weight: 500; }
+.circulo-icone { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; flex: none; }
+.aviso .circulo-icone { width: 28px; height: 28px; background: var(--surface); }
+
+/* botões: um azul cheio por tela; o resto suave ou só texto */
+.btn, .btn-secundario, .btn-perigo, .btn-suave { border-radius: var(--raio-controle); font-weight: 500; }
+.btn-suave {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 14px; border: 0;
+  border-radius: var(--raio-controle); background: var(--accent-suave); color: var(--accent-fg);
+  font: inherit; font-size: .95rem; font-weight: 500; line-height: 1.2; cursor: pointer; text-decoration: none;
+  transition: background-color 120ms ease;
+}
+.btn-suave:hover { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.btn-suave:active { background: color-mix(in srgb, var(--accent) 26%, transparent); }
+.btn-suave:disabled { opacity: .5; cursor: not-allowed; }
+.btn-suave.btn-peq { padding: 5px 10px; font-size: .85rem; }
+.btn-whatsapp, .btn.btn-whatsapp { background: var(--whatsapp-suave); color: var(--whatsapp-suave-texto); }
+.btn-whatsapp:hover, .btn.btn-whatsapp:hover { background: color-mix(in srgb, var(--whatsapp) 24%, transparent); }
+.btn-whatsapp:active, .btn.btn-whatsapp:active { background: color-mix(in srgb, var(--whatsapp) 32%, transparent); }
+.btn-whatsapp:disabled:hover { background: var(--whatsapp-suave); }
+.btn-perigo { border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
+.btn-link, .btn-fantasma { border-radius: var(--raio-controle); }
+
+/* campos: 40px de altura, cantos 10px */
+.campo input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), .campo select, .auth input { min-height: 40px; border-radius: var(--raio-controle); }
+.campo textarea { border-radius: var(--raio-controle); }
+.campo { gap: 6px; }
+
+/* listas: um contêiner com linhas separadas por divisor (em vez de caixas soltas) */
+.lista { gap: 0; border: 1px solid var(--borda-suave); border-radius: 14px; overflow: hidden; background: var(--surface); }
+.lista li { border: 0; border-radius: 0; border-bottom: 1px solid var(--borda-suave); padding: 12px 16px; }
+.lista li:last-child { border-bottom: 0; }
+.lista li:hover { background: color-mix(in srgb, var(--accent-suave) 40%, transparent); }
+.lista li.inativo { border-style: solid; border-color: var(--borda-suave); }
+.lista-compacta li { padding: 8px 14px; }
+.lista li.item-atrasado { background: transparent; border-color: var(--borda-suave); }
+.item-titulo { display: grid; gap: 2px; min-width: 0; }
+.item-sub { font-size: .8rem; color: var(--muted); }
+.item-sub.atrasada { color: var(--danger-texto); font-weight: 400; }
+
+/* linha do tempo: blocos claros, marcador redondo */
+.historico { gap: 10px; }
+.historico li { border-left: 0; border-radius: 12px; background: var(--bg); padding: 12px 14px; }
+
+/* estado vazio: bloco claro em vez de tracejado */
+.vazio { border: 0; background: var(--bg); border-radius: 14px; padding: 28px; }
+
+/* abas: sublinhado discreto */
+.abas { border-bottom-color: var(--borda-suave); gap: 2px; }
+.aba { border-radius: 8px 8px 0 0; }
+
+/* kanban: colunas no tom de fundo, cards brancos */
+.kanban-coluna { background: var(--bg); border: 0; border-radius: 14px; }
+.kanban-coluna h3 { font-weight: 500; }
+.coluna-atrasado h3, .coluna-concluido h3 { color: var(--text); }
+.kanban-cartao { border-color: var(--borda-suave); border-radius: 12px; box-shadow: var(--sombra-card); }
+.kanban-cartao:hover { border-color: var(--border); }
+.progresso { height: 4px; border-radius: 999px; background: var(--border); overflow: hidden; margin-top: 4px; }
+.progresso span { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
+
+.barra { border-radius: 999px; }
+.secao-form { border-color: var(--borda-suave); border-radius: 12px; }
+.modal { border-color: var(--borda-suave); border-radius: var(--raio-card); }
+.plano { border-color: var(--borda-suave); border-radius: 14px; }
+
+/* links: cor de acento sem sublinhado; sublinha só no hover/foco */
+.conteudo a:not(.btn):not(.aba):not(.nav-item):not(.btn-suave):not(.btn-secundario) { text-decoration: none; }
+.conteudo a:not(.btn):not(.aba):not(.nav-item):not(.btn-suave):not(.btn-secundario):hover { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }

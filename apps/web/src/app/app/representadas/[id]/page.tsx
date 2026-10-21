@@ -49,7 +49,7 @@ export default async function RepresentadaInicio({
         <div>
           {r.catalogo_publico ? (
             <>
-              <a className="btn btn-peq" href={`/c/${r.slug}`} target="_blank" rel="noopener noreferrer"><Icone nome="link" tamanho={16} /> Abrir catálogo digital</a>
+              <a className="btn-suave btn-peq" href={`/c/${r.slug}`} target="_blank" rel="noopener noreferrer"><Icone nome="link" tamanho={16} /> Abrir catálogo digital</a>
               <small className="dica"> /c/{r.slug} · {r.criar_pedido_publico ? "aceitando pedidos" : "somente vitrine"}</small>
             </>
           ) : (
@@ -87,7 +87,7 @@ export default async function RepresentadaInicio({
               <span>Adicionar documentos</span>
               <input type="file" name="documentos" multiple required accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt" />
             </label>
-            <button className="btn btn-peq" type="submit">Enviar</button>
+            <button className="btn-suave btn-peq" type="submit">Enviar</button>
           </form>
         </details>
         <details open={editar === "1" || undefined}>

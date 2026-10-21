@@ -23,7 +23,7 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
       </p>
       <h1 className="titulo-icone"><Icone nome="carrinho" tamanho={24} /> Pedido {p.numero} <StatusPedido status={p.status} /></h1>
       <Mensagens erro={erro} ok={ok} />
-      {descontoAcima && <p className="aviso aviso-alerta com-icone" role="alert"><Icone nome="alerta" /> Desconto Acima do Máximo Permitido</p>}
+      {descontoAcima && <p className="aviso aviso-alerta" role="alert"><span className="circulo-icone"><Icone nome="alerta" tamanho={16} /></span>Desconto Acima do Máximo Permitido</p>}
 
       <section className="card">
         <dl className="resumo">

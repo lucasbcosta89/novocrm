@@ -12,7 +12,7 @@ export default async function RepresentadaOportunidades({ params }: { params: Pr
     <section className="card">
       <div className="cabecalho">
         <h2 className="titulo-icone"><Icone nome="documento" tamanho={20} /> Oportunidades</h2>
-        <Link className="btn btn-peq" href="/app/oportunidades">Abrir kanban</Link>
+        <Link className="btn-suave btn-peq" href="/app/oportunidades">Abrir kanban</Link>
       </div>
       {itens.length === 0 ? (
         <div className="vazio">Nenhuma oportunidade vinculada a esta representada.</div>

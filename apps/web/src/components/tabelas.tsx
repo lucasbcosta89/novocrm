@@ -12,7 +12,7 @@ export function TabelaPedidos({ pedidos, coluna }: { pedidos: PedidoResumo[]; co
         <thead>
           <tr>
             <th>Nº</th><th>Data</th><th>{coluna === "cliente" ? "Cliente" : "Representada"}</th>
-            <th>Status</th><th>Valor</th><th>Comissão</th>
+            <th>Status</th><th className="num">Valor</th><th className="num">Comissão</th>
           </tr>
         </thead>
         <tbody>
@@ -24,8 +24,8 @@ export function TabelaPedidos({ pedidos, coluna }: { pedidos: PedidoResumo[]; co
                 <td>{formatarData(p.data)}</td>
                 <td>{rel ? <Link href={`/app/${coluna === "cliente" ? "clientes" : "representadas"}/${rel.id}`}>{rel.nome}</Link> : "—"}</td>
                 <td><StatusPedido status={p.status} /></td>
-                <td>{formatarMoeda(p.valor_total)}</td>
-                <td>{formatarMoeda(p.comissao_total)}</td>
+                <td className="num">{formatarMoeda(p.valor_total)}</td>
+                <td className="num">{formatarMoeda(p.comissao_total)}</td>
               </tr>
             );
           })}

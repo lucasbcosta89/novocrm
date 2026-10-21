@@ -243,6 +243,9 @@ function Cartao({ o, onDrag, onMover, onAbrir }: {
       {(o.cidade || o.estado) && <span className="dica">{[o.cidade, o.estado].filter(Boolean).join("/")}</span>}
       {o.valor_estimado != null && <span className="dica">{formatarMoeda(Number(o.valor_estimado))}</span>}
       <span className="dica">{o.produtos.length} produto(s) · ações {feitas}/{o.acoes.length}</span>
+      {o.acoes.length > 0 && (
+        <span className="progresso" aria-hidden="true"><span style={{ width: `${Math.round((feitas / o.acoes.length) * 100)}%` }} /></span>
+      )}
       {o.resultado && (
         <span className={`etiqueta ${o.resultado === "ganhou" ? "etiqueta-recebida" : "etiqueta-atrasada"}`} title={o.observacoes_resultado ?? undefined}>
           {ROTULO_RESULTADO[o.resultado]}

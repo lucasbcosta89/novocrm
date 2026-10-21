@@ -54,8 +54,8 @@ export default async function ComissoesPage({
       <h1 className="titulo-icone"><Icone nome="cifrao" tamanho={24} /> Comissões</h1>
       <Mensagens erro={erro} ok={ok} />
       {atrasadas.length > 0 && (
-        <p className="aviso aviso-erro alerta com-icone">
-          <Icone nome="alerta" /> {atrasadas.length} comissão(ões) atrasada(s), total {formatarMoeda(atrasadas.reduce((s, c) => s + Number(c.valor), 0))}.{" "}
+        <p className="aviso aviso-erro alerta">
+          <span className="circulo-icone"><Icone nome="alerta" tamanho={16} /></span> {atrasadas.length} comissão(ões) atrasada(s), total {formatarMoeda(atrasadas.reduce((s, c) => s + Number(c.valor), 0))}.{" "}
           <Link href="/app/comissoes?status=atrasada">Ver atrasadas</Link>
         </p>
       )}
@@ -102,7 +102,7 @@ export default async function ComissoesPage({
           <div className="tabela-wrap">
             <table className="tabela">
               <thead>
-                <tr><th>Pedido</th><th>Cliente</th><th>Representada</th><th>Valor pedido</th><th>% (média)</th><th>Comissão</th><th>Prevista</th><th>Status</th><th>Ações</th></tr>
+                <tr><th>Pedido</th><th>Cliente</th><th>Representada</th><th className="num">Valor pedido</th><th className="num">% (média)</th><th className="num">Comissão</th><th>Prevista</th><th>Status</th><th>Ações</th></tr>
               </thead>
               <tbody>
                 {lista.map((c) => (
@@ -110,15 +110,15 @@ export default async function ComissoesPage({
                     <td>{c.pedido ? <Link href={`/app/pedidos/${c.pedido.id}`}>{c.pedido.numero}</Link> : "—"}</td>
                     <td>{c.pedido?.cliente?.nome ?? "—"}</td>
                     <td>{c.representada?.nome ?? "—"}</td>
-                    <td>{c.pedido ? formatarMoeda(c.pedido.valor_total) : "—"}</td>
-                    <td>{formatarPercentual(c.percentual)}</td>
-                    <td><strong>{formatarMoeda(c.valor)}</strong></td>
+                    <td className="num">{c.pedido ? formatarMoeda(c.pedido.valor_total) : "—"}</td>
+                    <td className="num">{formatarPercentual(c.percentual)}</td>
+                    <td className="num"><strong>{formatarMoeda(c.valor)}</strong></td>
                     <td>{c.data_prevista ? formatarData(c.data_prevista) : "—"}</td>
                     <td><Status classe={c.status} icone={ICONE_STATUS[c.status] ?? "circulo"} rotulo={ROTULO_STATUS_COMISSAO[c.status] ?? c.status} /></td>
                     <td className="acoes-linha">
                       {c.status !== "recebida" && c.status !== "cancelada" && (
                         <form action={marcarComissaoAction.bind(null, c.id, "recebida", voltar)}>
-                          <button className="btn btn-peq" type="submit"><Icone nome="check" tamanho={16} /> Marcar recebida</button>
+                          <button className="btn-suave btn-peq" type="submit"><Icone nome="check" tamanho={16} /> Marcar recebida</button>
                         </form>
                       )}
                       {c.status === "a_receber" && (

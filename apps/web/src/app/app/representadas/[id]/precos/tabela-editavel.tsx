@@ -59,7 +59,7 @@ export function TabelaPrecosEditavel({ representadaId, precos }: { representadaI
               <button type="button" className="btn-link" onClick={cancelar} disabled={salvando}>Cancelar</button>
             </>
           ) : (
-            <button type="button" className="btn btn-peq" onClick={() => { setMsg(null); setEditando(true); }} disabled={precos.length === 0}>Editar</button>
+            <button type="button" className="btn-suave btn-peq" onClick={() => { setMsg(null); setEditando(true); }} disabled={precos.length === 0}>Editar</button>
           )}
         </span>
       </div>

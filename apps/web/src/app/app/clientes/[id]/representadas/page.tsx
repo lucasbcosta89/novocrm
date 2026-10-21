@@ -38,7 +38,7 @@ export default async function ClienteRepresentadas({ params, searchParams }: { p
               <li key={r.id} className="inativo">
                 <span>{r.nome}</span>
                 <form action={vincularUmaAction.bind(null, c.id, r.id)}>
-                  <button className="btn btn-peq" type="submit"><Icone nome="link" tamanho={16} /> Vincular</button>
+                  <button className="btn-suave btn-peq" type="submit"><Icone nome="link" tamanho={16} /> Vincular</button>
                 </form>
               </li>
             ))}

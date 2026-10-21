@@ -15,7 +15,7 @@ export function DocumentosRecentes({ documentos }: { documentos: Documento[] }) 
               {d.titulo ?? ROTULO_DOCUMENTO[d.tipo]}
               <span className="dica"> · {formatarDataHora(d.gerado_em ?? d.criado_em)}</span>
             </span>
-            {d.status === "pronto" && <a className="btn btn-peq" href={urlDownload(d.id)}>Baixar</a>}
+            {d.status === "pronto" && <a className="btn-suave btn-peq" href={urlDownload(d.id)}>Baixar</a>}
             {d.status === "gerando" && <span className="etiqueta etiqueta-a_receber">Gerando…</span>}
             {d.status === "falha" && <span className="etiqueta etiqueta-atrasada" title={d.erro ?? ""}>Falhou</span>}
           </li>

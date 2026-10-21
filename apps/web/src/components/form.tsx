@@ -1,10 +1,11 @@
 import type { InputHTMLAttributes } from "react";
+import { Icone } from "./icones";
 
 export function Mensagens({ erro, ok }: { erro?: string; ok?: string }) {
   return (
     <>
-      {erro && <p className="aviso aviso-erro">{erro}</p>}
-      {ok && <p className="aviso aviso-ok">{ok}</p>}
+      {erro && <p className="aviso aviso-erro" role="alert"><span className="circulo-icone"><Icone nome="alerta" tamanho={16} /></span>{erro}</p>}
+      {ok && <p className="aviso aviso-ok" role="status"><span className="circulo-icone"><Icone nome="check" tamanho={16} /></span>{ok}</p>}
     </>
   );
 }

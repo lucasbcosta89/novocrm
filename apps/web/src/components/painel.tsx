@@ -35,7 +35,7 @@ export function PainelResumo({ painel, rotuloVisitas }: { painel: Painel; rotulo
             {painel.alertas.map((a) => (
               <li key={`${a.tipo}-${a.id}`}>
                 <Link href={a.href}>
-                  <Icone nome={a.tipo === "tarefa" ? "relogio" : "calendario"} tamanho={16} />{" "}
+                  <span className={`circulo-icone ${a.tipo === "tarefa" ? "tom-azul" : "tom-violeta"}`}><Icone nome={a.tipo === "tarefa" ? "relogio" : "calendario"} tamanho={16} /></span>
                   <span className={`etiqueta ${a.tipo === "tarefa" ? "etiqueta-a_receber" : "etiqueta-oportunidade"}`}>{a.tipo === "tarefa" ? "Tarefa" : "Visita"}</span>{" "}
                   {a.titulo}
                 </Link>

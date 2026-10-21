@@ -90,7 +90,7 @@ export default async function RepresentadaCatalogo({ params, searchParams }: { p
                             <span>Imagem (JPEG/PNG até 2 MB)</span>
                             <input type="file" name="imagem" accept="image/jpeg,image/png" required />
                           </label>
-                          <button className="btn btn-peq" type="submit">Enviar imagem</button>
+                          <button className="btn-suave btn-peq" type="submit">Enviar imagem</button>
                         </form>
                         <form action={excluirProdutoAction.bind(null, r.id, p.id)}>
                           <button className="btn-perigo" type="submit">Excluir produto</button>

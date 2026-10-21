@@ -105,7 +105,7 @@ export default async function PlanoAcaoPage({
                         {a.status !== "concluido" ? (
                           <form action={atualizarAcaoAction.bind(null, cliente.id, o.id, a.id)}>
                             <input type="hidden" name="status" value="concluido" />
-                            <button className="btn btn-peq" type="submit">Concluir</button>
+                            <button className="btn-suave btn-peq" type="submit">Concluir</button>
                           </form>
                         ) : (
                           <form action={atualizarAcaoAction.bind(null, cliente.id, o.id, a.id)}>

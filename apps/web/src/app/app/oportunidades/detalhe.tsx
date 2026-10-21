@@ -241,7 +241,7 @@ export function DetalheOportunidade({
                     <td><input type="date" value={a.data_entrega} aria-label="Data de entrega" onChange={(e) => mudarAcao(i, { data_entrega: e.target.value })} /></td>
                     <td><input value={a.observacoes} aria-label="Observações" onChange={(e) => mudarAcao(i, { observacoes: e.target.value })} /></td>
                     <td className="acoes-linha">
-                      <button className="btn btn-peq" type="button" disabled={ocupado || a.descricao.trim().length < 2} onClick={() => salvarAcao(a)}>
+                      <button className="btn-suave btn-peq" type="button" disabled={ocupado || a.descricao.trim().length < 2} onClick={() => salvarAcao(a)}>
                         {a.id ? "Salvar" : "Adicionar"}
                       </button>
                       <button className="btn-link perigo" type="button" disabled={ocupado} onClick={() => excluirAcao(a, i)}>Excluir</button>
