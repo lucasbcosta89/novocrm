@@ -5,14 +5,14 @@ import { cancelarPedido, confirmarPedido, criarPedido, excluirPedido } from "@/s
 
 const BASE = "/app/pedidos";
 
-/** Itens vêm como qtd_<produtoId> / desc_<produtoId>; só entram os com quantidade > 0. */
+/** Itens vêm como qtd_<produtoId> / desc_<produtoId> (desconto em %); só entram os com quantidade > 0. */
 function itensDoForm(fd: FormData) {
-  const itens: { produto_id: string; quantidade: string; desconto: string }[] = [];
+  const itens: { produto_id: string; quantidade: string; desconto_percentual: string }[] = [];
   for (const [chave, valor] of fd.entries()) {
     if (!chave.startsWith("qtd_") || typeof valor !== "string" || !(Number(valor.replace(",", ".")) > 0)) continue;
     const produto_id = chave.slice(4);
     const desconto = fd.get(`desc_${produto_id}`);
-    itens.push({ produto_id, quantidade: valor, desconto: typeof desconto === "string" && desconto ? desconto : "0" });
+    itens.push({ produto_id, quantidade: valor, desconto_percentual: typeof desconto === "string" && desconto ? desconto : "0" });
   }
   return itens;
 }
@@ -27,6 +27,8 @@ export async function criarPedidoAction(fd: FormData) {
         representada_id,
         cliente_id,
         forma_pagamento: fd.get("forma_pagamento"),
+        prazo_tipo: fd.get("prazo_tipo") ?? "a_vista",
+        prazo_dias: fd.get("prazo_dias"),
         confirmar,
         itens: itensDoForm(fd),
       }),

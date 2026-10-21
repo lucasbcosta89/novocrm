@@ -1,11 +1,12 @@
 import Link from "next/link";
-import { Campo, Mensagens } from "@/components/form";
+import { Mensagens } from "@/components/form";
 import { formatarMoeda, formatarPercentual } from "@/lib/formato";
 import { carregar } from "@/server/acao";
 import { listarClientes } from "@/server/clientes";
 import { listarTabelaPrecos } from "@/server/consultas";
 import { listarProdutos } from "@/server/produtos";
 import { listarRepresentadas } from "@/server/representadas";
+import { PagamentoPedido } from "@/components/pagamento-pedido";
 import { criarPedidoAction } from "../actions";
 
 export default async function NovoPedidoPage({
@@ -68,7 +69,7 @@ export default async function NovoPedidoPage({
               <div className="tabela-wrap">
                 <table className="tabela">
                   <thead>
-                    <tr><th>SKU</th><th>Produto</th><th>Preço</th><th>Comissão</th><th>Desc. máx.</th><th>Qtd.</th><th>Desconto (R$)</th></tr>
+                    <tr><th>SKU</th><th>Produto</th><th>Preço</th><th>Comissão</th><th>Desc. máx.</th><th>Qtd.</th><th>Desconto (%)</th></tr>
                   </thead>
                   <tbody>
                     {ativos.map((p) => {
@@ -84,7 +85,7 @@ export default async function NovoPedidoPage({
                           <td>{formatarPercentual(p.comissao)}</td>
                           <td>{formatarPercentual(especifico?.desconto_max ?? p.desconto_max)}</td>
                           <td><input className="input-num" name={`qtd_${p.id}`} type="number" min="0" step="any" defaultValue="0" /></td>
-                          <td><input className="input-num" name={`desc_${p.id}`} type="number" min="0" step="0.01" defaultValue="0" /></td>
+                          <td><input className="input-num" name={`desc_${p.id}`} type="number" min="0" max={especifico?.desconto_max ?? p.desconto_max} step="0.01" defaultValue="0" aria-label={`Desconto em % de ${p.nome}`} /></td>
                         </tr>
                       );
                     })}
@@ -92,13 +93,13 @@ export default async function NovoPedidoPage({
                 </table>
               </div>
               <div className="grade" style={{ marginTop: 12 }}>
-                <Campo label="Forma de pagamento" name="forma_pagamento" placeholder="Ex.: boleto 30/60" />
+                <PagamentoPedido />
                 <div className="acoes acoes-linha">
                   <button className="btn" type="submit" name="confirmar" value="1">Confirmar pedido</button>
                   <button className="btn-link" type="submit" name="confirmar" value="0">Salvar rascunho</button>
                 </div>
               </div>
-              <p className="dica">Totais e comissões são calculados no servidor ao salvar, pela comissão de cada produto.</p>
+              <p className="dica">Desconto em % sobre o item (até o desconto máximo da tabela). Subtotal = qtd × preço × (1 − desconto%); o total do pedido é a soma dos subtotais.</p>
             </form>
           )}
         </section>

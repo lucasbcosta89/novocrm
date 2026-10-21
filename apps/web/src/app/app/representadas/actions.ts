@@ -2,7 +2,9 @@
 
 import { comParam } from "@/lib/url";
 import { executarAcao } from "@/server/acao";
-import { atualizarProduto, criarProduto, excluirProduto, salvarImagemProduto } from "@/server/produtos";
+import { obterContexto } from "@/server/contexto";
+import { normalizarErro } from "@/server/erros";
+import { atualizarPrecos, atualizarProduto, criarProduto, excluirProduto, salvarImagemProduto } from "@/server/produtos";
 import { salvarDocumentosRepresentada } from "@/server/documentos-representada";
 import { atualizarPonto, criarPonto, excluirPonto } from "@/server/pontos-faturamento";
 import { atualizarRepresentada, criarRepresentada, excluirRepresentada } from "@/server/representadas";
@@ -116,4 +118,14 @@ export async function imagemProdutoAction(representadaId: string, produtoId: str
     erro: `${BASE}/${representadaId}/catalogo`,
     mensagem: "Imagem atualizada",
   });
+}
+
+/** Tabela de preços editável: só chega aqui depois da confirmação no navegador. */
+export async function salvarPrecosAction(representadaId: string, alteracoes: { id: string; preco: number; desconto_max: number }[]) {
+  try {
+    const n = await atualizarPrecos(await obterContexto(), representadaId, alteracoes);
+    return { ok: `${n} preço(s) salvo(s)` };
+  } catch (e) {
+    return { erro: normalizarErro(e).message };
+  }
 }

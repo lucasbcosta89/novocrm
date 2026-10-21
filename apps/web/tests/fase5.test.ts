@@ -8,8 +8,8 @@ const P = "33333333-3333-4333-8333-333333333333";
 
 describe("pedidoSchema", () => {
   it("converte quantidades/desconto e exige itens", () => {
-    const p = pedidoSchema.parse({ representada_id: R1, cliente_id: R2, itens: [{ produto_id: P, quantidade: "2", desconto: "1,5" }] });
-    expect(p.itens[0]).toEqual({ produto_id: P, quantidade: 2, desconto: 1.5 });
+    const p = pedidoSchema.parse({ representada_id: R1, cliente_id: R2, itens: [{ produto_id: P, quantidade: "2", desconto_percentual: "1,5" }] });
+    expect(p.itens[0]).toEqual({ produto_id: P, quantidade: 2, desconto_percentual: 1.5 });
     expect(p.confirmar).toBe(false);
     expect(pedidoSchema.safeParse({ representada_id: R1, cliente_id: R2, itens: [] }).success).toBe(false);
     expect(pedidoSchema.safeParse({ representada_id: R1, cliente_id: R2, itens: [{ produto_id: P, quantidade: 0 }] }).success).toBe(false);
@@ -57,5 +57,28 @@ describe("NCM do produto (Fase 3d-2)", () => {
     expect(produtoSchema.parse({ sku: "A", nome: "Prod A", preco: 10, ncm: "4820.10.00" }).ncm).toBe("48201000");
     expect(produtoSchema.parse({ sku: "A", nome: "Prod A", preco: 10, ncm: "" }).ncm).toBeNull();
     expect(produtoSchema.safeParse({ sku: "A", nome: "Prod A", preco: 10, ncm: "1234" }).success).toBe(false);
+  });
+});
+
+describe("Fase 3d-3: desconto %, pagamento e prazo", () => {
+  it("10% sobre item de R$ 100 = R$ 90", async () => {
+    const { subtotalItem } = await import("@/lib/validacao");
+    expect(subtotalItem(1, 100, 10)).toBe(90);
+    expect(subtotalItem(3, 33.33, 5)).toBe(94.99);
+  });
+  it("forma de pagamento e prazo", () => {
+    const base = { representada_id: R1, cliente_id: R2, itens: [{ produto_id: P, quantidade: 1, desconto_percentual: 10 }] };
+    expect(pedidoSchema.parse({ ...base, forma_pagamento: "pix" })).toMatchObject({ forma_pagamento: "pix", prazo_tipo: "a_vista", prazo_dias: null });
+    expect(pedidoSchema.parse({ ...base, prazo_tipo: "a_prazo", prazo_dias: "30" }).prazo_dias).toBe(30);
+    expect(pedidoSchema.parse({ ...base, prazo_tipo: "a_vista", prazo_dias: "30" }).prazo_dias).toBeNull();
+    expect(pedidoSchema.safeParse({ ...base, prazo_tipo: "a_prazo" }).success).toBe(false);
+    expect(pedidoSchema.safeParse({ ...base, forma_pagamento: "boleto" }).success).toBe(false);
+    expect(pedidoSchema.safeParse({ ...base, itens: [{ produto_id: P, quantidade: 1, desconto_percentual: 101 }] }).success).toBe(false);
+  });
+  it("tabela de preços editável valida preço e desconto máximo", async () => {
+    const { precosSchema } = await import("@/lib/validacao");
+    expect(precosSchema.parse([{ id: P, preco: "12,50", desconto_max: "10" }])).toEqual([{ id: P, preco: 12.5, desconto_max: 10 }]);
+    expect(precosSchema.safeParse([{ id: P, preco: -1, desconto_max: 0 }]).success).toBe(false);
+    expect(precosSchema.safeParse([]).success).toBe(false);
   });
 });

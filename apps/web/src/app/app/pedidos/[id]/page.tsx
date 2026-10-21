@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Mensagens, type Busca } from "@/components/form";
 import { formatarData, formatarDataHora, formatarMoeda, formatarPercentual } from "@/lib/formato";
-import { ROTULO_STATUS_COMISSAO, ROTULO_STATUS_PEDIDO } from "@/lib/rotulos";
+import { ROTULO_FORMA_PAGAMENTO, ROTULO_STATUS_COMISSAO, ROTULO_STATUS_PEDIDO } from "@/lib/rotulos";
 import { carregar } from "@/server/acao";
 import { obterPedido } from "@/server/pedidos";
 import { cancelarPedidoAction, confirmarPedidoAction, excluirPedidoAction } from "../actions";
@@ -26,7 +26,8 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
           <div><dt>Data</dt><dd>{formatarDataHora(p.data)}</dd></div>
           <div><dt>Valor total</dt><dd>{formatarMoeda(p.valor_total)}</dd></div>
           <div><dt>Comissão total</dt><dd>{formatarMoeda(p.comissao_total)}</dd></div>
-          <div><dt>Pagamento</dt><dd>{p.forma_pagamento ?? "—"}</dd></div>
+          <div><dt>Forma de pagamento</dt><dd>{p.forma_pagamento ? ROTULO_FORMA_PAGAMENTO[p.forma_pagamento] ?? p.forma_pagamento : "—"}</dd></div>
+          <div><dt>Prazo</dt><dd>{p.prazo_tipo === "a_prazo" ? `${p.prazo_dias} dias` : "À vista"}</dd></div>
           <div><dt>Origem</dt><dd>{p.origem === "catalogo_web" ? "Catálogo digital" : p.origem === "whatsapp" ? "WhatsApp" : "App"}</dd></div>
           {comissao && (
             <div>
@@ -70,7 +71,7 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
         <div className="tabela-wrap">
           <table className="tabela">
             <thead>
-              <tr><th>SKU</th><th>Produto</th><th>Qtd.</th><th>Preço un.</th><th>Desconto</th><th>Subtotal</th><th>Comissão %</th><th>Comissão R$</th></tr>
+              <tr><th>SKU</th><th>Produto</th><th>Qtd.</th><th>Preço un.</th><th>Desconto (%)</th><th>Subtotal</th><th>Comissão %</th><th>Comissão R$</th></tr>
             </thead>
             <tbody>
               {p.itens.map((i) => (
@@ -79,7 +80,7 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
                   <td>{i.descricao}</td>
                   <td>{String(i.quantidade).replace(".", ",")}</td>
                   <td>{formatarMoeda(i.preco_unitario)}</td>
-                  <td>{formatarMoeda(i.desconto)}</td>
+                  <td>{formatarPercentual(i.desconto_percentual)}</td>
                   <td>{formatarMoeda(i.subtotal)}</td>
                   <td>{formatarPercentual(i.comissao_percentual)}</td>
                   <td>{p.status === "rascunho" ? <span className="dica">ao confirmar</span> : formatarMoeda(i.comissao_valor)}</td>

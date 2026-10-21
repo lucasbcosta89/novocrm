@@ -176,23 +176,50 @@ export const acaoUpdateSchema = parcial(acaoSchema);
 
 export const STATUS_COMISSAO = ["a_receber", "recebida", "atrasada", "cancelada"] as const;
 
-export const pedidoSchema = z.object({
-  representada_id: idSchema,
-  cliente_id: idSchema,
-  forma_pagamento: textoOpcional(60),
-  confirmar: z.boolean().default(false),
-  itens: z
-    .array(
-      z.object({
-        produto_id: idSchema,
-        quantidade: numero(0.001, 1_000_000, "Quantidade inválida"),
-        desconto: numero(0, 99_999_999, "Desconto inválido").default(0),
-      }),
-    )
-    .min(1, "Adicione ao menos um item")
-    .max(500),
-});
+export const FORMAS_PAGAMENTO = ["dinheiro", "credito", "debito", "bonificacao", "pix", "outros"] as const;
+export const PRAZOS_PAGAMENTO = ["a_vista", "a_prazo"] as const;
+
+export const pedidoSchema = z
+  .object({
+    representada_id: idSchema,
+    cliente_id: idSchema,
+    forma_pagamento: z.preprocess(vazioParaNull, z.enum(FORMAS_PAGAMENTO, "Forma de pagamento inválida").nullable().optional()),
+    prazo_tipo: z.enum(PRAZOS_PAGAMENTO, "Prazo de pagamento inválido").default("a_vista"),
+    prazo_dias: z.preprocess(
+      (v) => (v === "" || v == null ? null : Number(v)),
+      z.number("Prazo inválido").int("Prazo deve ser em dias inteiros").min(1, "Prazo mínimo de 1 dia").max(365, "Prazo máximo de 365 dias").nullable().optional(),
+    ),
+    confirmar: z.boolean().default(false),
+    itens: z
+      .array(
+        z.object({
+          produto_id: idSchema,
+          quantidade: numero(0.001, 1_000_000, "Quantidade inválida"),
+          /** % sobre o item (limitado ao desconto máximo da tabela de preços, checado no banco). */
+          desconto_percentual: numero(0, 100, "Desconto deve estar entre 0% e 100%").default(0),
+        }),
+      )
+      .min(1, "Adicione ao menos um item")
+      .max(500),
+  })
+  .refine((p) => p.prazo_tipo === "a_vista" || p.prazo_dias != null, { message: "Informe o prazo em dias", path: ["prazo_dias"] })
+  .transform((p) => (p.prazo_tipo === "a_vista" ? { ...p, prazo_dias: null } : p));
 export type PedidoInput = z.infer<typeof pedidoSchema>;
+
+/** Subtotal do item = quantidade × preço × (1 − desconto%/100), arredondado em centavos (igual ao banco). */
+export const subtotalItem = (quantidade: number, preco: number, descontoPercentual: number) =>
+  Math.round(quantidade * preco * (1 - descontoPercentual / 100) * 100) / 100;
+
+export const precosSchema = z
+  .array(
+    z.object({
+      id: idSchema,
+      preco: numero(0, 99_999_999, "Preço inválido"),
+      desconto_max: numero(0, 100, "Desconto máximo deve estar entre 0 e 100"),
+    }),
+  )
+  .min(1, "Nenhuma alteração")
+  .max(2000);
 
 /** Status que o usuário pode definir manualmente (cancelada só via cancelamento do pedido). */
 export const marcarComissaoSchema = z.object({

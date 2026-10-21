@@ -243,3 +243,8 @@ a.btn { text-decoration: none; display: inline-block; }
 .acao-catalogo { display: grid; gap: 4px; justify-items: start; }
 .btn svg { vertical-align: -3px; margin-right: 4px; }
 .btn-whatsapp { background: #1fa855; }
+
+/* Fase 3d-3: tabela de preços editável */
+.planilha td { padding: 4px 6px; }
+.planilha input { min-width: 90px; }
+.tabela tr.alterada td { background: color-mix(in srgb, var(--accent) 10%, transparent); }

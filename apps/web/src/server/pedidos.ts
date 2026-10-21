@@ -8,7 +8,7 @@ export type PedidoItem = {
   descricao: string | null;
   quantidade: number;
   preco_unitario: number;
-  desconto: number;
+  desconto_percentual: number;
   subtotal: number;
   comissao_percentual: number;
   comissao_valor: number;
@@ -23,6 +23,8 @@ export type Pedido = {
   valor_total: number;
   comissao_total: number;
   forma_pagamento: string | null;
+  prazo_tipo: string;
+  prazo_dias: number | null;
   origem: string;
   observacoes: string | null;
   cliente: { id: string; nome: string } | null;
@@ -31,9 +33,9 @@ export type Pedido = {
   comissao: { id: string; status: string; valor: number; percentual: number; data_prevista: string | null }[];
 };
 
-const CAMPOS = `id, numero, data, status, valor_total, comissao_total, forma_pagamento, origem, observacoes,
+const CAMPOS = `id, numero, data, status, valor_total, comissao_total, forma_pagamento, prazo_tipo, prazo_dias, origem, observacoes,
   cliente:clientes(id, nome), representada:representadas(id, nome),
-  itens:pedido_itens(id, produto_id, descricao, quantidade, preco_unitario, desconto, subtotal, comissao_percentual, comissao_valor, produto:produtos(sku)),
+  itens:pedido_itens(id, produto_id, descricao, quantidade, preco_unitario, desconto_percentual, subtotal, comissao_percentual, comissao_valor, produto:produtos(sku)),
   comissao:comissoes(id, status, valor, percentual, data_prevista)`;
 
 export async function obterPedido({ supabase }: Contexto, id: string): Promise<Pedido> {
@@ -51,6 +53,8 @@ export async function criarPedido(ctx: Contexto, input: unknown): Promise<Pedido
     p_itens: p.itens,
     p_forma_pagamento: p.forma_pagamento ?? null,
     p_confirmar: p.confirmar,
+    p_prazo_tipo: p.prazo_tipo,
+    p_prazo_dias: p.prazo_dias,
   });
   if (error) throw erroBanco(error, "Número de pedido em uso; tente novamente");
   return obterPedido(ctx, data as string);

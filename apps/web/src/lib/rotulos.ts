@@ -27,3 +27,12 @@ export const ROTULO_STATUS_COMISSAO: Record<string, string> = {
   atrasada: "Atrasada",
   cancelada: "Cancelada",
 };
+export const ROTULO_FORMA_PAGAMENTO: Record<string, string> = {
+  dinheiro: "Dinheiro",
+  credito: "Crédito",
+  debito: "Débito",
+  bonificacao: "Bonificação",
+  pix: "PIX",
+  outros: "Outros",
+};
+export const ROTULO_PRAZO: Record<string, string> = { a_vista: "À vista", a_prazo: "À prazo" };

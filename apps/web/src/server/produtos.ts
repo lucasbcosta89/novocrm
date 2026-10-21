@@ -1,4 +1,4 @@
-import { idSchema, produtoSchema, produtoUpdateSchema } from "@/lib/validacao";
+import { idSchema, precosSchema, produtoSchema, produtoUpdateSchema } from "@/lib/validacao";
 import type { Contexto } from "./contexto";
 import { detectarTipoImagem } from "@/lib/imagem";
 import { salvarArquivo } from "./armazenamento";
@@ -127,4 +127,33 @@ export async function salvarImagemProduto(ctx: Contexto, produtoId: string, arqu
   if (error) throw erroBanco(error);
   await ctx.supabase.from("uploads").insert({ user_id: ctx.userId, representada_id: produto.representada_id, tipo: "foto_produto", r2_key: chave });
   return obterProduto(ctx, produto.id);
+}
+
+/**
+ * Tabela de preços editável (Fase 3d-3): grava preço e desconto máximo das linhas alteradas.
+ * Linha padrão (sem cliente) também atualiza produtos.preco, que espelha o preço padrão.
+ */
+export async function atualizarPrecos(ctx: Contexto, representadaId: string, input: unknown): Promise<number> {
+  const itens = precosSchema.parse(input);
+  const rep = idSchema.parse(representadaId);
+  const { data: linhas, error } = await ctx.supabase
+    .from("tabelas_preco")
+    .select("id, produto_id, cliente_id")
+    .eq("representada_id", rep)
+    .in("id", itens.map((i) => i.id))
+    .returns<{ id: string; produto_id: string; cliente_id: string | null }[]>();
+  if (error) throw erroBanco(error);
+  const porId = new Map(linhas.map((l) => [l.id, l]));
+  if (porId.size !== itens.length) throw new AppError(400, "Há linhas que não pertencem a esta representada", "validacao");
+
+  for (const i of itens) {
+    const { error: e } = await ctx.supabase.from("tabelas_preco").update({ preco: i.preco, desconto_max: i.desconto_max }).eq("id", i.id);
+    if (e) throw erroBanco(e);
+    const linha = porId.get(i.id)!;
+    if (linha.cliente_id === null) {
+      const { error: e2 } = await ctx.supabase.from("produtos").update({ preco: i.preco }).eq("id", linha.produto_id);
+      if (e2) throw erroBanco(e2);
+    }
+  }
+  return itens.length;
 }

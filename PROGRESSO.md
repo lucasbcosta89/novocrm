@@ -38,6 +38,11 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Catálogo: "Gerar Catálogo PDF" (gera e baixa direto), "Gerar Catálogo Web" (copia /c/slug), "Enviar Catálogo por WhatsApp" (nova aba), com ícones; tabela de PDFs gerados removida
   - [x] produtos.ncm (8 dígitos, check no banco) no cadastro, edição e lista
   - [ ] Critério verificado (PDF baixa; Web copia com mensagem; WhatsApp em nova aba; NCM salva)
+- [ ] Fase 3d-3 — Preços editáveis + Pedidos (desconto %, pagamento e prazo)
+  - [x] pedido_itens.desconto_percentual (descontos antigos convertidos); pedidos com forma_pagamento padronizada (texto antigo → observações), prazo_tipo e prazo_dias; criar_pedido atualizado
+  - [x] Tabela de preços editável (Editar → células → Salvar com confirmação "As alterações serão permanentes. Deseja salvar?")
+  - [x] Pedido: Desconto (%), Forma de Pagamento, Prazo de Pagamento e Prazo (dias)
+  - [ ] Critério verificado (preços só gravam após confirmar; 10% em R$ 100 = R$ 90; pagamento e prazo salvam)
 - [x] Fase 4 — Oportunidades e desafios por cliente + plano de ação
   - [x] Bloco "Oportunidades e Desafios" na página do cliente (+ Novo, tabela tipo/título/prioridade/status/data/ações)
   - [x] Plano de ação em /app/clientes/:id/oportunidades/:opId (adicionar, concluir, editar, excluir ações)
