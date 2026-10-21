@@ -20,7 +20,7 @@ export default async function ClienteOportunidades({ params, searchParams }: { p
     <>
       <Mensagens erro={erro} ok={ok} />
       <section className="card">
-        <h2 className="titulo-icone"><Icone nome="documento" tamanho={20} /> Oportunidades e desafios</h2>
+        <h2 className="titulo-icone"><Icone nome="funil" tamanho={20} /> Oportunidades e desafios</h2>
         <AvisoLimite uso={uso} recurso="oportunidades" />
         <details className="novo">
           <summary className="btn btn-peq" title="Novo item">+ Novo</summary>

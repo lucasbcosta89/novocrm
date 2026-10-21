@@ -206,6 +206,12 @@ export const pedidoSchema = z
   .transform((p) => (p.prazo_tipo === "a_vista" ? { ...p, prazo_dias: null } : p));
 export type PedidoInput = z.infer<typeof pedidoSchema>;
 
+export const MODELOS_FUNIL = ["vendas", "prospeccao", "personalizado"] as const;
+export const funilSchema = z.object({
+  nome: z.string().trim().min(1, "Informe o nome do funil").max(80, "Nome muito longo (máx. 80)"),
+  modelo: z.enum(MODELOS_FUNIL, "Modelo de funil inválido"),
+});
+
 /** Edição de pedido (rascunho ou confirmado): o preço unitário passa a ser informado pelo usuário. */
 export const edicaoPedidoSchema = z
   .object({

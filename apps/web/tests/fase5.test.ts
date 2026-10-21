@@ -95,3 +95,20 @@ describe("edição de pedido", () => {
     expect(edicaoPedidoSchema.safeParse({ prazo_tipo: "a_prazo", itens: [{ produto_id: P, quantidade: 1, preco_unitario: 1 }] }).success).toBe(false);
   });
 });
+
+describe("funis (fase 4d-1)", () => {
+  it("valida nome/modelo e define as etapas de cada modelo", async () => {
+    const { funilSchema } = await import("@/lib/validacao");
+    const { ETAPAS_MODELO, ROTULO_MODELO_FUNIL, emAberto } = await import("@/lib/funis");
+    expect(funilSchema.parse({ nome: "  Vendas 2027 ", modelo: "prospeccao" })).toEqual({ nome: "Vendas 2027", modelo: "prospeccao" });
+    expect(funilSchema.safeParse({ nome: " ", modelo: "vendas" }).success).toBe(false);
+    expect(funilSchema.safeParse({ nome: "X", modelo: "outro" }).success).toBe(false);
+    expect(ETAPAS_MODELO.vendas).toEqual(["Oportunidade Identificada", "Proposta Enviada", "Negociação", "Fechamento"]);
+    expect(ETAPAS_MODELO.prospeccao).toHaveLength(6);
+    expect(ETAPAS_MODELO.personalizado).toEqual(Array(4).fill("Definir Etapa"));
+    expect(ROTULO_MODELO_FUNIL.vendas).toBe("Modelo Padrão - Vendas");
+    expect(emAberto({ arquivada: false, status: "em_progresso" })).toBe(true);
+    expect(emAberto({ arquivada: true, status: "em_progresso" })).toBe(false);
+    expect(emAberto({ arquivada: false, status: "concluido" })).toBe(false);
+  });
+});

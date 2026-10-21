@@ -615,3 +615,8 @@ h1.titulo-icone .icone, h2.titulo-icone .icone, h3.titulo-icone .icone { color: 
 .cliente-pedido-topo .avatar { width: 44px; height: 44px; font-size: .9rem; }
 .cliente-pedido-nome { font-size: 1.1rem; font-weight: 500; }
 .cliente-pedido .resumo dd { font-weight: 400; overflow-wrap: anywhere; }
+
+/* Fase 4d-1: funis */
+.modal-estreito { width: min(520px, calc(100vw - 32px)); }
+.lista-modelos { margin: 0; padding-left: 18px; display: grid; gap: 4px; font-size: .85rem; }
+.campo-filtro { min-width: 200px; }

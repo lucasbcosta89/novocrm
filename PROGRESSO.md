@@ -43,6 +43,12 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Tabela de preços editável (Editar → células → Salvar com confirmação "As alterações serão permanentes. Deseja salvar?")
   - [x] Pedido: Desconto (%), Forma de Pagamento, Prazo de Pagamento e Prazo (dias); desconto acima do máximo gera alerta (não bloqueia)
   - [x] Critério verificado (preços só gravam após confirmar; 10% em R$ 100 = R$ 90; pagamento e prazo salvam)
+- [ ] Fase 4d-1 — Funis: estrutura, migração e página inicial
+  - [x] Migration: funis, funil_etapas (RLS), oportunidades_desafios.funil_id/etapa_id/arquivada; criar_funil; gatilho garante funil/etapa em toda oportunidade
+  - [x] Dados migrados: 1 funil "Vendas" por usuário com oportunidades (concluídas → Fechamento; demais → 1ª etapa)
+  - [x] Sidebar com ícone de funil; /app/oportunidades com abas Início, Funis (kanban) e Arquivo
+  - [x] Início: primeiro uso com mensagem + "Criar Funil de Vendas" (popup: nome + modelo); tabela de funis com oportunidades em aberto; log filtrável por funil
+  - [ ] Critério verificado (3 modelos com etapas corretas; contagem em aberto; filtro do log; oportunidades antigas no funil Vendas; ícone de funil)
 - [x] Fase 4 — Oportunidades e desafios por cliente + plano de ação
   - [x] Bloco "Oportunidades e Desafios" na página do cliente (+ Novo, tabela tipo/título/prioridade/status/data/ações)
   - [x] Plano de ação em /app/clientes/:id/oportunidades/:opId (adicionar, concluir, editar, excluir ações)

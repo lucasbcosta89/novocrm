@@ -33,6 +33,9 @@ export type Oportunidade = {
   resultado: "ganhou" | "perdeu" | null;
   observacoes_resultado: string | null;
   data_conclusao: string | null;
+  funil_id: string | null;
+  etapa_id: string | null;
+  arquivada: boolean;
   criado_em: string;
   atualizado_em: string;
   representada: { nome: string } | null;
@@ -50,7 +53,7 @@ export type ProdutoOportunidade = {
 export type OportunidadeDetalhe = Omit<Oportunidade, "acoes"> & { acoes: Acao[]; produtos: ProdutoOportunidade[] };
 
 const CAMPOS =
-  "id, cliente_id, representada_id, tipo, titulo, descricao, valor_estimado, prioridade, status, cidade, estado, resultado, observacoes_resultado, data_conclusao, criado_em, atualizado_em, representada:representadas(nome), cliente:clientes(id, nome)";
+  "id, cliente_id, representada_id, tipo, titulo, descricao, valor_estimado, prioridade, status, cidade, estado, resultado, observacoes_resultado, data_conclusao, funil_id, etapa_id, arquivada, criado_em, atualizado_em, representada:representadas(nome), cliente:clientes(id, nome)";
 const CAMPOS_ACAO = "id, oportunidade_id, descricao, responsavel, prazo, data_entrega, observacoes, status, criado_em";
 
 function erroReferencia(error: Parameters<typeof erroBanco>[0]) {
@@ -159,11 +162,12 @@ export type CartaoKanban = Omit<Oportunidade, "acoes"> & {
   produtos: { quantidade: number; produto: { sku: string; nome: string } | null }[];
 };
 
-/** Todas as oportunidades/desafios do usuário (com representada, cliente, ações e produtos). */
-export async function listarKanban({ supabase }: Contexto): Promise<CartaoKanban[]> {
+/** Oportunidades/desafios do usuário (com representada, cliente, ações e produtos); arquivadas só se pedido. */
+export async function listarKanban({ supabase }: Contexto, arquivadas = false): Promise<CartaoKanban[]> {
   const { data, error } = await supabase
     .from("oportunidades_desafios")
     .select(`${CAMPOS}, acoes:plano_acao(status), produtos:oportunidade_produtos(quantidade, produto:produtos(sku, nome))`)
+    .eq("arquivada", arquivadas)
     .order("atualizado_em", { ascending: false })
     .limit(1000)
     .returns<CartaoKanban[]>();

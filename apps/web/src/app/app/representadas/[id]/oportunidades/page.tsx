@@ -11,8 +11,8 @@ export default async function RepresentadaOportunidades({ params }: { params: Pr
   return (
     <section className="card">
       <div className="cabecalho">
-        <h2 className="titulo-icone"><Icone nome="documento" tamanho={20} /> Oportunidades</h2>
-        <Link className="btn-suave btn-peq" href="/app/oportunidades">Abrir kanban</Link>
+        <h2 className="titulo-icone"><Icone nome="funil" tamanho={20} /> Oportunidades</h2>
+        <Link className="btn-suave btn-peq" href="/app/oportunidades/funis">Abrir kanban</Link>
       </div>
       {itens.length === 0 ? (
         <div className="vazio">Nenhuma oportunidade vinculada a esta representada.</div>
@@ -26,7 +26,7 @@ export default async function RepresentadaOportunidades({ params }: { params: Pr
               {itens.map((o) => (
                 <tr key={o.id}>
                   <td><span className={`etiqueta etiqueta-${o.tipo}`}>{ROTULO_TIPO_OPORTUNIDADE[o.tipo] ?? o.tipo}</span></td>
-                  <td>{o.cliente ? <Link href={`/app/clientes/${o.cliente.id}/oportunidades/${o.id}`}>{o.titulo}</Link> : <Link href="/app/oportunidades">{o.titulo}</Link>}</td>
+                  <td>{o.cliente ? <Link href={`/app/clientes/${o.cliente.id}/oportunidades/${o.id}`}>{o.titulo}</Link> : <Link href="/app/oportunidades/funis">{o.titulo}</Link>}</td>
                   <td>{o.cliente ? <Link href={`/app/clientes/${o.cliente.id}`}>{o.cliente.nome}</Link> : "—"}</td>
                   <td>{ROTULO_PRIORIDADE[o.prioridade] ?? o.prioridade}</td>
                   <td>{ROTULO_STATUS_OPORTUNIDADE[o.status] ?? o.status}</td>

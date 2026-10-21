@@ -5,7 +5,6 @@ import { Avatar } from "@/components/avatar";
 import { Icone, type NomeIcone } from "@/components/icones";
 import { useMemo, useRef, useState } from "react";
 import { formatarMoeda } from "@/lib/formato";
-import { resumoOportunidades } from "@/lib/oportunidades";
 import { ROTULO_PRIORIDADE, ROTULO_RESULTADO, ROTULO_STATUS_OPORTUNIDADE, ROTULO_TIPO_OPORTUNIDADE } from "@/lib/rotulos";
 import { PRIORIDADES, STATUS_OPORTUNIDADE } from "@/lib/validacao";
 import type { CartaoKanban } from "@/server/oportunidades";
@@ -56,7 +55,6 @@ export function Kanban({ inicial, representadas }: { inicial: CartaoKanban[]; re
     agrupar === "nenhum"
       ? [{ nome: "", itens: visiveis }]
       : [...new Set(visiveis.map((o) => valorGrupo(o, agrupar)))].sort().map((nome) => ({ nome, itens: visiveis.filter((o) => valorGrupo(o, agrupar) === nome) }));
-  const resumo = resumoOportunidades(itens);
 
   const atualizarLocal = (id: string, campos: Partial<CartaoKanban>) => setItens((xs) => xs.map((o) => (o.id === id ? { ...o, ...campos } : o)));
 
@@ -151,17 +149,6 @@ export function Kanban({ inicial, representadas }: { inicial: CartaoKanban[]; re
           </div>
         </section>
       ))}
-
-      <section className="card kanban-log">
-        <h2 className="titulo-icone"><Icone nome="grafico" tamanho={20} /> Log de oportunidades</h2>
-        <dl className="resumo">
-          <div><dt>Total inseridas</dt><dd>{resumo.total}</dd></div>
-          <div><dt>Ganhas</dt><dd className="txt-ok">{resumo.ganhas}</dd></div>
-          <div><dt>Perdidas</dt><dd className="atrasada">{resumo.perdidas}</dd></div>
-          <div><dt>Aproveitamento</dt><dd>{String(resumo.aproveitamento).replace(".", ",")}%</dd></div>
-        </dl>
-        <p className="dica">Aproveitamento = ganhas ÷ (ganhas + perdidas) × 100.</p>
-      </section>
 
       {novo && (
         <NovaOportunidade
