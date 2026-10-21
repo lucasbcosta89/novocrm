@@ -1,6 +1,6 @@
 import "server-only";
 import { idSchema } from "@/lib/validacao";
-import { salvarArquivo } from "./armazenamento";
+import { excluirArquivo, salvarArquivo } from "./armazenamento";
 import type { Contexto } from "./contexto";
 import { AppError, erroBanco } from "./erros";
 
@@ -44,6 +44,20 @@ export async function salvarDocumentosRepresentada(ctx: Contexto, representadaId
     if (error) throw erroBanco(error);
   }
   return validos.length;
+}
+
+/** Exclui um documento da representada: registro (RLS garante o dono) e arquivo. */
+export async function excluirDocumentoRepresentada({ supabase }: Contexto, id: string): Promise<void> {
+  const { data, error } = await supabase
+    .from("uploads")
+    .delete()
+    .eq("id", idSchema.parse(id))
+    .eq("tipo", TIPO_DOC_REPRESENTADA)
+    .select("r2_key")
+    .maybeSingle<{ r2_key: string }>();
+  if (error) throw erroBanco(error);
+  if (!data) throw new AppError(404, "Documento não encontrado", "nao_encontrado");
+  await excluirArquivo(data.r2_key);
 }
 
 /** Chave e nome do arquivo de um upload do próprio usuário (RLS). */

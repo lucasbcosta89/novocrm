@@ -12,6 +12,7 @@ import {
   atualizarRepresentadaAction,
   criarPontoAction,
   enviarDocumentosAction,
+  excluirDocumentoAction,
   excluirPontoAction,
   excluirRepresentadaAction,
 } from "../actions";
@@ -54,16 +55,31 @@ export default async function RepresentadaInicio({
             <small className="dica">Catálogo digital desativado — ative em “Editar dados”.</small>
           )}
         </div>
-        <div>
-          <strong>Documentos</strong>
+        <details id="documentos">
+          <summary>Documentos anexados ({documentos.length})</summary>
           {documentos.length === 0 ? (
             <p className="dica">Nenhum documento.</p>
           ) : (
-            <ul className="lista lista-compacta">
-              {documentos.map((d) => (
-                <li key={d.id}><a href={`/api/uploads/${d.id}`}>{d.nome}</a><span className="dica">{formatarData(d.criado_em)}</span></li>
-              ))}
-            </ul>
+            <div className="tabela-wrap">
+              <table className="tabela">
+                <thead>
+                  <tr><th>Documento</th><th>Enviado em</th><th>Ações</th></tr>
+                </thead>
+                <tbody>
+                  {documentos.map((d) => (
+                    <tr key={d.id}>
+                      <td><a href={`/api/uploads/${d.id}`}>{d.nome}</a></td>
+                      <td>{formatarData(d.criado_em)}</td>
+                      <td>
+                        <form action={excluirDocumentoAction.bind(null, r.id, d.id)}>
+                          <BotaoConfirmar texto="Excluir" pergunta={`Excluir o documento “${d.nome}”? Esta ação não pode ser desfeita.`} />
+                        </form>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
           <form action={enviarDocumentosAction.bind(null, r.id)} className="inline">
             <label className="campo">
@@ -72,7 +88,7 @@ export default async function RepresentadaInicio({
             </label>
             <button className="btn btn-peq" type="submit">Enviar</button>
           </form>
-        </div>
+        </details>
         <details open={editar === "1" || undefined}>
           <summary>Editar dados</summary>
           <form action={atualizarRepresentadaAction.bind(null, r.id)} className="grade-1">

@@ -5,7 +5,7 @@ import { executarAcao } from "@/server/acao";
 import { obterContexto } from "@/server/contexto";
 import { normalizarErro } from "@/server/erros";
 import { atualizarPrecos, atualizarProduto, criarProduto, excluirProduto, salvarImagemProduto } from "@/server/produtos";
-import { salvarDocumentosRepresentada } from "@/server/documentos-representada";
+import { excluirDocumentoRepresentada, salvarDocumentosRepresentada } from "@/server/documentos-representada";
 import { atualizarPonto, criarPonto, excluirPonto } from "@/server/pontos-faturamento";
 import { atualizarRepresentada, criarRepresentada, excluirRepresentada } from "@/server/representadas";
 
@@ -40,6 +40,14 @@ export async function enviarDocumentosAction(id: string, fd: FormData) {
     },
     { ok: () => comParam(`${BASE}/${id}`, "ok", mensagem), erro: `${BASE}/${id}` },
   );
+}
+
+export async function excluirDocumentoAction(representadaId: string, documentoId: string) {
+  await executarAcao((ctx) => excluirDocumentoRepresentada(ctx, documentoId), {
+    ok: `${BASE}/${representadaId}#documentos`,
+    erro: `${BASE}/${representadaId}#documentos`,
+    mensagem: "Documento excluído",
+  });
 }
 
 /* Pontos de faturamento */

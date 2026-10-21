@@ -11,6 +11,7 @@ import { AppError } from "./erros";
 type R2Bucket = {
   put(key: string, value: ArrayBuffer | Uint8Array, opts?: { httpMetadata?: { contentType?: string } }): Promise<unknown>;
   get(key: string): Promise<{ arrayBuffer(): Promise<ArrayBuffer>; httpMetadata?: { contentType?: string } } | null>;
+  delete(key: string): Promise<void>;
 };
 
 const BUCKET = "arquivos";
@@ -44,4 +45,12 @@ export async function lerArquivo(chave: string): Promise<{ bytes: ArrayBuffer; c
   const { data, error } = await supabaseAdmin().storage.from(BUCKET).download(chave);
   if (error || !data) return null;
   return { bytes: await data.arrayBuffer(), contentType: data.type || "application/octet-stream" };
+}
+
+/** Remove o arquivo do R2 e do Supabase Storage (pode estar em qualquer um; ausência não é erro). */
+export async function excluirArquivo(chave: string): Promise<void> {
+  const bucket = r2();
+  if (bucket) await bucket.delete(chave);
+  const { error } = await supabaseAdmin().storage.from(BUCKET).remove([chave]);
+  if (error) throw new AppError(500, `Falha ao excluir arquivo: ${error.message}`, "armazenamento");
 }
