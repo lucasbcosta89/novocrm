@@ -65,6 +65,12 @@ Toda fase termina com commit + tag no GitHub.
   - [x] /app/calendario (sidebar): react-big-calendar (MIT) com visões Mês/Semana, chips por tipo, filtro Todos/Visitas/Sub-tarefas/Tarefas
   - [x] Faixa vermelha em item vencido e não concluído; arrastar reagenda; clique abre a edição (detalhe da oportunidade ou página de origem)
   - [x] Critério verificado (3 tipos aparecem; mensal/semanal; filtro; faixa vermelha; arraste persiste; clique edita)
+- [ ] Fase 9-1 — Endpoint de agregação do Dashboard
+  - [x] GET /api/dashboard?periodo=3m|6m|12m|ano&representada_id=<uuid>|todas (somente leitura, sem migration); 403 para representada de outro usuário
+  - [x] KPIs com variação vs período anterior, séries mensais de vendas e comissões, alertas, próximas ações, top representadas/clientes/produtos e positivação
+  - [x] Filtro por representada em todos os blocos (visitas e tarefas pela própria coluna representada_id; sub-tarefas via oportunidade)
+  - [x] Número fixo de consultas (sem N+1), agregação mensal em memória; cache de 60s por usuário + período + representada
+  - [ ] Critério verificado (todas/filtrado; soma da série = vendas_total; comissão atrasada; top vazio com filtro; 403; cache)
 - [x] Fase 4 — Oportunidades e desafios por cliente + plano de ação
   - [x] Bloco "Oportunidades e Desafios" na página do cliente (+ Novo, tabela tipo/título/prioridade/status/data/ações)
   - [x] Plano de ação em /app/clientes/:id/oportunidades/:opId (adicionar, concluir, editar, excluir ações)
