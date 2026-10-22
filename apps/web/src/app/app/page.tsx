@@ -1,13 +1,20 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { Mensagens, type Busca } from "@/components/form";
 import { Icone } from "@/components/icones";
 import { formatarData } from "@/lib/formato";
 import { carregar } from "@/server/acao";
 import { listarTarefasPendentes } from "@/server/consultas";
+import { listarRepresentadas } from "@/server/representadas";
+import { PainelPrincipal } from "./dashboard/painel-principal";
 import { concluirTarefaAction, followUpAction } from "./whatsapp-actions";
 
+/** Home: dashboard principal (dados via /api/dashboard) + follow-ups e tarefas pendentes com ações. */
 export default async function Dashboard({ searchParams }: { searchParams: Busca }) {
-  const [{ erro, ok }, tarefas] = await Promise.all([searchParams, carregar(listarTarefasPendentes)]);
+  const [{ erro, ok }, [tarefas, representadas]] = await Promise.all([
+    searchParams,
+    carregar((ctx) => Promise.all([listarTarefasPendentes(ctx), listarRepresentadas(ctx)])),
+  ]);
 
   const agora = new Date();
   const hoje = agora.toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }); // AAAA-MM-DD
@@ -16,19 +23,16 @@ export default async function Dashboard({ searchParams }: { searchParams: Busca 
 
   return (
     <>
-      <div className="cabecalho-pagina">
-        <div>
-          <h1>Dashboard</h1>
-          <p className="subtitulo">
-            {dataExtenso} · {tarefas.length === 0 ? "nenhuma tarefa pendente" : `${tarefas.length} ${tarefas.length === 1 ? "tarefa pendente" : "tarefas pendentes"}`}
-          </p>
-        </div>
-        <Link className="btn" href="/app/pedidos/novo"><Icone nome="mais" tamanho={16} /> Novo pedido</Link>
-      </div>
       <Mensagens erro={erro} ok={ok} />
+      <Suspense>
+        <PainelPrincipal representadas={representadas.map((r) => ({ id: r.id, nome: r.nome }))} dataExtenso={dataExtenso} />
+      </Suspense>
 
-      <section className="card">
-        <h2 className="titulo-icone"><Icone nome="sino" tamanho={20} /> Follow-ups e tarefas</h2>
+      <section className="card" id="tarefas">
+        <div className="cabecalho">
+          <h2 className="titulo-icone"><Icone nome="sino" tamanho={20} /> Follow-ups e tarefas pendentes</h2>
+          <Link className="btn-suave btn-peq" href="/app/pedidos/novo"><Icone nome="mais" tamanho={16} /> Novo pedido</Link>
+        </div>
         <p className="dica">Visitas sem retorno há 15 dias geram um follow-up automático (todo dia às 6h).</p>
         {tarefas.length === 0 ? (
           <div className="vazio">Nenhuma tarefa pendente.</div>

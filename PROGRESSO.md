@@ -71,6 +71,11 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Filtro por representada em todos os blocos (visitas e tarefas pela própria coluna representada_id; sub-tarefas via oportunidade)
   - [x] Número fixo de consultas (sem N+1), agregação mensal em memória; cache de 60s por usuário + período + representada
   - [ ] Critério verificado (todas/filtrado; soma da série = vendas_total; comissão atrasada; top vazio com filtro; 403; cache)
+- [ ] Fase 9-2 — Página do Dashboard (home) e design
+  - [x] /app consome só GET /api/dashboard: filtros Representada e Período na query string + localStorage; skeleton por bloco; uma chamada por mudança
+  - [x] 6 KPIs com variação (↑/↓ colorida), gráficos Recharts (vendas; comissões empilhadas), alertas por severidade, próximas ações, top clientes/produtos/representadas e positivação
+  - [x] Contexto da representada no subtítulo + "Ver representada"; grid de 12 colunas (1/2/3+ colunas); follow-ups e tarefas pendentes mantidos abaixo
+  - [ ] Critério verificado (6 KPIs; período; representada filtra e oculta top representadas; reload preserva filtros; alerta abre lista; ordem por data; responsivo; 1 chamada por mudança)
 - [x] Fase 4 — Oportunidades e desafios por cliente + plano de ação
   - [x] Bloco "Oportunidades e Desafios" na página do cliente (+ Novo, tabela tipo/título/prioridade/status/data/ações)
   - [x] Plano de ação em /app/clientes/:id/oportunidades/:opId (adicionar, concluir, editar, excluir ações)
