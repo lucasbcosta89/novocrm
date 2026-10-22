@@ -9,6 +9,7 @@ export const SECOES = [
   { slug: "oportunidades", titulo: "Oportunidades", icone: "funil" },
   { slug: "calendario", titulo: "Calendário", icone: "calendario" },
   { slug: "comissoes", titulo: "Comissões", icone: "cifrao" },
+  { slug: "biblioteca", titulo: "Biblioteca", icone: "documento" },
   { slug: "configurar", titulo: "Configurar", icone: "engrenagem" },
 ] as const satisfies readonly { slug: string; titulo: string; icone: NomeIcone }[];
 

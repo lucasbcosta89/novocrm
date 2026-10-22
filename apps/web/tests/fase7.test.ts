@@ -39,7 +39,7 @@ describe("solicitação", () => {
     const { pdfMensalGeral, pdfComissoesGeral } = await import("@/server/relatorios");
     const mensal = (nome: string) => ({ representada: { ...REP, nome }, periodo: "2026-10", visitas: [], pedidos: [], comissoes: [{ valor: 70, status: "a_receber" }], carteira: 1 });
     expect(asc(await pdfMensalGeral([mensal("A"), mensal("B")], "2026-10"))).toBe("%PDF-");
-    expect(asc(await pdfComissoesGeral([{ representada: REP, periodo: "2026-10", comissoes: [] }], "2026-10"))).toBe("%PDF-");
+    expect(asc(await pdfComissoesGeral([{ representada: REP, periodo: "2026-10", comissoes: [], produtos: [{ sku: "A", nome: "Produto A", quantidade: 2, vendido: 200, comissao: 10 }] }], "2026-10"))).toBe("%PDF-");
   });
 });
 
@@ -91,7 +91,7 @@ describe("Fase 7b: template padrão", () => {
     const { pdfComissoes } = await import("@/server/relatorios");
     const completo = { nome: "Ana Rep", nome_empresa: "Ana Representações", cnpj: "11222333000181" };
     const so_nome = { nome: "Ana Rep", nome_empresa: null, cnpj: null };
-    const dados = { representada: REP, periodo: "2026-10", comissoes: [] };
+    const dados = { representada: REP, periodo: "2026-10", comissoes: [], produtos: [] };
     expect(asc(await pdfComissoes(dados, completo))).toBe("%PDF-");
     expect(asc(await pdfComissoes(dados, so_nome))).toBe("%PDF-");
     expect(asc(await pdfCatalogo({ marcas: [{ representada: REP, produtos: [] }] }, completo))).toBe("%PDF-");

@@ -11,13 +11,35 @@ import { erroBanco } from "./erros";
 
 /* ---------- período ---------- */
 
-/** "2026-10" → limites em horário de Brasília (UTC-3, sem horário de verão). */
+const DIA = 86_400_000;
+const ddmmaaaa = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+const somarDias = (iso: string, n: number) => new Date(Date.parse(`${iso}T12:00:00Z`) + n * DIA).toISOString().slice(0, 10);
+
+/**
+ * Período do relatório em horário de Brasília (UTC-3, sem horário de verão):
+ * "2026-10" (mês) ou "2026-09-01_2026-10-15" (intervalo, datas inclusivas).
+ */
 export function limitesPeriodo(periodo: string): { inicio: string; fim: string; rotulo: string } {
+  if (periodo.includes("_")) {
+    const [de, ate] = periodo.split("_") as [string, string];
+    return { inicio: `${de}T00:00:00-03:00`, fim: `${somarDias(ate, 1)}T00:00:00-03:00`, rotulo: `${ddmmaaaa(de)} a ${ddmmaaaa(ate)}` };
+  }
   const [ano, mes] = periodo.split("-").map(Number) as [number, number];
   const prox = mes === 12 ? `${ano + 1}-01` : `${ano}-${String(mes + 1).padStart(2, "0")}`;
   const nomeMes = new Intl.DateTimeFormat("pt-BR", { month: "long", timeZone: "UTC" }).format(new Date(Date.UTC(ano, mes - 1, 15)));
   const rotulo = `${nomeMes.charAt(0).toUpperCase()}${nomeMes.slice(1)}/${ano}`;
   return { inicio: `${periodo}-01T00:00:00-03:00`, fim: `${prox}-01T00:00:00-03:00`, rotulo };
+}
+
+/** Período anterior equivalente: mês anterior, ou intervalo de mesma duração imediatamente antes. */
+export function periodoAnterior(periodo: string): string {
+  if (periodo.includes("_")) {
+    const [de, ate] = periodo.split("_") as [string, string];
+    const dias = Math.round((Date.parse(ate) - Date.parse(de)) / DIA) + 1;
+    return `${somarDias(de, -dias)}_${somarDias(de, -1)}`;
+  }
+  const [ano, mes] = periodo.split("-").map(Number) as [number, number];
+  return mes === 1 ? `${ano - 1}-12` : `${ano}-${String(mes - 1).padStart(2, "0")}`;
 }
 
 type Rep = { id: string; nome: string; cnpj: string | null };
@@ -182,22 +204,54 @@ export type DadosComissoes = {
     data_prevista: string | null;
     pedido: { numero: string; data: string; valor_total: number; cliente: { nome: string } | null };
   }[];
+  /** Detalhe por produto: soma de pedido_itens.comissao_valor (snapshot da confirmação; nunca recalcula). */
+  produtos: ProdutoComissao[];
 };
+export type ProdutoComissao = { sku: string; nome: string; quantidade: number; vendido: number; comissao: number };
+
+type ItemComissaoRow = { quantidade: number; subtotal: number; comissao_valor: number; descricao: string | null; produto: { sku: string; nome: string } | null };
+
+/** Itens de pedidos válidos do período agrupados por produto (comissão gravada no item). */
+function agruparProdutos(itens: ItemComissaoRow[]): ProdutoComissao[] {
+  const m = new Map<string, ProdutoComissao>();
+  for (const i of itens) {
+    const chave = i.produto?.sku ?? i.descricao ?? "—";
+    const p = m.get(chave) ?? { sku: i.produto?.sku ?? "—", nome: i.produto?.nome ?? i.descricao ?? "—", quantidade: 0, vendido: 0, comissao: 0 };
+    p.quantidade += Number(i.quantidade);
+    p.vendido += Number(i.subtotal);
+    p.comissao += Number(i.comissao_valor);
+    m.set(chave, p);
+  }
+  return [...m.values()]
+    .map((p) => ({ ...p, vendido: Math.round(p.vendido * 100) / 100, comissao: Math.round(p.comissao * 100) / 100 }))
+    .sort((a, b) => b.comissao - a.comissao);
+}
 
 /** Só comissões de pedidos do período. */
 export async function dadosComissoes(ctx: Contexto, representadaId: string, periodo: string): Promise<DadosComissoes> {
   const rep = await representada(ctx, representadaId);
   const { inicio, fim } = limitesPeriodo(periodo);
-  const { data, error } = await ctx.supabase
-    .from("comissoes")
-    .select("percentual, valor, status, data_prevista, pedido:pedidos!inner(numero, data, valor_total, cliente:clientes(nome))")
-    .eq("representada_id", rep.id)
-    .gte("pedido.data", inicio)
-    .lt("pedido.data", fim)
-    .returns<DadosComissoes["comissoes"]>();
-  if (error) throw erroBanco(error);
-  const comissoes = [...data].sort((a, b) => a.pedido.data.localeCompare(b.pedido.data));
-  return { representada: rep, periodo, comissoes };
+  const [com, itens] = await Promise.all([
+    ctx.supabase
+      .from("comissoes")
+      .select("percentual, valor, status, data_prevista, pedido:pedidos!inner(numero, data, valor_total, cliente:clientes(nome))")
+      .eq("representada_id", rep.id)
+      .gte("pedido.data", inicio)
+      .lt("pedido.data", fim)
+      .returns<DadosComissoes["comissoes"]>(),
+    ctx.supabase
+      .from("pedido_itens")
+      .select("quantidade, subtotal, comissao_valor, descricao, produto:produtos(sku, nome), pedido:pedidos!inner(data, status, representada_id)")
+      .eq("pedido.representada_id", rep.id)
+      .in("pedido.status", ["confirmado", "entregue"])
+      .gte("pedido.data", inicio)
+      .lt("pedido.data", fim)
+      .returns<ItemComissaoRow[]>(),
+  ]);
+  if (com.error) throw erroBanco(com.error);
+  if (itens.error) throw erroBanco(itens.error);
+  const comissoes = [...com.data].sort((a, b) => a.pedido.data.localeCompare(b.pedido.data));
+  return { representada: rep, periodo, comissoes, produtos: agruparProdutos(itens.data) };
 }
 
 const validasComissoes = (d: DadosComissoes) => d.comissoes.filter((c) => c.status !== "cancelada");
@@ -227,7 +281,24 @@ function corpoComissoes(d: DadosComissoes): Content[] {
       d.comissoes,
       { vazio: "Nenhuma comissão no período.", totais: ["Total", "", "", "", "", formatarMoeda(soma(validas.map((c) => c.valor))), "", ""] },
     ),
+    secao("Detalhe por produto"),
+    tabelaProdutos(d.produtos),
   ];
+}
+
+/** Comissão por produto (pedido_itens.comissao_valor dos pedidos confirmados/entregues). */
+function tabelaProdutos(produtos: ProdutoComissao[]): Content {
+  return tabela(
+    [
+      { titulo: "SKU", valor: (p: ProdutoComissao) => p.sku, largura: "auto" },
+      { titulo: "Produto", valor: (p) => p.nome },
+      { titulo: "Qtd.", valor: (p) => String(p.quantidade).replace(".", ","), alinhar: "right", largura: "auto" },
+      { titulo: "Vendido", valor: (p) => formatarMoeda(p.vendido), alinhar: "right", largura: "auto" },
+      { titulo: "Comissão", valor: (p) => formatarMoeda(p.comissao), alinhar: "right", largura: "auto" },
+    ],
+    produtos,
+    { vazio: "Nenhum item vendido no período.", totais: ["Total", "", "", formatarMoeda(soma(produtos.map((p) => p.vendido))), formatarMoeda(soma(produtos.map((p) => p.comissao)))] },
+  );
 }
 
 export function pdfComissoes(d: DadosComissoes, representante?: Representante): Promise<Uint8Array> {
@@ -265,6 +336,7 @@ export function pdfComissoesGeral(ds: DadosComissoes[], periodo: string, represe
       },
     ),
   );
+  conteudo.push(secao("Total por produto (todas as representadas)"), tabelaProdutos(ds.flatMap((d) => d.produtos).sort((a, b) => b.comissao - a.comissao)));
   return gerarPdf(conteudo, { titulo: `Comissões geral ${periodo}`, paisagem: true, representante });
 }
 

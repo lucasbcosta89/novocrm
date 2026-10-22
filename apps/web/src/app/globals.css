@@ -809,3 +809,16 @@ h1.titulo-icone .icone, h2.titulo-icone .icone, h3.titulo-icone .icone { color: 
 .conteudo a.dash-alerta-topo, .conteudo a.dash-alerta-topo:hover { color: inherit !important; text-decoration: none !important; }
 .link-alerta { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); }
 .link-alerta:hover { text-decoration-color: currentColor; }
+
+/* Fase 10: Biblioteca */
+.quota-pdf .cabecalho strong { font-weight: 500; }
+.biblioteca-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.biblioteca-card { display: grid; grid-template-columns: auto 1fr; gap: 10px 12px; align-items: start; padding: 16px; border: 1px solid var(--borda-suave); border-radius: 14px; background: var(--bg); }
+.biblioteca-card h3 { margin: 0 0 2px; font-size: .98rem; font-weight: 500; }
+.biblioteca-card p { margin: 0; font-size: .85rem; }
+.biblioteca-acao { grid-column: 1 / -1; display: grid; gap: 4px; justify-items: start; }
+.toast { position: fixed; right: 20px; bottom: 20px; z-index: 60; display: flex; align-items: center; gap: 10px; max-width: min(460px, calc(100vw - 40px)); padding: 12px 14px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, .15); background: var(--surface); border: 1px solid var(--borda-suave); font-size: .9rem; }
+.toast-erro { background: var(--danger-suave); color: var(--danger-texto); }
+.toast-ok { background: var(--ok-suave); color: var(--ok-texto); }
+.toast a { color: inherit !important; font-weight: 500; text-decoration: underline !important; }
+.toast .btn-link { padding: 4px; color: inherit; }

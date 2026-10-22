@@ -25,9 +25,9 @@ describe("planos", () => {
 });
 
 describe("navegação", () => {
-  it("sidebar tem as 6 seções na ordem (Relatórios saiu na Fase 7c; Calendário entrou na 4e)", () => {
+  it("sidebar tem as 7 seções na ordem (Calendário entrou na 4e; Biblioteca na 10)", () => {
     expect(SECOES.map((s) => s.titulo)).toEqual([
-      "Representadas", "Clientes", "Oportunidades", "Calendário", "Comissões", "Configurar",
+      "Representadas", "Clientes", "Oportunidades", "Calendário", "Comissões", "Biblioteca", "Configurar",
     ]);
     expect(buscarSecao("clientes")?.titulo).toBe("Clientes");
     expect(buscarSecao("xpto")).toBeUndefined();

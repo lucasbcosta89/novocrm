@@ -13,8 +13,15 @@ import {
   dadosCatalogo, dadosComissoes, dadosMensal, idsRepresentadas, limitesPeriodo,
   pdfCatalogo, pdfComissoes, pdfComissoesGeral, pdfMensal, pdfMensalGeral,
 } from "./relatorios";
+import {
+  dadosKpis, dadosVendasCliente, dadosVendasGeral, dadosVendasRepresentada,
+  pdfKpis, pdfVendasCliente, pdfVendasGeral, pdfVendasRepresentada,
+} from "./relatorios-biblioteca";
 
-export const TIPOS_DOCUMENTO = ["relatorio_periodo", "relatorio_comissao", "catalogo", "catalogo_geral"] as const;
+export const TIPOS_DOCUMENTO = [
+  "relatorio_periodo", "relatorio_comissao", "catalogo", "catalogo_geral",
+  "relatorio_vendas_geral", "relatorio_vendas_cliente", "relatorio_vendas_representada", "relatorio_kpis",
+] as const;
 export type TipoDocumento = (typeof TIPOS_DOCUMENTO)[number];
 
 export const ROTULO_DOCUMENTO: Record<TipoDocumento, string> = {
@@ -22,9 +29,22 @@ export const ROTULO_DOCUMENTO: Record<TipoDocumento, string> = {
   relatorio_comissao: "Relatório de comissões",
   catalogo: "Catálogo",
   catalogo_geral: "Catálogo geral",
+  relatorio_vendas_geral: "Vendas — Geral",
+  relatorio_vendas_cliente: "Vendas — Por cliente",
+  relatorio_vendas_representada: "Vendas — Por representada",
+  relatorio_kpis: "KPIs",
 };
 
-const periodoSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Período inválido (use AAAA-MM)");
+/** Mês "AAAA-MM" ou intervalo "AAAA-MM-DD_AAAA-MM-DD" (até 366 dias). */
+export const periodoSchema = z
+  .string()
+  .regex(/^\d{4}-(0[1-9]|1[0-2])$|^\d{4}-\d{2}-\d{2}_\d{4}-\d{2}-\d{2}$/, "Período inválido (use AAAA-MM ou um intervalo de datas)")
+  .refine((p) => {
+    if (!p.includes("_")) return true;
+    const [de, ate] = p.split("_") as [string, string];
+    const dias = (Date.parse(ate) - Date.parse(de)) / 86_400_000;
+    return !Number.isNaN(dias) && dias >= 0 && dias <= 366;
+  }, "Intervalo inválido: a data final deve ser igual ou posterior à inicial (máx. 366 dias)");
 /** "todas" = relatório geral (todas as representadas do usuário em um documento). */
 const representadaOuTodas = z.union([idSchema, z.literal("todas")]);
 
@@ -33,6 +53,10 @@ export const solicitacaoSchema = z.discriminatedUnion("tipo", [
   z.object({ tipo: z.literal("relatorio_comissao"), representada_id: representadaOuTodas, periodo: periodoSchema }),
   z.object({ tipo: z.literal("catalogo"), representada_id: idSchema }),
   z.object({ tipo: z.literal("catalogo_geral") }),
+  z.object({ tipo: z.literal("relatorio_vendas_geral"), periodo: periodoSchema }),
+  z.object({ tipo: z.literal("relatorio_vendas_cliente"), cliente_id: z.uuid("Selecione o cliente"), periodo: periodoSchema }),
+  z.object({ tipo: z.literal("relatorio_vendas_representada"), representada_id: z.uuid("Selecione a representada"), periodo: periodoSchema }),
+  z.object({ tipo: z.literal("relatorio_kpis"), periodo: periodoSchema }),
 ]);
 export type Solicitacao = z.infer<typeof solicitacaoSchema>;
 
@@ -77,6 +101,23 @@ async function preparar(ctx: Contexto, s: Solicitacao, rep: Representante) {
     return { dados, titulo: geral ? "Catálogo Geral" : `Catálogo — ${dados.marcas[0]!.representada.nome}`, gerar: () => pdfCatalogo(dados, rep) };
   }
   const { rotulo } = limitesPeriodo(s.periodo);
+  // Biblioteca (Fase 10): vendas e KPIs
+  if (s.tipo === "relatorio_vendas_geral") {
+    const dados = await dadosVendasGeral(ctx, s.periodo);
+    return { dados, titulo: `Vendas — Geral — ${rotulo}`, gerar: () => pdfVendasGeral(dados, rep) };
+  }
+  if (s.tipo === "relatorio_vendas_cliente") {
+    const dados = await dadosVendasCliente(ctx, s.periodo, s.cliente_id);
+    return { dados, titulo: `Vendas — ${dados.cliente.nome} — ${rotulo}`, gerar: () => pdfVendasCliente(dados, rep) };
+  }
+  if (s.tipo === "relatorio_vendas_representada") {
+    const dados = await dadosVendasRepresentada(ctx, s.periodo, s.representada_id);
+    return { dados, titulo: `Vendas — ${dados.representada.nome} — ${rotulo}`, gerar: () => pdfVendasRepresentada(dados, rep) };
+  }
+  if (s.tipo === "relatorio_kpis") {
+    const dados = await dadosKpis(ctx, s.periodo);
+    return { dados, titulo: `KPIs — ${rotulo}`, gerar: () => pdfKpis(dados, rep) };
+  }
   const ids = s.representada_id === "todas" ? await idsRepresentadas(ctx) : null;
   if (ids && ids.length === 0) throw new AppError(404, "Cadastre uma representada primeiro", "nao_encontrado");
   if (s.tipo === "relatorio_periodo") {
