@@ -15,8 +15,8 @@ const pct = (v: number) => `${v.toLocaleString("pt-BR", { minimumFractionDigits:
 /** dd/MM (data AAAA-MM-DD ou ISO, fuso de Brasília). */
 const ddmm = (d: string) =>
   new Date(d.length === 10 ? `${d}T12:00:00-03:00` : d).toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" });
-/** Tarefas são editadas na lista do próprio dashboard. */
-const rota = (r: string) => (r === "/app" ? "/app#tarefas" : r);
+/** Tarefas (rota "/app" no endpoint) abrem no Calendário, onde aparecem. */
+const rota = (r: string) => (r === "/app" ? "/app/calendario" : r);
 
 type Estado = { chave: string; dados: DashboardPrincipal | null; erro: string | null };
 
