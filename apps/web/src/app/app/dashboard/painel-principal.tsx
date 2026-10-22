@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Icone, type NomeIcone } from "@/components/icones";
 import { PERIODOS, type Periodo } from "@/lib/dashboard";
 import type { BlocoAlerta, DashboardPrincipal, Kpi } from "@/server/dashboard-principal";
+import { EditarTarefa } from "./editar-tarefa";
 import { GraficoComissoes, GraficoVendas } from "./graficos";
 
 const CHAVE_LOCAL = "plurima.dashboard.filtros";
@@ -34,6 +35,9 @@ export function PainelPrincipal({ representadas, dataExtenso }: { representadas:
   const periodo: Periodo = (PERIODOS as readonly string[]).includes(perUrl ?? "") ? (perUrl as Periodo) : "6m";
   const chave = `${representada}|${periodo}`;
   const [estado, setEstado] = useState<Estado>({ chave: "", dados: null, erro: null });
+  // popup de edição de tarefa aberto a partir dos alertas; versao recarrega os dados após salvar
+  const [editando, setEditando] = useState<{ tipo: "subtarefa" | "tarefa"; id: string; rota: string } | null>(null);
+  const [versao, setVersao] = useState(0);
 
   function aplicar(rep: string, per: Periodo) {
     try {
@@ -70,7 +74,7 @@ export function PainelPrincipal({ representadas, dataExtenso }: { representadas:
         if (!ctrl.signal.aborted) setEstado({ chave, dados: null, erro: e instanceof Error ? e.message : "Falha ao carregar o dashboard" });
       });
     return () => ctrl.abort();
-  }, [temFiltro, representada, periodo, chave, caminho, representadas]);
+  }, [temFiltro, representada, periodo, chave, caminho, representadas, versao]);
 
   const carregando = estado.chave !== chave;
   const d = carregando ? null : estado.dados;
@@ -154,7 +158,7 @@ export function PainelPrincipal({ representadas, dataExtenso }: { representadas:
       <section className="dash-meio">
         <div className="dash-card">
           <h2 className="titulo-icone"><Icone nome="sino" tamanho={20} /> Alertas</h2>
-          {d ? <Alertas a={d.alertas} filtroComissao={filtroComissao} /> : <div className="esqueleto esqueleto-lista" />}
+          {d ? <Alertas a={d.alertas} filtroComissao={filtroComissao} onEditar={setEditando} /> : <div className="esqueleto esqueleto-lista" />}
         </div>
         <div className="dash-card">
           <h2 className="titulo-icone"><Icone nome="calendario" tamanho={20} /> Próximas ações</h2>
@@ -204,6 +208,19 @@ export function PainelPrincipal({ representadas, dataExtenso }: { representadas:
       ) : (
         <section className="dash-rodape">{Array.from({ length: 3 }, (_, i) => <div key={i} className="dash-card esqueleto esqueleto-lista" />)}</section>
       )}
+
+      {editando && (
+        <EditarTarefa
+          tipo={editando.tipo}
+          id={editando.id}
+          rotaOrigem={editando.rota}
+          onFechar={() => setEditando(null)}
+          onSalva={() => {
+            setEditando(null);
+            setVersao((v) => v + 1);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -236,7 +253,12 @@ const ALERTAS: { chave: keyof DashboardPrincipal["alertas"]; titulo: string; niv
   { chave: "oportunidades_paradas", titulo: "Oportunidades paradas (+30 dias)", nivel: "azul", icone: "funil", href: () => "/app/oportunidades/funis" },
 ];
 
-function Alertas({ a, filtroComissao }: { a: DashboardPrincipal["alertas"]; filtroComissao: string }) {
+/** Alertas de tarefas (vencidas / a vencer) abrem o popup de edição; os demais levam à origem. */
+const EDITAVEIS = new Set<string>(["tarefas_vencidas", "tarefas_a_vencer"]);
+
+function Alertas({ a, filtroComissao, onEditar }: {
+  a: DashboardPrincipal["alertas"]; filtroComissao: string; onEditar: (t: { tipo: "subtarefa" | "tarefa"; id: string; rota: string }) => void;
+}) {
   const ativos = ALERTAS.filter((x) => a[x.chave].total > 0);
   if (ativos.length === 0) return <Vazio texto="Tudo em dia: nenhum alerta no momento." />;
   return (
@@ -253,7 +275,13 @@ function Alertas({ a, filtroComissao }: { a: DashboardPrincipal["alertas"]; filt
             <ul>
               {b.itens.slice(0, 3).map((i) => (
                 <li key={`${i.tipo}-${i.id}`}>
-                  <Link href={rota(i.rota_edicao)}>{i.titulo}</Link>
+                  {EDITAVEIS.has(x.chave) && (i.tipo === "subtarefa" || i.tipo === "tarefa") ? (
+                    <button type="button" className="link-alerta" onClick={() => onEditar({ tipo: i.tipo as "subtarefa" | "tarefa", id: i.id, rota: rota(i.rota_edicao) })}>
+                      {i.titulo}
+                    </button>
+                  ) : (
+                    <Link href={rota(i.rota_edicao)}>{i.titulo}</Link>
+                  )}
                   {i.data && <span className="item-sub"> · {ddmm(i.data)}</span>}
                 </li>
               ))}

@@ -34,3 +34,13 @@ describe("dashboard principal (fase 9-1)", () => {
     expect(topN(new Map([["a", 1], ["b", 3]]), new Map([["b", "B"]]), 1)).toEqual([{ id: "b", nome: "B", valor: 3 }]);
   });
 });
+
+describe("edição de tarefa pelo dashboard", () => {
+  it("valida título, data e conclusão da tarefa avulsa", async () => {
+    const { tarefaUpdateSchema } = await import("@/lib/validacao");
+    expect(tarefaUpdateSchema.parse({ titulo: " Ligar ", data: "2026-10-30", concluida: true })).toEqual({ titulo: "Ligar", data: "2026-10-30", concluida: true });
+    expect(tarefaUpdateSchema.parse({ data: "" })).toEqual({ data: null });
+    expect(tarefaUpdateSchema.safeParse({ titulo: "x" }).success).toBe(false);
+    expect(tarefaUpdateSchema.safeParse({ data: "30/10/2026" }).success).toBe(false);
+  });
+});

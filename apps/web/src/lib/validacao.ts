@@ -175,6 +175,13 @@ export const acaoSchema = z.object({
 });
 export const acaoUpdateSchema = parcial(acaoSchema);
 
+/** Tarefa avulsa (tabela tarefas: follow-ups e lembretes). */
+export const tarefaUpdateSchema = z.object({
+  titulo: z.string().trim().min(2, "Informe o título").max(300).optional(),
+  data: z.preprocess(vazioParaNull, z.iso.date("Data inválida").nullable().optional()),
+  concluida: z.boolean().optional(),
+});
+
 export const STATUS_COMISSAO = ["a_receber", "recebida", "atrasada", "cancelada"] as const;
 
 export const FORMAS_PAGAMENTO = ["dinheiro", "credito", "debito", "bonificacao", "pix", "outros"] as const;

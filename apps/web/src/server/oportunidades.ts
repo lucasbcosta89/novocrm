@@ -137,6 +137,17 @@ export async function criarAcao({ supabase }: Contexto, oportunidadeId: string, 
   return data;
 }
 
+/** Uma sub-tarefa com a oportunidade (popup de edição no dashboard). */
+export async function obterAcao({ supabase }: Contexto, id: string): Promise<Acao & { oportunidade: { id: string; titulo: string } | null }> {
+  const { data, error } = await supabase
+    .from("plano_acao")
+    .select(`${CAMPOS_ACAO}, oportunidade:oportunidades_desafios(id, titulo)`)
+    .eq("id", idSchema.parse(id))
+    .single<Acao & { oportunidade: { id: string; titulo: string } | null }>();
+  if (error) throw erroBanco(error);
+  return data;
+}
+
 export async function atualizarAcao({ supabase }: Contexto, id: string, input: unknown): Promise<Acao> {
   const dados = acaoUpdateSchema.parse(input);
   const { data, error } = await supabase

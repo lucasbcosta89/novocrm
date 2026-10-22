@@ -59,6 +59,11 @@ const bloco = (itens: ItemAlerta[]): BlocoAlerta => ({ total: itens.length, iten
 const TTL_MS = 60_000;
 const cache = new Map<string, { expira: number; dados: Omit<DashboardPrincipal, "meta"> & { meta: Omit<DashboardPrincipal["meta"], "cache"> } }>();
 
+/** Edição feita pelo próprio dashboard: descarta o cache do usuário para a próxima leitura vir atualizada. */
+export function limparCacheDashboard(userId: string) {
+  for (const k of cache.keys()) if (k.startsWith(`${userId}|`)) cache.delete(k);
+}
+
 /**
  * Dashboard principal: KPIs (com variação vs período anterior), séries mensais, alertas,
  * próximas ações e rankings — numa única resposta. Número fixo de consultas (sem N+1); a

@@ -807,3 +807,5 @@ h1.titulo-icone .icone, h2.titulo-icone .icone, h3.titulo-icone .icone { color: 
 @media (prefers-reduced-motion: reduce) { .esqueleto::after { animation: none; } }
 .conteudo a.dash-kpi, .conteudo a.dash-kpi:hover { color: var(--text) !important; text-decoration: none !important; }
 .conteudo a.dash-alerta-topo, .conteudo a.dash-alerta-topo:hover { color: inherit !important; text-decoration: none !important; }
+.link-alerta { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); }
+.link-alerta:hover { text-decoration-color: currentColor; }
