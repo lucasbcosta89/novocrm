@@ -23,3 +23,24 @@ export const JANELA_MS = 24 * 60 * 60 * 1000;
 export function dentroDaJanela(ultimaEntrada: string | null, agora = new Date()): boolean {
   return ultimaEntrada != null && agora.getTime() - new Date(ultimaEntrada).getTime() < JANELA_MS;
 }
+
+/* ---------- Pedido em PDF por wa.me (Fase 12b) ---------- */
+
+// espaço comum no lugar do NBSP do Intl (texto mais limpo na URL e no WhatsApp)
+const brl = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v).replace(/\u00a0/g, " ");
+
+/** Mensagem pré-preenchida (editável no WhatsApp). */
+export const mensagemPedido = (cliente: string, numero: string, total: number) =>
+  `Olá, ${cliente}! Segue o pedido nº ${numero}, no valor de ${brl(total)}. O PDF está em anexo.`;
+
+/**
+ * Link wa.me do pedido: número só com dígitos e DDI 55 (DDD + 8 ou 9 dígitos).
+ * Sem telefone ou número inválido → motivo para desabilitar o botão.
+ */
+export function linkPedidoWhatsApp(telefone: string | null | undefined, cliente: string, numero: string, total: number):
+  { url: string; contato: string } | { motivo: string } {
+  if (!telefone?.replace(/\D/g, "")) return { motivo: "Cliente sem telefone cadastrado" };
+  const contato = normalizarTelefone(telefone);
+  if (!contato) return { motivo: "Telefone do cliente inválido (use DDD + número)" };
+  return { contato, url: linkWhatsApp(contato, mensagemPedido(cliente, numero, total)) };
+}

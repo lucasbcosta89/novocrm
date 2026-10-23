@@ -9,7 +9,7 @@ import { StatusPedido } from "./status";
 
 /** Lista de pedidos (somente leitura até a Fase 5). `coluna` = entidade relacionada a exibir. */
 /**
- * acoes (página do cliente): coluna com botões só de ícone — enviar por WhatsApp (Fase 12),
+ * acoes (página do cliente): coluna com botões só de ícone — enviar por WhatsApp (Fase 12b, wa.me),
  * editar e excluir o pedido.
  */
 export function TabelaPedidos({ pedidos, coluna, acoes }: {
@@ -39,7 +39,7 @@ export function TabelaPedidos({ pedidos, coluna, acoes }: {
                 {acoes && (
                   <td className="col-acoes" data-rotulo="Ações">
                     <span className="acoes-icones">
-                      {p.status !== "cancelado" && <BotaoPedidoWhatsApp pedidoId={p.id} numero={p.numero} cliente={acoes.cliente} telefone={acoes.telefone} />}
+                      {p.status !== "cancelado" && <BotaoPedidoWhatsApp pedidoId={p.id} numero={p.numero} cliente={acoes.cliente} telefone={acoes.telefone} total={Number(p.valor_total)} />}
                       {p.status !== "cancelado" && (
                         <span className="com-dica" data-dica="Editar pedido">
                           <Link className="botao-icone botao-acao" href={`/app/pedidos/${p.id}/editar`} aria-label={`Editar pedido ${p.numero}`}>

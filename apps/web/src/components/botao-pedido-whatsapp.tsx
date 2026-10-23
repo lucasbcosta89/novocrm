@@ -1,24 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { enviarPedidoPdfAction } from "@/app/app/whatsapp-actions";
+import { Modal } from "@/app/app/oportunidades/comum";
+import { linkPedidoWhatsApp } from "@/lib/whatsapp";
 import { Icone } from "./icones";
 
-/** "(62) 99999-8888" a partir do telefone cadastrado (só para a confirmação). */
-function telefoneVisivel(t: string): string {
-  const d = t.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, "");
-  if (d.length === 11) return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
-  if (d.length === 10) return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
-  return t;
-}
-
 /**
- * Botão só com o ícone do WhatsApp: confirma, gera (ou reusa) o PDF do pedido e envia como documento.
- * Sem telefone → desabilitado com dica. Sem Cloud API → abre o wa.me com o link do PDF.
+ * Botão só com o ícone do WhatsApp (Fase 12b): modal curto → no mesmo clique, dispara o download do
+ * PDF do pedido (gera ou reusa do cache) e abre o wa.me em NOVA aba com a mensagem pronta.
+ * Sem telefone ou número inválido → desabilitado com o motivo na dica.
  */
-export function BotaoPedidoWhatsApp({ pedidoId, numero, cliente, telefone }: { pedidoId: string; numero: string; cliente: string; telefone: string | null }) {
-  const [enviando, setEnviando] = useState(false);
+export function BotaoPedidoWhatsApp({ pedidoId, numero, cliente, telefone, total }: {
+  pedidoId: string; numero: string; cliente: string; telefone: string | null; total: number;
+}) {
+  const [aberto, setAberto] = useState(false);
+  const [baixando, setBaixando] = useState(false);
   const [aviso, setAviso] = useState<{ tipo: "ok" | "erro"; texto: string } | null>(null);
+  const link = linkPedidoWhatsApp(telefone, cliente, numero, total);
 
   useEffect(() => {
     if (!aviso) return;
@@ -26,25 +24,50 @@ export function BotaoPedidoWhatsApp({ pedidoId, numero, cliente, telefone }: { p
     return () => clearTimeout(t);
   }, [aviso]);
 
-  async function enviar() {
-    if (!telefone) return;
-    if (!window.confirm(`Enviar o pedido nº ${numero} para ${cliente} no WhatsApp ${telefoneVisivel(telefone)}?`)) return;
-    setEnviando(true);
-    const r = await enviarPedidoPdfAction(pedidoId);
-    setEnviando(false);
-    if (r.erro) return setAviso({ tipo: "erro", texto: r.erro });
-    if (r.url) window.open(r.url, "_blank", "noopener,noreferrer");
-    setAviso({ tipo: "ok", texto: r.ok ?? "Pedido enviado" });
+  function continuar() {
+    if (!("url" in link)) return;
+    setAberto(false);
+    setBaixando(true);
+    // (1) download do PDF — a requisição sai antes da nova aba; o arquivo é salvo quando chegar
+    const pdf = fetch(`/api/pedidos/${pedidoId}/pdf?envio=whatsapp`);
+    // (2) wa.me em nova aba, ainda dentro do clique (não é bloqueado como popup)
+    window.open(link.url, "_blank", "noopener,noreferrer");
+    pdf
+      .then(async (r) => {
+        if (!r.ok) throw new Error(((await r.json().catch(() => ({}))) as { erro?: string }).erro ?? "Falha ao gerar o PDF");
+        const nome = /filename="([^"]+)"/.exec(r.headers.get("content-disposition") ?? "")?.[1] ?? `pedido-${numero}.pdf`;
+        const url = URL.createObjectURL(await r.blob());
+        const a = Object.assign(document.createElement("a"), { href: url, download: nome });
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10_000);
+        setAviso({ tipo: "ok", texto: `PDF do pedido nº ${numero} baixado. Anexe o arquivo na conversa do WhatsApp.` });
+      })
+      .catch((e: unknown) => setAviso({ tipo: "erro", texto: e instanceof Error ? e.message : "Falha ao baixar o PDF" }))
+      .finally(() => setBaixando(false));
   }
 
-  const dica = !telefone ? "Cliente sem telefone cadastrado" : enviando ? "Enviando…" : "Enviar pedido por WhatsApp";
+  const dica = "motivo" in link ? link.motivo : baixando ? "Baixando o PDF…" : "Enviar pedido por WhatsApp";
   return (
     <>
       <span className="com-dica" data-dica={dica}>
-        <button type="button" className="botao-icone botao-whatsapp" aria-label={dica} disabled={!telefone || enviando} aria-busy={enviando} onClick={enviar}>
-          {enviando ? <span className="girando" aria-hidden="true" /> : <Icone nome="whatsapp" tamanho={18} />}
+        <button type="button" className="botao-icone botao-whatsapp" aria-label={dica} disabled={"motivo" in link || baixando} aria-busy={baixando}
+          onClick={() => setAberto(true)}>
+          {baixando ? <span className="girando" aria-hidden="true" /> : <Icone nome="whatsapp" tamanho={18} />}
         </button>
       </span>
+      {aberto && (
+        <Modal titulo={`Enviar pedido nº ${numero}`} onFechar={() => setAberto(false)} largo={false}>
+          <div className="grade-1">
+            <p>O PDF do pedido será baixado. Anexe o arquivo na conversa do WhatsApp que abrirá em seguida.</p>
+            <div className="acoes-linha">
+              <button type="button" className="btn btn-whatsapp" onClick={continuar}><Icone nome="whatsapp" tamanho={16} /> Continuar</button>
+              <button type="button" className="btn-link" onClick={() => setAberto(false)}>Cancelar</button>
+            </div>
+          </div>
+        </Modal>
+      )}
       {aviso && (
         <div className={`toast toast-${aviso.tipo}`} role={aviso.tipo === "erro" ? "alert" : "status"}>
           <Icone nome={aviso.tipo === "erro" ? "alerta" : "check"} tamanho={16} />

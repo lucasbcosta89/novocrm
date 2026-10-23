@@ -48,18 +48,16 @@ describe("PDF do pedido (fase 12)", () => {
     vi.doUnmock("@/server/relatorios");
   });
 
-  it("erros da Cloud API viram mensagens claras; link público assinado expira", async () => {
-    process.env.DADOS_PESSOAIS_CHAVE = "teste";
-    vi.resetModules();
-    const m = await import("@/server/pedido-whatsapp");
-    expect(m.mensagemErroMeta(131026, "x")).toMatch(/Número sem WhatsApp/);
-    expect(m.mensagemErroMeta(131047, "x")).toMatch(/janela de 24h/);
-    expect(m.mensagemErroMeta(132001, "x")).toMatch(/Template inexistente/);
-    expect(m.mensagemErroMeta(131053, "x")).toMatch(/rejeitou o PDF/);
-    const agora = Date.now();
-    const url = new URL(await m.linkPublicoDocumento("https://x.dev", "doc-1", agora));
-    expect(await m.linkPublicoValido("doc-1", url.searchParams.get("exp"), url.searchParams.get("sig"), agora)).toBe(true);
-    expect(await m.linkPublicoValido("doc-2", url.searchParams.get("exp"), url.searchParams.get("sig"), agora)).toBe(false);
-    expect(await m.linkPublicoValido("doc-1", url.searchParams.get("exp"), url.searchParams.get("sig"), agora + 8 * 86_400_000)).toBe(false);
+  it("fase 12b: link wa.me com DDI 55, mensagem com número e valor; sem telefone ou inválido = motivo", async () => {
+    const { linkPedidoWhatsApp, mensagemPedido } = await import("@/lib/whatsapp");
+    const ok = linkPedidoWhatsApp("(62) 99999-8888", "Maria Souza", "P000010", 6610);
+    expect(ok).toMatchObject({ contato: "5562999998888" });
+    const url = new URL((ok as { url: string }).url);
+    expect(url.origin + url.pathname).toBe("https://wa.me/5562999998888");
+    expect(url.searchParams.get("text")?.replace(/ /g, " ")).toBe("Olá, Maria Souza! Segue o pedido nº P000010, no valor de R$ 6.610,00. O PDF está em anexo.");
+    expect(linkPedidoWhatsApp("55 62 3333-4444", "X", "1", 1)).toMatchObject({ contato: "556233334444" });
+    expect(linkPedidoWhatsApp(null, "X", "1", 1)).toEqual({ motivo: "Cliente sem telefone cadastrado" });
+    expect(linkPedidoWhatsApp("9999-8888", "X", "1", 1)).toEqual({ motivo: "Telefone do cliente inválido (use DDD + número)" });
+    expect(mensagemPedido("Ana", "P1", 10.5).replace(/ /g, " ")).toContain("R$ 10,50");
   });
 });

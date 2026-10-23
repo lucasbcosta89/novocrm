@@ -5,7 +5,6 @@ import { comParam } from "@/lib/url";
 import { executarAcao } from "@/server/acao";
 import { obterContexto, type Contexto } from "@/server/contexto";
 import { erroBanco, normalizarErro } from "@/server/erros";
-import { enviarPedidoPdf } from "@/server/pedido-whatsapp";
 import { enviarCatalogo, enviarConfirmacaoPedido, enviarFollowUp, type Envio } from "@/server/whatsapp";
 
 async function origem() {
@@ -57,13 +56,3 @@ export async function enviarCatalogoNovaAbaAction(
   }
 }
 
-/** Fase 12: PDF do pedido por WhatsApp (documento pela Cloud API ou link wa.me). Devolve o resultado ao botão. */
-export async function enviarPedidoPdfAction(pedidoId: string): Promise<{ ok?: string; url?: string; erro?: string }> {
-  try {
-    const envio = await enviarPedidoPdf(await obterContexto(), pedidoId, await origem());
-    if (envio.modo === "link") return { url: envio.url, ok: "WhatsApp aberto com o link do PDF do pedido" };
-    return { ok: `PDF do pedido enviado pelo WhatsApp${envio.viaTemplate ? " (template)" : ""}${envio.cache ? " — PDF reaproveitado" : ""}` };
-  } catch (e) {
-    return { erro: normalizarErro(e).message };
-  }
-}
