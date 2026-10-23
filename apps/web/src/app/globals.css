@@ -846,3 +846,28 @@ h1.titulo-icone .icone, h2.titulo-icone .icone, h3.titulo-icone .icone { color: 
 :root[data-tema="escuro"] .botao-whatsapp { color: #4ADE80; }
 .girando { width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: girar .8s linear infinite; }
 @keyframes girar { to { transform: rotate(360deg); } }
+
+/* Tabela de pedidos do cliente: ações só com ícone, sem rolagem lateral */
+.acoes-icones { display: inline-flex; align-items: center; gap: 4px; }
+.acoes-icones form { margin: 0; display: inline-flex; }
+.botao-acao { width: 32px; height: 32px; color: var(--muted); }
+.botao-acao:hover { background: var(--accent-suave); color: var(--accent-fg); }
+.botao-excluir:hover { background: var(--danger-suave); color: var(--danger-texto); }
+.acoes-icones .botao-icone { width: 32px; height: 32px; }
+.tabela-pedidos th, .tabela-pedidos td { padding-left: 10px; padding-right: 10px; }
+.tabela-pedidos td:first-child, .tabela-pedidos td:nth-child(2) { white-space: nowrap; }
+.tabela-pedidos .com-dica::after { left: auto; right: 0; transform: none; }
+/* responsivo pela largura do quadro (não da janela): a sidebar aberta reduz o espaço útil */
+.tabela-wrap:has(> .tabela-pedidos) { container-type: inline-size; }
+@container (max-width: 680px) { .tabela-pedidos th:nth-child(6), .tabela-pedidos td:nth-child(6) { display: none; } }
+/* quadro estreito: cada pedido vira um cartão (rótulo à esquerda, valor à direita) */
+@container (max-width: 560px) {
+  .tabela-pedidos, .tabela-pedidos tbody, .tabela-pedidos tr, .tabela-pedidos td { display: block; width: 100%; }
+  .tabela-pedidos thead { display: none; }
+  .tabela-pedidos tbody tr { padding: 8px 12px; border-bottom: 1px solid var(--borda-suave); }
+  .tabela-pedidos tbody tr:last-child { border-bottom: 0; }
+  .tabela-pedidos tbody tr:hover td { background: transparent; }
+  .tabela-pedidos td, .tabela-pedidos td:nth-child(6) { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 4px 0; border: 0; text-align: right; white-space: normal; }
+  .tabela-pedidos td::before { content: attr(data-rotulo); color: var(--muted); font-size: .8rem; text-align: left; flex: none; }
+  .tabela-pedidos td.col-acoes { width: 100%; }
+}

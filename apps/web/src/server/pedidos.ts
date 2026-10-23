@@ -88,13 +88,20 @@ export async function cancelarPedido(ctx: Contexto, id: string): Promise<Pedido>
   return obterPedido(ctx, id);
 }
 
-/** Só rascunhos podem ser excluídos; confirmados devem ser cancelados. */
+/**
+ * Exclui o pedido (itens em cascata). Confirmado/entregue/cancelado: a comissão lançada é apagada junto;
+ * bloqueado quando a comissão já foi recebida (o histórico de recebimento não some).
+ */
 export async function excluirPedido({ supabase }: Contexto, id: string): Promise<void> {
-  const { error, count } = await supabase
-    .from("pedidos")
-    .delete({ count: "exact" })
-    .eq("id", idSchema.parse(id))
-    .eq("status", "rascunho");
+  const pedidoId = idSchema.parse(id);
+  const { data: com, error: e1 } = await supabase.from("comissoes").select("id, status").eq("pedido_id", pedidoId).returns<{ id: string; status: string }[]>();
+  if (e1) throw erroBanco(e1);
+  if (com.some((c) => c.status === "recebida")) throw new AppError(400, "Comissão já recebida: este pedido não pode ser excluído", "regra");
+  if (com.length) {
+    const { error } = await supabase.from("comissoes").delete().eq("pedido_id", pedidoId);
+    if (error) throw erroBanco(error);
+  }
+  const { error, count } = await supabase.from("pedidos").delete({ count: "exact" }).eq("id", pedidoId);
   if (error) throw erroBanco(error);
-  if (!count) throw new AppError(400, "Só pedidos em rascunho podem ser excluídos", "regra");
+  if (!count) throw new AppError(404, "Pedido não encontrado", "nao_encontrado");
 }

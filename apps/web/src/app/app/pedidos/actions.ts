@@ -67,10 +67,11 @@ export async function cancelarPedidoAction(id: string) {
   await executarAcao((ctx) => cancelarPedido(ctx, id), { ok: `${BASE}/${id}`, erro: `${BASE}/${id}`, mensagem: "Pedido cancelado" });
 }
 
-export async function excluirPedidoAction(id: string, clienteId: string) {
+/** voltar: página de origem (tabela de pedidos do cliente ou o próprio pedido); o erro volta para ela. */
+export async function excluirPedidoAction(id: string, clienteId: string, voltar: string) {
   await executarAcao((ctx) => excluirPedido(ctx, id), {
     ok: `/app/clientes/${clienteId}/pedidos`,
-    erro: `${BASE}/${id}`,
-    mensagem: "Rascunho excluído",
+    erro: voltar.startsWith("/app/") ? voltar : `${BASE}/${id}`,
+    mensagem: "Pedido excluído",
   });
 }

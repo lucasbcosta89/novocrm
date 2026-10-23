@@ -81,7 +81,7 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
                 <button className="btn" type="submit"><Icone nome="check" tamanho={16} /> Confirmar pedido</button>
               </form>
               {p.cliente && (
-                <form action={excluirPedidoAction.bind(null, p.id, p.cliente.id)}>
+                <form action={excluirPedidoAction.bind(null, p.id, p.cliente.id, `/app/pedidos/${p.id}`)}>
                   <button className="btn-link perigo" type="submit"><Icone nome="lixeira" tamanho={16} /> Excluir rascunho</button>
                 </form>
               )}
