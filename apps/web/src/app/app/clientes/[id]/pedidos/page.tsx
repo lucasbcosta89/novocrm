@@ -17,7 +17,7 @@ export default async function ClientePedidos({ params, searchParams }: { params:
           <h2 className="titulo-icone"><Icone nome="carrinho" tamanho={20} /> Pedidos</h2>
           <Link className="btn btn-peq" href={`/app/pedidos/novo?cliente=${c.id}${c.representadas.length === 1 ? `&representada=${c.representadas[0]!.id}` : ""}`}><Icone nome="mais" tamanho={16} /> Novo pedido</Link>
         </div>
-        <TabelaPedidos pedidos={pedidos} coluna="representada" />
+        <TabelaPedidos pedidos={pedidos} coluna="representada" whatsapp={{ cliente: c.nome, telefone: c.whatsapp ?? c.celular }} />
       </section>
     </>
   );

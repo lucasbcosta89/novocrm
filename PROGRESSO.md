@@ -89,6 +89,14 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Resumo: total de custos, resultado bruto (comissões recebidas) e líquido; CSV não feito (não há helper de export na plataforma)
   - [x] Dashboard: kpis custos_total/resultado_bruto/resultado_liquido + serie_custos; cards Custos e Resultado; linha de custos no gráfico de comissões
   - [ ] Critério verificado (despesa com 2 representadas e 1 cliente; filtros; agrupamento sem duplicar; líquido; dashboard; exclusão em cascata)
+- [ ] Fase 12 — Pedido em PDF por WhatsApp
+  - [x] Tipo de documento "pedido" (mesmo fluxo/hash_cache da Fase 7, template 7b); não consome pdf_mes (gatilho de quota ignora o tipo)
+  - [x] PDF: uma linha por item (Foto 40x40, SKU, Produto, NCM, Qtd., Valor unit., Desc. % só se houver, Valor total), TOTAL DO PEDIDO, pagamento e prazo
+  - [x] Botão só com ícone do WhatsApp na tabela de pedidos do cliente (confirmação, "Enviando…", avisos; sem telefone = desabilitado)
+  - [x] Cloud API: upload de mídia + documento na janela de 24h; fora dela, template "pedido_pdf" com cabeçalho de documento; sem Cloud API: wa.me com link assinado (7 dias)
+  - [x] Registro do envio em mensagens_whatsapp
+  - [ ] Template "pedido_pdf" aprovado na Meta e cadastrado (pendente) · credenciais da Cloud API em produção
+  - [ ] Critério verificado (ícone; 3 itens com foto vazia; total; template; documento no WhatsApp; sem telefone; cache)
 - [x] Fase 4 — Oportunidades e desafios por cliente + plano de ação
   - [x] Bloco "Oportunidades e Desafios" na página do cliente (+ Novo, tabela tipo/título/prioridade/status/data/ações)
   - [x] Plano de ação em /app/clientes/:id/oportunidades/:opId (adicionar, concluir, editar, excluir ações)

@@ -395,7 +395,8 @@ export async function dadosCatalogo(ctx: Contexto, representadaId: string): Prom
 
 const PLACEHOLDER = `<svg xmlns="http://www.w3.org/2000/svg" width="110" height="80"><rect width="110" height="80" fill="${COR.fundo}"/><text x="55" y="44" font-size="9" fill="${COR.suave}" text-anchor="middle" font-family="Helvetica">sem imagem</text></svg>`;
 
-async function imagemDataUrl(chave: string | null): Promise<string | null> {
+/** Imagem do produto (R2/Storage) como data URL; null se ausente, inválida ou formato não suportado (webp). */
+export async function imagemDataUrl(chave: string | null): Promise<string | null> {
   if (!chave) return null;
   const arq = await lerArquivo(chave).catch(() => null);
   if (!arq) return null;

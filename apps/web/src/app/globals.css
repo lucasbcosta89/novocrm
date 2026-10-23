@@ -837,3 +837,12 @@ h1.titulo-icone .icone, h2.titulo-icone .icone, h3.titulo-icone .icone { color: 
 .tabela-custos .grupo-custos th { background: var(--accent-suave); color: var(--text); font-size: .85rem; }
 .tabela-custos .obs-despesa { max-width: 220px; white-space: pre-wrap; }
 @media (min-width: 1500px) { .dash-kpis > * { grid-column: span 3; } }
+
+/* Fase 12: envio do pedido por WhatsApp */
+.col-acoes { width: 1%; white-space: nowrap; text-align: center; }
+.botao-whatsapp { color: #128C4A; background: var(--whatsapp-suave); }
+.botao-whatsapp:hover:not(:disabled) { background: color-mix(in srgb, var(--whatsapp) 24%, transparent); }
+.botao-whatsapp:disabled { opacity: .45; cursor: not-allowed; }
+:root[data-tema="escuro"] .botao-whatsapp { color: #4ADE80; }
+.girando { width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: girar .8s linear infinite; }
+@keyframes girar { to { transform: rotate(360deg); } }

@@ -3,7 +3,7 @@ import { after } from "next/server";
 import { z } from "zod";
 import { idSchema } from "@/lib/validacao";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { salvarArquivo } from "./armazenamento";
+import { lerArquivo, salvarArquivo } from "./armazenamento";
 import type { Contexto } from "./contexto";
 import { AppError, erroBanco } from "./erros";
 import type { Representante } from "@/lib/pdf";
@@ -17,10 +17,12 @@ import {
   dadosKpis, dadosVendasCliente, dadosVendasGeral, dadosVendasRepresentada,
   pdfKpis, pdfVendasCliente, pdfVendasGeral, pdfVendasRepresentada,
 } from "./relatorios-biblioteca";
+import { dadosPedidoPdf, pdfPedido } from "./pdf-pedido";
 
 export const TIPOS_DOCUMENTO = [
   "relatorio_periodo", "relatorio_comissao", "catalogo", "catalogo_geral",
   "relatorio_vendas_geral", "relatorio_vendas_cliente", "relatorio_vendas_representada", "relatorio_kpis",
+  "pedido",
 ] as const;
 export type TipoDocumento = (typeof TIPOS_DOCUMENTO)[number];
 
@@ -33,6 +35,7 @@ export const ROTULO_DOCUMENTO: Record<TipoDocumento, string> = {
   relatorio_vendas_cliente: "Vendas — Por cliente",
   relatorio_vendas_representada: "Vendas — Por representada",
   relatorio_kpis: "KPIs",
+  pedido: "Pedido",
 };
 
 /** Mês "AAAA-MM" ou intervalo "AAAA-MM-DD_AAAA-MM-DD" (até 366 dias). */
@@ -57,6 +60,8 @@ export const solicitacaoSchema = z.discriminatedUnion("tipo", [
   z.object({ tipo: z.literal("relatorio_vendas_cliente"), cliente_id: z.uuid("Selecione o cliente"), periodo: periodoSchema }),
   z.object({ tipo: z.literal("relatorio_vendas_representada"), representada_id: z.uuid("Selecione a representada"), periodo: periodoSchema }),
   z.object({ tipo: z.literal("relatorio_kpis"), periodo: periodoSchema }),
+  // Fase 12: PDF operacional do pedido (não consome pdf_mes)
+  z.object({ tipo: z.literal("pedido"), pedido_id: z.uuid("Pedido inválido") }),
 ]);
 export type Solicitacao = z.infer<typeof solicitacaoSchema>;
 
@@ -94,6 +99,12 @@ async function representante(ctx: Contexto): Promise<Representante> {
 }
 
 async function preparar(ctx: Contexto, s: Solicitacao, rep: Representante) {
+  if (s.tipo === "pedido") {
+    const pedido = await dadosPedidoPdf(ctx, s.pedido_id);
+    // contato do cliente fora do hash: trocar o telefone não obriga a regerar o PDF
+    const dados = { ...pedido, cliente: pedido.cliente ? { id: pedido.cliente.id, nome: pedido.cliente.nome } : null };
+    return { dados, titulo: `Pedido nº ${pedido.numero} — ${pedido.cliente?.nome ?? "Cliente"}`, gerar: () => pdfPedido(pedido, rep) };
+  }
   if (s.tipo === "catalogo" || s.tipo === "catalogo_geral") {
     const geral = s.tipo === "catalogo_geral";
     const dados = await dadosCatalogo(ctx, geral ? "todas" : s.representada_id);
@@ -186,7 +197,7 @@ export async function solicitarDocumento(ctx: Contexto, input: unknown): Promise
     if (error) throw erroBanco(error);
     doc = data;
   } else {
-    await verificarLimite(ctx, "pdf_mes");
+    if (s.tipo !== "pedido") await verificarLimite(ctx, "pdf_mes"); // PDF do pedido é operacional
     const { data, error } = await ctx.supabase
       .from("documentos")
       .insert({
@@ -234,4 +245,46 @@ export async function arquivoDocumento({ supabase }: Contexto, id: string): Prom
   if (error) throw erroBanco(error);
   if (data.status !== "pronto") throw new AppError(409, "Documento ainda não está pronto", "nao_pronto");
   return { chave: data.r2_key, titulo: data.titulo ?? "documento" };
+}
+
+/**
+ * PDF do pedido pronto para anexar (envio por WhatsApp): reusa o arquivo do cache (hash) quando o
+ * pedido não mudou; senão gera na hora e grava em documentos. Não consome pdf_mes.
+ */
+export async function pdfDoPedido(ctx: Contexto, pedidoId: string): Promise<{ bytes: Uint8Array; nome: string; documentoId: string; cache: boolean }> {
+  const s: Solicitacao = { tipo: "pedido", pedido_id: idSchema.parse(pedidoId) };
+  const rep = await representante(ctx);
+  const { dados, titulo, gerar } = await preparar(ctx, s, rep);
+  const hash = await sha256(JSON.stringify({ v: VERSAO_LAYOUT, s, dados, rep }));
+  const nome = `${titulo.replace(/[\\/:*?"<>|]/g, "-")}.pdf`;
+
+  const { data: existente, error: e1 } = await ctx.supabase
+    .from("documentos")
+    .select("id, status, r2_key")
+    .eq("hash_cache", hash)
+    .maybeSingle<{ id: string; status: string; r2_key: string }>();
+  if (e1) throw erroBanco(e1);
+  if (existente?.status === "pronto" && existente.r2_key) {
+    const arq = await lerArquivo(existente.r2_key);
+    if (arq) return { bytes: new Uint8Array(arq.bytes), nome, documentoId: existente.id, cache: true };
+  }
+
+  const bytes = await gerar();
+  let id = existente?.id;
+  if (!id) {
+    const { data, error } = await ctx.supabase
+      .from("documentos")
+      .insert({ user_id: ctx.userId, tipo: "pedido", parametros: s, titulo, hash_cache: hash, r2_key: "", status: "gerando" })
+      .select("id")
+      .single<{ id: string }>();
+    if (error) throw erroBanco(error);
+    id = data.id;
+  }
+  const chave = `documentos/${ctx.userId}/${id}.pdf`;
+  await salvarArquivo(chave, bytes, "application/pdf");
+  await supabaseAdmin()
+    .from("documentos")
+    .update({ status: "pronto", r2_key: chave, tamanho: bytes.byteLength, gerado_em: new Date().toISOString(), erro: null })
+    .eq("id", id);
+  return { bytes, nome, documentoId: id, cache: false };
 }
