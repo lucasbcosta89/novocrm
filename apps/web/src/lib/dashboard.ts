@@ -39,16 +39,17 @@ export function janelas(periodo: Periodo, agora: Date = new Date()): { atual: Ja
   const n = periodo === "ano" ? Number(mesAtual.slice(5, 7)) : Number(periodo.replace("m", ""));
   const primeiro = periodo === "ano" ? `${mesAtual.slice(0, 4)}-01` : somarMeses(mesAtual, -(n - 1));
   const primeiroAnt = periodo === "ano" ? somarMeses(primeiro, -12) : somarMeses(primeiro, -n);
-  const atual = { meses: listaMeses(primeiro, n), inicio: inicioDoMes(primeiro), fim: agora.toISOString() };
-  const fimAnt = periodo === "ano" ? new Date(new Date(agora).setUTCFullYear(agora.getUTCFullYear() - 1)).toISOString() : atual.inicio;
-  return { atual, anterior: { meses: listaMeses(primeiroAnt, n), inicio: inicioDoMes(primeiroAnt), fim: fimAnt } };
+  // a janela vai até o fim do mês corrente (inclui comissões previstas e despesas do mês inteiro);
+  // o período anterior tem os mesmos N meses completos
+  const atual = { meses: listaMeses(primeiro, n), inicio: inicioDoMes(primeiro), fim: inicioDoMes(somarMeses(mesAtual, 1)) };
+  return { atual, anterior: { meses: listaMeses(primeiroAnt, n), inicio: inicioDoMes(primeiroAnt), fim: inicioDoMes(somarMeses(primeiroAnt, n)) } };
 }
 
-/** Instante (ISO) dentro da janela [inicio, fim). */
+/** Instante (ISO) ou data (AAAA-MM-DD, meio-dia em Brasília) dentro da janela [inicio, fim). */
 export const naJanela = (iso: string | null | undefined, j: Janela) => {
   if (!iso) return false;
   const t = Date.parse(iso.length === 10 ? `${iso}T12:00:00-03:00` : iso);
-  return t >= Date.parse(j.inicio) && t < Date.parse(j.fim) + 1;
+  return t >= Date.parse(j.inicio) && t < Date.parse(j.fim);
 };
 
 /** Variação % vs período anterior (1 casa); sem base anterior: 0 se ambos zero, senão null. */

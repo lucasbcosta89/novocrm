@@ -130,9 +130,13 @@ export function PainelPrincipal({ representadas, dataExtenso }: { representadas:
             <CardKpi titulo="Oportunidades em aberto" kpi={d.kpis.oportunidades_abertas} icone="funil" tom="tom-ciano" href="/app/oportunidades" numero />
             <CardKpi titulo="Ticket médio" kpi={d.kpis.ticket_medio} icone="carrinho" tom="tom-rosa"
               href={representada !== "todas" ? `/app/representadas/${representada}/pedidos` : "/app/representadas"} />
+            <CardKpi titulo="Custos" kpi={d.kpis.custos_total} icone="carteira" tom="tom-perigo" inverso
+              href={`/app/custos?p=este_mes${representada !== "todas" ? `&rep=${representada}` : ""}`} />
+            <CardKpi titulo="Resultado" kpi={d.kpis.resultado_liquido} icone="tendencia" tom={d.kpis.resultado_liquido.valor >= 0 ? "tom-ok" : "tom-perigo"}
+              href={`/app/custos${representada !== "todas" ? `?rep=${representada}` : ""}`} />
           </>
         ) : (
-          Array.from({ length: 6 }, (_, i) => <div key={i} className="dash-card esqueleto esqueleto-kpi" />)
+          Array.from({ length: 8 }, (_, i) => <div key={i} className="dash-card esqueleto esqueleto-kpi" />)
         )}
       </section>
 
@@ -145,10 +149,10 @@ export function PainelPrincipal({ representadas, dataExtenso }: { representadas:
           ) : <div className="esqueleto esqueleto-grafico" />}
         </div>
         <div className="dash-card">
-          <h2 className="titulo-icone"><Icone nome="cifrao" tamanho={20} /> Comissões por mês</h2>
+          <h2 className="titulo-icone"><Icone nome="cifrao" tamanho={20} /> Comissões x custos por mês</h2>
           {d ? (
-            d.serie_comissoes.some((s) => s.a_receber + s.recebida + s.atrasada > 0)
-              ? <GraficoComissoes dados={d.serie_comissoes} />
+            d.serie_comissoes.some((s) => s.a_receber + s.recebida + s.atrasada > 0) || d.serie_custos.some((c) => c.valor > 0)
+              ? <GraficoComissoes dados={d.serie_comissoes.map((c, i) => ({ ...c, custos: d.serie_custos[i]?.valor ?? 0 }))} />
               : <Vazio texto="Nenhuma comissão prevista neste período." />
           ) : <div className="esqueleto esqueleto-grafico" />}
         </div>

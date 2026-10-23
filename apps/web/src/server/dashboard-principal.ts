@@ -16,11 +16,14 @@ export type ProximaAcao = { id: string; tipo: "visita" | "subtarefa" | "tarefa";
 export type DashboardPrincipal = {
   meta: { periodo: Periodo; representada_id: string; representada_nome: string | null; atualizado_em: string; meses: string[]; cache: "hit" | "miss" };
   kpis: Record<
-    "vendas_total" | "vendas_mes_atual" | "comissao_a_receber" | "comissao_recebida" | "comissao_atrasada" | "oportunidades_abertas" | "ticket_medio" | "taxa_conversao",
+    | "vendas_total" | "vendas_mes_atual" | "comissao_a_receber" | "comissao_recebida" | "comissao_atrasada" | "oportunidades_abertas" | "ticket_medio" | "taxa_conversao"
+    // Fase 11: custos = despesas do período; bruto = comissões recebidas; líquido = bruto − custos
+    | "custos_total" | "resultado_bruto" | "resultado_liquido",
     Kpi
   >;
   serie_vendas: { mes: string; valor: number }[];
   serie_comissoes: { mes: string; a_receber: number; recebida: number; atrasada: number }[];
+  serie_custos: { mes: string; valor: number }[];
   alertas: Record<"tarefas_vencidas" | "tarefas_a_vencer" | "comissoes_atrasadas" | "visitas_atrasadas" | "oportunidades_paradas", BlocoAlerta>;
   proximas_acoes: ProximaAcao[];
   extras: {
@@ -47,6 +50,7 @@ type AcaoRow = {
 };
 type TarefaRow = { id: string; titulo: string; data: string; cliente_id: string | null; cliente: Nome };
 type VisitaRow = { id: string; data: string; cliente_id: string; cliente: Nome };
+type DespesaRow = { valor: number; data: string };
 
 const VENDA = ["confirmado", "entregue"];
 const LIMITE = 5000;
@@ -140,6 +144,13 @@ async function calcular(ctx: Contexto, periodo: Periodo, rep: string | null) {
     .gte("data", agora.toISOString())
     .order("data")
     .limit(8);
+  // despesas (Fase 11): com representada selecionada, só as vinculadas a ela (despesa_representadas)
+  let despesasQ = supabase
+    .from("despesas")
+    .select(rep ? "valor, data, vinculo:despesa_representadas!inner(representada_id)" : "valor, data")
+    .gte("data", diaSP(anterior.inicio))
+    .lt("data", diaSP(atual.fim)); // fim = 1º dia do mês seguinte
+  if (rep) despesasQ = despesasQ.eq("vinculo.representada_id", rep);
   const carteiraQ = rep
     ? supabase.from("cliente_representada").select("cliente_id", { count: "exact", head: true }).eq("representada_id", rep)
     : supabase.from("clientes").select("id", { count: "exact", head: true });
@@ -154,7 +165,7 @@ async function calcular(ctx: Contexto, periodo: Periodo, rep: string | null) {
     visitasQ = visitasQ.eq("representada_id", rep); // visitas têm representada_id
   }
 
-  const [pedidosR, itensR, comissoesR, opsR, acoesR, tarefasR, visitasR, carteiraR] = await Promise.all([
+  const [pedidosR, itensR, comissoesR, opsR, acoesR, tarefasR, visitasR, carteiraR, despesasR] = await Promise.all([
     pedidosQ.limit(LIMITE).returns<PedidoRow[]>(),
     itensQ.limit(LIMITE * 4).returns<ItemRow[]>(),
     comissoesQ.limit(LIMITE).returns<ComissaoRow[]>(),
@@ -163,8 +174,12 @@ async function calcular(ctx: Contexto, periodo: Periodo, rep: string | null) {
     tarefasQ.limit(LIMITE).returns<TarefaRow[]>(),
     visitasQ.returns<VisitaRow[]>(),
     carteiraQ,
+    despesasQ.limit(LIMITE).returns<DespesaRow[]>(),
   ]);
-  for (const r of [pedidosR, itensR, comissoesR, opsR, acoesR, tarefasR, visitasR, carteiraR]) if (r.error) throw erroBanco(r.error);
+  for (const r of [pedidosR, itensR, comissoesR, opsR, acoesR, tarefasR, visitasR, carteiraR, despesasR]) if (r.error) throw erroBanco(r.error);
+  const despesas = despesasR.data ?? [];
+  const custosNa = (j: typeof atual) => despesas.filter((d) => naJanela(d.data, j)).reduce((t, d) => t + Number(d.valor), 0);
+  const custosPorMes = somarPor(despesas, (d) => d.data.slice(0, 7), (d) => Number(d.valor));
   const pedidos = pedidosR.data ?? [];
   const comissoes = comissoesR.data ?? [];
   const ops = opsR.data ?? [];
@@ -209,6 +224,9 @@ async function calcular(ctx: Contexto, periodo: Periodo, rep: string | null) {
     oportunidades_abertas: { valor: abertas.length, variacao_pct: variacao(criadasEmAberto(atual), criadasEmAberto(anterior)) },
     ticket_medio: k(ticket(vendasAtual), ticket(vendasAnterior)),
     taxa_conversao: { valor: conversao(atual), variacao_pct: variacao(conversao(atual), conversao(anterior)) },
+    custos_total: k(custosNa(atual), custosNa(anterior)),
+    resultado_bruto: k(comissaoNa(atual, "recebida"), comissaoNa(anterior, "recebida")),
+    resultado_liquido: k(comissaoNa(atual, "recebida") - custosNa(atual), comissaoNa(anterior, "recebida") - custosNa(anterior)),
   };
 
   /* Alertas (situação atual, não dependem do período) */
@@ -262,6 +280,7 @@ async function calcular(ctx: Contexto, periodo: Periodo, rep: string | null) {
     kpis,
     serie_vendas: serieMensal(atual.meses, porMes),
     serie_comissoes: serieComissoes,
+    serie_custos: serieMensal(atual.meses, custosPorMes),
     alertas: {
       tarefas_vencidas: bloco(vencidas),
       tarefas_a_vencer: bloco(aVencer),

@@ -22,7 +22,10 @@ describe("dashboard principal (fase 9-1)", () => {
     expect(janelas("12m", agora).atual.meses[0]).toBe("2025-11");
     expect(naJanela("2026-05-01T03:00:00Z", j6.atual)).toBe(true);
     expect(naJanela("2026-05-01T02:59:00Z", j6.atual)).toBe(false); // 30/04 23:59 em Brasília
-    expect(naJanela("2026-10-31", ja.atual)).toBe(false); // depois de agora
+    expect(naJanela("2026-10-31", ja.atual)).toBe(true); // mês corrente inteiro (comissões previstas, despesas)
+    expect(naJanela("2026-11-01", ja.atual)).toBe(false);
+    expect(naJanela("2026-04-30", j6.anterior)).toBe(true);
+    expect(naJanela("2026-05-01", j6.anterior)).toBe(false);
   });
 
   it("variação, série mensal e ranking", () => {

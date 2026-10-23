@@ -82,6 +82,13 @@ Toda fase termina com commit + tag no GitHub.
   - [x] /app/biblioteca (sidebar): quota "X de Y PDFs", cards por seção, modal com período e cliente/representada, "Gerando…", aviso de erro, gerados recentemente
   - [x] Quota: documento novo consome 1 (gatilho em documentos); cache hit não consome; limite checado no servidor e botões desabilitados
   - [x] Critério verificado (6 cards com template; vendas = soma de valor_total; comissões = soma de comissao_valor; KPIs e "—"; débito e cache; limite)
+- [ ] Fase 11 — Controle de Custos + custos no Dashboard
+  - [x] Migration: despesas, despesa_representadas, despesa_clientes (RLS; junções só aceitam representada/cliente do próprio usuário; cascade)
+  - [x] /app/custos (sidebar): popup adicionar/editar (descrição, data, valor BRL, representadas, clientes, observações), tabela com editar/excluir
+  - [x] Filtros na query string (atalhos de período + intervalo, representadas, clientes), agrupamento (mês/semana/dia/representada/cliente) com subtotais e total geral sem duplicar
+  - [x] Resumo: total de custos, resultado bruto (comissões recebidas) e líquido; CSV não feito (não há helper de export na plataforma)
+  - [x] Dashboard: kpis custos_total/resultado_bruto/resultado_liquido + serie_custos; cards Custos e Resultado; linha de custos no gráfico de comissões
+  - [ ] Critério verificado (despesa com 2 representadas e 1 cliente; filtros; agrupamento sem duplicar; líquido; dashboard; exclusão em cascata)
 - [x] Fase 4 — Oportunidades e desafios por cliente + plano de ação
   - [x] Bloco "Oportunidades e Desafios" na página do cliente (+ Novo, tabela tipo/título/prioridade/status/data/ações)
   - [x] Plano de ação em /app/clientes/:id/oportunidades/:opId (adicionar, concluir, editar, excluir ações)

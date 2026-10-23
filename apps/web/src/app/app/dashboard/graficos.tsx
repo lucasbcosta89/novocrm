@@ -1,6 +1,6 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, ComposedChart, Legend, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const brlCurto = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL", notation: "compact", maximumFractionDigits: 1 });
@@ -33,12 +33,12 @@ export function GraficoVendas({ dados }: { dados: { mes: string; valor: number }
   );
 }
 
-/** Barras empilhadas de comissões por mês (a receber / recebida / atrasada). */
-export function GraficoComissoes({ dados }: { dados: { mes: string; a_receber: number; recebida: number; atrasada: number }[] }) {
+/** Barras empilhadas de comissões por mês (a receber / recebida / atrasada) + linha de custos (mesmo eixo). */
+export function GraficoComissoes({ dados }: { dados: { mes: string; a_receber: number; recebida: number; atrasada: number; custos: number }[] }) {
   return (
-    <div className="dash-grafico" role="img" aria-label="Comissões por mês: a receber, recebidas e atrasadas">
+    <div className="dash-grafico" role="img" aria-label={`Comissões e custos por mês: ${dados.map((d) => `${rotuloMes(d.mes)} recebida ${brl.format(d.recebida)}, custos ${brl.format(d.custos)}`).join("; ")}`}>
       <ResponsiveContainer width="100%" height={260}>
-        <BarChart data={dados} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+        <ComposedChart data={dados} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
           <CartesianGrid vertical={false} stroke="var(--borda-suave)" />
           <XAxis dataKey="mes" tickFormatter={rotuloMes} tick={EIXO} axisLine={false} tickLine={false} />
           <YAxis tickFormatter={(v) => brlCurto.format(v)} tick={EIXO} axisLine={false} tickLine={false} width={72} />
@@ -47,7 +47,8 @@ export function GraficoComissoes({ dados }: { dados: { mes: string; a_receber: n
           <Bar dataKey="recebida" name="Recebida" stackId="c" fill="var(--ok)" maxBarSize={44} />
           <Bar dataKey="a_receber" name="A receber" stackId="c" fill="#7C3AED" maxBarSize={44} />
           <Bar dataKey="atrasada" name="Atrasada" stackId="c" fill="var(--danger)" radius={[6, 6, 0, 0]} maxBarSize={44} />
-        </BarChart>
+          <Line type="monotone" dataKey="custos" name="Custos" stroke="var(--atencao)" strokeWidth={2.5} dot={{ r: 3, fill: "var(--atencao)" }} activeDot={{ r: 5 }} />
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   );

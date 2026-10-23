@@ -822,3 +822,18 @@ h1.titulo-icone .icone, h2.titulo-icone .icone, h3.titulo-icone .icone { color: 
 .toast-ok { background: var(--ok-suave); color: var(--ok-texto); }
 .toast a { color: inherit !important; font-weight: 500; text-decoration: underline !important; }
 .toast .btn-link { padding: 4px; color: inherit; }
+
+/* Fase 11: controle de custos */
+.filtros-custos { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin-top: 0; }
+.filtros-custos .campo { min-width: 170px; }
+.multi { position: relative; }
+.multi > summary { list-style: none; min-height: 40px; display: flex; align-items: center; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--raio-controle); background: var(--surface); color: var(--text); font-size: .95rem; }
+.multi > summary::-webkit-details-marker { display: none; }
+.multi > summary::after { content: "▾"; margin-left: auto; color: var(--muted); padding-left: 8px; }
+.multi[open] > .multi-opcoes { position: absolute; z-index: 15; top: calc(100% + 4px); left: 0; min-width: 100%; background: var(--surface); border: 1px solid var(--borda-suave); border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, .12); padding: 10px; }
+.multi-opcoes { display: grid; gap: 6px; max-height: 220px; overflow-y: auto; color: var(--text); }
+.resumo-custos { margin-top: 20px; }
+.resumo-custos .kpi > div { display: grid; }
+.tabela-custos .grupo-custos th { background: var(--accent-suave); color: var(--text); font-size: .85rem; }
+.tabela-custos .obs-despesa { max-width: 220px; white-space: pre-wrap; }
+@media (min-width: 1500px) { .dash-kpis > * { grid-column: span 3; } }
