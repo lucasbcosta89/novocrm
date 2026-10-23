@@ -76,12 +76,12 @@ Toda fase termina com commit + tag no GitHub.
   - [x] 6 KPIs com variação (↑/↓ colorida), gráficos Recharts (vendas; comissões empilhadas), alertas por severidade, próximas ações, top clientes/produtos/representadas e positivação
   - [x] Contexto da representada no subtítulo + "Ver representada"; grid de 12 colunas (1/2/3+ colunas); follow-ups e tarefas pendentes mantidos abaixo
   - [x] Critério verificado (6 KPIs; período; representada filtra e oculta top representadas; reload preserva filtros; alerta abre lista; ordem por data; responsivo; 1 chamada por mudança)
-- [ ] Fase 10 — Página Biblioteca (documentos gerais)
+- [x] Fase 10 — Página Biblioteca (documentos gerais)
   - [x] Reuso do fluxo da Fase 7 (POST /api/relatorios, documentos + hash_cache, geração em segundo plano, template 7b, quota pdf_mes); só a restrição de tipos de documentos foi ampliada
   - [x] 6 relatórios: Vendas Geral / Por Cliente / Por Representada, Comissões Geral / Por Representada (com detalhe por produto via pedido_itens.comissao_valor) e KPIs; período por mês ou intervalo
   - [x] /app/biblioteca (sidebar): quota "X de Y PDFs", cards por seção, modal com período e cliente/representada, "Gerando…", aviso de erro, gerados recentemente
   - [x] Quota: documento novo consome 1 (gatilho em documentos); cache hit não consome; limite checado no servidor e botões desabilitados
-  - [ ] Critério verificado (6 cards com template; vendas = soma de valor_total; comissões = soma de comissao_valor; KPIs e "—"; débito e cache; limite)
+  - [x] Critério verificado (6 cards com template; vendas = soma de valor_total; comissões = soma de comissao_valor; KPIs e "—"; débito e cache; limite)
 - [x] Fase 4 — Oportunidades e desafios por cliente + plano de ação
   - [x] Bloco "Oportunidades e Desafios" na página do cliente (+ Novo, tabela tipo/título/prioridade/status/data/ações)
   - [x] Plano de ação em /app/clientes/:id/oportunidades/:opId (adicionar, concluir, editar, excluir ações)
