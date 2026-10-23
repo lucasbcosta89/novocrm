@@ -75,7 +75,8 @@ function validarLinhas(linhas: Record<string, unknown>[]) {
   const erros: ErroLinha[] = [];
   const primeiraLinhaDoSku = new Map<string, number>();
   linhas.forEach((crua, i) => {
-    const linha = i + 2;
+    // __linha: número real na planilha enviado pelo front (que pula linhas vazias); senão, posição + 2
+    const linha = typeof crua.__linha === "number" && Number.isInteger(crua.__linha) && crua.__linha >= 2 ? crua.__linha : i + 2;
     const r = linhaSchema.safeParse(crua);
     if (!r.success) {
       for (const issue of r.error.issues) erros.push({ linha, campo: String(issue.path[0] ?? "linha"), mensagem: issue.message });

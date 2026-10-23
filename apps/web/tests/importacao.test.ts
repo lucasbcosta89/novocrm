@@ -58,6 +58,8 @@ describe("importação: valores", () => {
     expect(parseNcm("6109.10")).toBeNull();
     expect(parseNcm("610910001")).toBeNull();
     expect(parseNcm(null)).toBeNull();
+    expect(parseNcm(1012100)).toBe("01012100"); // Excel numérico sem o zero
+    expect(parseNcm(123)).toBeNull();
   });
 });
 

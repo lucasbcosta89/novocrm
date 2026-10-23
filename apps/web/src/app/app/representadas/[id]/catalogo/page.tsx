@@ -10,6 +10,7 @@ import { obterUso } from "@/server/quota";
 import { obterRepresentada } from "@/server/representadas";
 import { atualizarProdutoAction, criarProdutoAction, excluirProdutoAction, imagemProdutoAction } from "../../actions";
 import { Icone } from "@/components/icones";
+import { ModalImportarProdutos } from "./_components/ModalImportarProdutos";
 
 /** Catálogo: produtos + Gerar Catálogo (PDF) e Enviar por WhatsApp (Fase 7c). */
 export default async function RepresentadaCatalogo({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Busca }) {
@@ -39,8 +40,11 @@ export default async function RepresentadaCatalogo({ params, searchParams }: { p
         </div>
       </section>
 
-      <section className="card">
-        <h2 className="titulo-icone"><Icone nome="pacote" tamanho={20} /> Produtos</h2>
+      <section className="card" id="produtos">
+        <div className="cabecalho">
+          <h2 className="titulo-icone"><Icone nome="pacote" tamanho={20} /> Produtos</h2>
+          <ModalImportarProdutos representadaId={r.id} />
+        </div>
         {produtos.length === 0 ? (
           <div className="vazio">Nenhum produto.</div>
         ) : (

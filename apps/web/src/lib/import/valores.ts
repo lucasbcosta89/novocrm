@@ -32,6 +32,9 @@ export function parsePercentual(v: unknown): number | null {
 
 /** NCM só com dígitos ("6109.10.00" → "61091000"); null se não sobrarem exatamente 8 dígitos. */
 export function parseNcm(v: unknown): string | null {
-  const digitos = String(v ?? "").replace(/\D/g, "");
+  // célula numérica do Excel perde o zero à esquerda (01012100 → 1012100): completa até 8 dígitos
+  const digitos = typeof v === "number" && Number.isInteger(v) && v >= 1_000_000 && v < 10_000_000
+    ? String(v).padStart(8, "0")
+    : String(v ?? "").replace(/\D/g, "");
   return digitos.length === 8 ? digitos : null;
 }
