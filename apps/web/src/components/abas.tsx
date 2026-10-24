@@ -4,8 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icone, type NomeIcone } from "./icones";
 
-/** Menu superior persistente das páginas de representada/cliente: cada aba é uma rota própria. */
-export function Abas({ base, abas }: { base: string; abas: { href: string; rotulo: string; icone?: NomeIcone }[] }) {
+/**
+ * Menu superior persistente das páginas de representada/cliente: cada aba é uma rota própria.
+ * busca: query string anexada a todas as abas (ex.: filtros globais das Análises).
+ */
+export function Abas({ base, abas, busca }: { base: string; abas: { href: string; rotulo: string; icone?: NomeIcone }[]; busca?: string }) {
   const caminho = usePathname();
   return (
     <nav className="abas abas-app" aria-label="Seções">
@@ -13,7 +16,7 @@ export function Abas({ base, abas }: { base: string; abas: { href: string; rotul
         const alvo = a.href ? `${base}/${a.href}` : base;
         const ativa = a.href ? caminho === alvo || caminho.startsWith(`${alvo}/`) : caminho === base;
         return (
-          <Link key={a.href || "inicio"} href={alvo} className={ativa ? "aba ativa" : "aba"} aria-current={ativa ? "page" : undefined}>
+          <Link key={a.href || "inicio"} href={busca ? `${alvo}?${busca}` : alvo} className={ativa ? "aba ativa" : "aba"} aria-current={ativa ? "page" : undefined}>
             {a.icone && <Icone nome={a.icone} tamanho={16} />}
             {a.rotulo}
           </Link>

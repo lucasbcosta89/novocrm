@@ -5,33 +5,11 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { Icone } from "@/components/icones";
 import { AGRUPAMENTOS, ATALHOS, ROTULO_AGRUPAMENTO, ROTULO_ATALHO, type DespesaLinha } from "@/lib/custos";
+import { MultiSelect } from "@/components/multi-select";
 import { Modal } from "../oportunidades/comum";
 import { salvarDespesaAction } from "./actions";
 
 type Opcao = { id: string; nome: string };
-
-/** Lista de caixas de seleção dentro de um menu expansível (multi-select acessível, sem dependência). */
-function MultiSelect({ nome, rotulo, opcoes, selecionados, onChange }: {
-  nome: string; rotulo: string; opcoes: Opcao[]; selecionados: string[]; onChange?: () => void;
-}) {
-  const marcados = opcoes.filter((o) => selecionados.includes(o.id));
-  return (
-    <div className="campo">
-      <span>{rotulo}</span>
-      <details className="multi">
-        <summary>{marcados.length === 0 ? "Todas" : marcados.length === 1 ? marcados[0]!.nome : `${marcados.length} selecionadas`}</summary>
-        <div className="multi-opcoes" role="group" aria-label={rotulo}>
-          {opcoes.length === 0 && <span className="dica">Nenhuma cadastrada.</span>}
-          {opcoes.map((o) => (
-            <label key={o.id} className="check">
-              <input type="checkbox" name={nome} value={o.id} defaultChecked={selecionados.includes(o.id)} onChange={onChange} /> {o.nome}
-            </label>
-          ))}
-        </div>
-      </details>
-    </div>
-  );
-}
 
 /** Filtros na query string (form GET): período, representadas, clientes e agrupamento. */
 export function FiltrosCustos({ atalho, de, ate, reps, clis, agrupar, representadas, clientes }: {

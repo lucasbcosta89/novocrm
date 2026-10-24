@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { CardKpi as CardKpiBase } from "@/components/card-kpi";
 import { Icone, type NomeIcone } from "@/components/icones";
 import { PERIODOS, type Periodo } from "@/lib/dashboard";
 import type { BlocoAlerta, DashboardPrincipal, Kpi } from "@/server/dashboard-principal";
@@ -229,24 +230,11 @@ export function PainelPrincipal({ representadas, dataExtenso }: { representadas:
   );
 }
 
+/** Adaptador: KPI do endpoint → card compartilhado (components/card-kpi). */
 function CardKpi({ titulo, kpi, icone, tom, href, inverso = false, numero = false }: {
   titulo: string; kpi: Kpi; icone: NomeIcone; tom: string; href: string; inverso?: boolean; numero?: boolean;
 }) {
-  const v = kpi.variacao_pct;
-  // subir é bom (verde), exceto quando o indicador é ruim (ex.: comissão em atraso)
-  const bom = v == null || v === 0 ? null : (v > 0) !== inverso;
-  return (
-    <Link href={href} className="dash-card dash-kpi">
-      <span className="dash-kpi-topo">
-        <span className="dash-kpi-titulo">{titulo}</span>
-        <span className={`kpi-icone ${tom}`}><Icone nome={icone} tamanho={18} /></span>
-      </span>
-      <span className="dash-kpi-valor">{numero ? kpi.valor.toLocaleString("pt-BR") : brl.format(kpi.valor)}</span>
-      <span className={`dash-variacao ${bom === null ? "" : bom ? "positiva" : "negativa"}`}>
-        {v == null ? "— sem base anterior" : v === 0 ? "estável vs período anterior" : `${v > 0 ? "↑" : "↓"} ${pct(Math.abs(v))} vs período anterior`}
-      </span>
-    </Link>
-  );
+  return <CardKpiBase titulo={titulo} valor={numero ? kpi.valor.toLocaleString("pt-BR") : brl.format(kpi.valor)} variacao={kpi.variacao_pct} icone={icone} tom={tom} href={href} inverso={inverso} />;
 }
 
 const ALERTAS: { chave: keyof DashboardPrincipal["alertas"]; titulo: string; nivel: "vermelho" | "amarelo" | "azul"; icone: NomeIcone; href: (f: string) => string }[] = [
