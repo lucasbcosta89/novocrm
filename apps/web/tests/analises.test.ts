@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { analiseSpecSchema, bloqueioGrafico, hashSpec, METRICAS } from "@/lib/analises/catalogo";
+import { agrupar, histograma, somarPor } from "@/lib/analises/grafico";
 import { PRESETS, resolverPeriodo, specDoPreset } from "@/lib/analises/presets";
 import { escreverEstado, formatarMetrica, lerEstado, variacao } from "@/lib/analises/url";
 
@@ -65,5 +66,49 @@ describe("análises — período e URL", () => {
     expect(formatarMetrica("ticket_medio", null)).toBe("—");
     expect(variacao(150, 100)).toBe(50);
     expect(variacao(10, 0)).toBeNull();
+  });
+});
+
+describe("análises — fase 2 (Cliente, Produto, Pedido)", () => {
+  const periodo = resolverPeriodo(null, null, null, AGORA).periodo;
+
+  it("cada aba carrega seu preset e a spec é válida no catálogo", () => {
+    for (const id of ["cliente", "produto", "pedido"] as const) {
+      const s = specDoPreset(id, periodo, vazio, "itens");
+      expect(analiseSpecSchema.safeParse(s).success).toBe(true);
+      expect(PRESETS[id].kpis).toHaveLength(4);
+      expect(PRESETS[id].fase).toBe(2);
+    }
+    expect(specDoPreset("cliente", periodo, vazio, "itens").metricas).toContain("dias_sem_comprar");
+    expect(specDoPreset("produto", periodo, vazio, "itens").grafico).toMatchObject({ tipo: "coluna_agrupada", dimensaoLinha: "categoria", dimensaoSerie: "representada" });
+  });
+
+  it("Por Pedido opera sempre na granularidade de cabeçalho de pedido; Por Produto, por item", () => {
+    expect(specDoPreset("pedido", periodo, vazio, "itens")).toMatchObject({ granularidade: "pedidos", dataset: "pedidos" });
+    expect(specDoPreset("produto", periodo, vazio, "pedidos").granularidade).toBe("itens");
+    expect(specDoPreset("cliente", periodo, vazio, "pedidos").granularidade).toBe("pedidos");
+  });
+
+  it("filtros globais são os mesmos em todas as abas", () => {
+    const f = { ...vazio, uf: ["SP"], representada_id: ["30445add-daf8-411d-bb3d-5345efeff8ab"] };
+    for (const id of ["representada", "cliente", "produto", "pedido"] as const) expect(specDoPreset(id, periodo, f, "itens").filtros).toEqual(f);
+  });
+
+  it("gráfico deriva das mesmas linhas: rollup, colunas agrupadas e histograma", () => {
+    const linhas = [
+      { categoria: "Calçados", representada: "A", valor_liquido: 100 },
+      { categoria: "Calçados", representada: "B", valor_liquido: 50 },
+      { categoria: "Bolsas", representada: "A", valor_liquido: 30 },
+    ];
+    expect(somarPor(linhas, "categoria", "valor_liquido").map((p) => [p.nome, p.valor])).toEqual([["Calçados", 150], ["Bolsas", 30]]);
+    expect(agrupar(linhas, "categoria", "representada", "valor_liquido")).toEqual({ series: ["A", "B"], dados: [{ nome: "Calçados", A: 100, B: 50 }, { nome: "Bolsas", A: 30 }] });
+    const h = histograma([{ valor_liquido: 400 }, { valor_liquido: 1000 }, { valor_liquido: 30000 }], "valor_liquido");
+    expect(h.map((f) => f.pedidos)).toEqual([1, 0, 1, 0, 0, 0, 1]);
+  });
+
+  it("formata data, dias e classe ABC", () => {
+    expect(formatarMetrica("ultima_compra", "2026-10-11")).toBe("11/10/2026");
+    expect(formatarMetrica("dias_sem_comprar", 95)).toBe("95 d");
+    expect(formatarMetrica("classe_abc", "A")).toBe("A");
   });
 });

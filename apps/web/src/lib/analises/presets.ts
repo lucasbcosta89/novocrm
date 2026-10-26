@@ -1,50 +1,76 @@
-import type { AnaliseSpec, FiltrosSpec, Granularidade, Periodo, Preset, PresetId } from "./tipos";
+import type { AnaliseSpec, DimensaoId, FiltrosSpec, Granularidade, MetricaId, Periodo, Preset, PresetId, TipoGrafico } from "./tipos";
 
 /**
  * As 5 subpáginas são a MESMA tela com presets diferentes: cada preset só declara título, KPIs,
- * dimensão e métricas padrão, gráfico inicial e colunas da tabela.
+ * dimensões e métricas padrão, gráfico inicial e colunas da tabela.
+ * Opcionais: dimensoes (tabela com mais de uma dimensão), granularidade fixa da aba, gráfico (linha/série),
+ * graficos permitidos no seletor, ordenação e limite iniciais, rótulos de coluna, micro barra, busca e densidade.
  * `fase`: em que fase da entrega a aba fica disponível (as outras mostram "em breve").
  */
-export const PRESETS: Record<PresetId, Preset & { fase: 1 | 2 | 3 }> = {
+export interface PresetAba extends Preset {
+  fase: 1 | 2 | 3;
+  dimensoes?: DimensaoId[];
+  granularidade?: Granularidade;
+  graficoDims?: { linha: DimensaoId; serie: DimensaoId | null };
+  graficos: TipoGrafico[];
+  ordenacao?: AnaliseSpec["tabela"]["ordenacao"];
+  limite: number;
+  rotulos?: Partial<Record<string, string>>;
+  microbarra?: MetricaId;
+  busca?: boolean;
+  compacta?: boolean;
+}
+
+export const PRESETS: Record<PresetId, PresetAba> = {
   representada: {
     id: "representada", fase: 1, titulo: "Por Representada",
     kpis: ["valor_liquido", "numero_pedidos", "ticket_medio", "representadas_ativas"],
     dimensaoPadrao: "representada",
     metricasPadrao: ["valor_liquido", "share", "numero_pedidos", "ticket_medio", "clientes_ativos", "variacao_percentual", "representadas_ativas"],
-    graficoTipo: "barra_horizontal",
+    graficoTipo: "barra_horizontal", graficos: ["barra_horizontal", "coluna", "donut"],
     colunas: ["representada", "valor_liquido", "share", "numero_pedidos", "ticket_medio", "clientes_ativos", "variacao_percentual"],
+    limite: 15,
   },
   cliente: {
     id: "cliente", fase: 2, titulo: "Por Cliente",
-    kpis: ["clientes_ativos", "valor_liquido", "ticket_medio", "numero_pedidos"],
+    kpis: ["clientes_ativos", "clientes_novos", "clientes_em_risco", "concentracao"],
     dimensaoPadrao: "cliente",
-    metricasPadrao: ["valor_liquido", "numero_pedidos", "ticket_medio", "clientes_ativos"],
-    graficoTipo: "dispersao",
-    colunas: ["cliente", "valor_liquido", "numero_pedidos", "ticket_medio"],
+    metricasPadrao: ["valor_liquido", "numero_pedidos", "ticket_medio", "clientes_ativos", "clientes_novos", "clientes_em_risco", "concentracao", "classe_abc", "ultima_compra", "dias_sem_comprar"],
+    graficoTipo: "dispersao", graficos: ["dispersao", "barra_horizontal"],
+    colunas: ["cliente", "classe_abc", "valor_liquido", "numero_pedidos", "ticket_medio", "ultima_compra", "dias_sem_comprar"],
+    ordenacao: { campo: "valor_liquido", direcao: "desc" },
+    limite: 500, busca: true,
   },
   produto: {
     id: "produto", fase: 2, titulo: "Por Produto",
-    kpis: ["skus_ativos", "quantidade", "preco_medio", "valor_liquido"],
-    dimensaoPadrao: "produto",
-    metricasPadrao: ["quantidade", "valor_liquido", "preco_medio", "share", "skus_ativos"],
-    graficoTipo: "coluna_agrupada",
-    colunas: ["produto", "quantidade", "valor_liquido", "preco_medio", "share"],
+    kpis: ["skus_ativos", "quantidade", "preco_medio", { indisponivel: "% devoluções", motivo: "sem dados de devolução" }],
+    dimensaoPadrao: "produto", dimensoes: ["produto", "categoria", "representada"], granularidade: "itens",
+    metricasPadrao: ["valor_liquido", "quantidade", "preco_medio", "share", "numero_pedidos", "skus_ativos"],
+    graficoTipo: "coluna_agrupada", graficoDims: { linha: "categoria", serie: "representada" }, graficos: ["coluna_agrupada", "barra_horizontal", "donut"],
+    colunas: ["produto", "categoria", "representada", "quantidade", "valor_liquido", "preco_medio", "share", "numero_pedidos"],
+    rotulos: { numero_pedidos: "Giro (pedidos)" }, microbarra: "numero_pedidos",
+    ordenacao: { campo: "valor_liquido", direcao: "desc" },
+    limite: 500,
   },
   pedido: {
     id: "pedido", fase: 2, titulo: "Por Pedido",
-    kpis: ["numero_pedidos", "ticket_medio", "itens_por_pedido", "valor_liquido"],
-    dimensaoPadrao: "pedido",
-    metricasPadrao: ["valor_liquido", "itens_por_pedido", "numero_pedidos", "ticket_medio"],
-    graficoTipo: "coluna",
-    colunas: ["pedido", "valor_liquido", "itens_por_pedido"],
+    kpis: ["numero_pedidos", "ticket_medio", "itens_por_pedido", "pedidos_cancelados"],
+    dimensaoPadrao: "pedido", dimensoes: ["pedido", "dia", "cliente", "representada", "status"], granularidade: "pedidos",
+    metricasPadrao: ["valor_liquido", "itens_por_pedido", "numero_pedidos", "ticket_medio", "pedidos_cancelados"],
+    graficoTipo: "histograma", graficos: ["histograma"],
+    colunas: ["pedido", "dia", "cliente", "representada", "itens_por_pedido", "valor_liquido", "status"],
+    rotulos: { pedido: "Nº do pedido", itens_por_pedido: "Itens", valor_liquido: "Valor" },
+    ordenacao: { campo: "dia", direcao: "desc" },
+    limite: 500, compacta: true,
   },
   mix: {
     id: "mix", fase: 3, titulo: "Análise de Mix",
     kpis: ["valor_liquido", "clientes_ativos", "share", "variacao_percentual"],
     dimensaoPadrao: "categoria",
     metricasPadrao: ["valor_liquido", "share", "clientes_ativos"],
-    graficoTipo: "coluna",
+    graficoTipo: "coluna", graficos: ["coluna"],
     colunas: ["categoria", "share", "clientes_ativos"],
+    limite: 15,
   },
 };
 
@@ -54,16 +80,17 @@ export const ehPreset = (v: string): v is PresetId => (ORDEM_PRESETS as string[]
 /** Spec inicial de uma aba a partir do preset + filtros globais (que valem para todas as abas). */
 export function specDoPreset(id: PresetId, periodo: Periodo, filtros: FiltrosSpec, granularidade: Granularidade): AnaliseSpec {
   const p = PRESETS[id];
+  const gran = p.granularidade ?? granularidade;
   return {
-    dataset: granularidade === "pedidos" ? "pedidos" : "itens_pedido",
-    granularidade,
+    dataset: gran === "pedidos" ? "pedidos" : "itens_pedido",
+    granularidade: gran,
     periodo,
     filtros,
-    dimensoes: [p.dimensaoPadrao],
+    dimensoes: [...(p.dimensoes ?? [p.dimensaoPadrao])],
     metricas: [...p.metricasPadrao],
-    grafico: { tipo: p.graficoTipo, dimensaoLinha: p.dimensaoPadrao, dimensaoSerie: null },
-    tabela: { colunas: [...p.colunas], ordenacao: { campo: p.metricasPadrao[0]!, direcao: "desc" } },
-    limite: 15,
+    grafico: { tipo: p.graficoTipo, dimensaoLinha: p.graficoDims?.linha ?? p.dimensaoPadrao, dimensaoSerie: p.graficoDims?.serie ?? null },
+    tabela: { colunas: [...p.colunas], ordenacao: p.ordenacao ?? { campo: p.metricasPadrao[0]!, direcao: "desc" } },
+    limite: p.limite,
   };
 }
 

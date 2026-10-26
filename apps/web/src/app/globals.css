@@ -916,3 +916,9 @@ h1.titulo-icone .icone, h2.titulo-icone .icone, h3.titulo-icone .icone { color: 
 .menu-exportar > summary.desabilitado { opacity: .5; pointer-events: none; }
 .menu-exportar-opcoes { position: absolute; right: 0; top: calc(100% + 4px); z-index: 15; display: grid; gap: 4px; min-width: 150px; padding: 8px; background: var(--surface); border: 1px solid var(--borda-suave); border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, .12); }
 .menu-exportar-opcoes .btn-link { text-align: left; }
+.busca-analise { min-height: 34px; padding: 5px 10px; border: 1px solid var(--border); border-radius: var(--raio-controle); background: var(--surface); color: var(--text); font: inherit; font-size: .9rem; min-width: 200px; }
+.micro-barra { display: inline-block; vertical-align: middle; width: 56px; height: 6px; margin-right: 8px; border-radius: 999px; background: var(--bg); overflow: hidden; }
+.micro-barra > span { display: block; height: 100%; background: var(--accent); border-radius: inherit; }
+.texto-perigo.forte { font-weight: 600; }
+.btn-link.texto-esquerda { text-align: left; }
+.dica-grafico { background: var(--surface); border: 1px solid var(--borda-suave); border-radius: 10px; padding: 8px 10px; font-size: 13px; color: var(--text); }

@@ -9,5 +9,5 @@ export default async function AbaAnalisePage({ params }: { params: Promise<{ aba
   const { aba } = await params;
   if (!ehPreset(aba)) notFound();
   const opcoes = await carregar(opcoesFiltros);
-  return <TelaAnalise aba={aba} opcoes={opcoes} />;
+  return <TelaAnalise key={aba} aba={aba} opcoes={opcoes} />;
 }

@@ -7,10 +7,12 @@ const pct = (v: number) => `${v.toLocaleString("pt-BR", { minimumFractionDigits:
  * Card de KPI: valor em destaque, rótulo, ícone e variação vs período anterior (↑/↓ com cor).
  * inverso: subir é ruim (ex.: atrasos). Com href, o card é um link.
  */
-export function CardKpi({ titulo, valor, variacao, icone, tom, href, inverso = false, pontos = false }: {
+export function CardKpi({ titulo, valor, variacao, icone, tom, href, inverso = false, pontos = false, nota }: {
   titulo: string; valor: string; variacao: number | null; icone: NomeIcone; tom: string; href?: string; inverso?: boolean;
   /** variação em pontos percentuais (p.p.) em vez de % */
   pontos?: boolean;
+  /** texto no lugar da variação (ex.: indicador sem dado na base) */
+  nota?: string;
 }) {
   const bom = variacao == null || variacao === 0 ? null : (variacao > 0) !== inverso;
   const conteudo = (
@@ -21,7 +23,9 @@ export function CardKpi({ titulo, valor, variacao, icone, tom, href, inverso = f
       </span>
       <span className="dash-kpi-valor">{valor}</span>
       <span className={`dash-variacao ${bom === null ? "" : bom ? "positiva" : "negativa"}`}>
-        {variacao == null
+        {nota
+          ? nota
+          : variacao == null
           ? "— sem base anterior"
           : variacao === 0
             ? "estável vs período anterior"

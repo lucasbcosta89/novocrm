@@ -41,10 +41,15 @@ const pct = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFr
 
 export function formatarMetrica(m: MetricaId, v: number | string | null | undefined): string {
   if (v == null || v === "") return "—";
+  const def = METRICAS[m];
+  if (def.unidade === "texto") return String(v);
+  if (def.unidade === "data") return typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v) ? `${v.slice(8, 10)}/${v.slice(5, 7)}/${v.slice(0, 4)}` : "—";
   const n = Number(v);
   if (!Number.isFinite(n)) return "—";
-  const def = METRICAS[m];
-  const s = def.unidade === "brl" ? brl.format(n) : def.unidade === "percentual" ? `${pct.format(n)}%` : num(def.casas ?? 0).format(n);
+  const s = def.unidade === "brl" ? brl.format(n)
+    : def.unidade === "percentual" ? `${pct.format(n)}%`
+    : def.unidade === "dias" ? `${num(0).format(n)} d`
+    : num(def.casas ?? 0).format(n);
   return s.replace(/\u00a0/g, " ");
 }
 
