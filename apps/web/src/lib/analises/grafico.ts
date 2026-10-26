@@ -53,3 +53,13 @@ export function histograma(linhas: Linhas, metrica: MetricaId) {
   }
   return faixas;
 }
+
+/** Pareto: pontos ordenados por valor com o % acumulado sobre o total das linhas. */
+export function pareto(linhas: Linhas, dim: DimensaoId, metrica: MetricaId) {
+  const pontos = somarPor(linhas, dim, metrica);
+  const total = pontos.reduce((t, p) => t + p.valor, 0);
+  return pontos.reduce<(Ponto & { acumulado: number })[]>((acc, p) => {
+    const anterior = acc.length ? acc[acc.length - 1]!.acumulado : 0;
+    return [...acc, { ...p, acumulado: total ? Math.round((anterior + (p.valor / total) * 100) * 10) / 10 : 0 }];
+  }, []);
+}

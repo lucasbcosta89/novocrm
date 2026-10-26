@@ -21,7 +21,7 @@ export const DIMENSOES: Record<DimensaoId, { rotulo: string; cardinalidade: Card
   dia: { rotulo: "Data", cardinalidade: "alta" },
 };
 
-export type Unidade = "brl" | "numero" | "percentual" | "data" | "dias" | "texto";
+export type Unidade = "brl" | "numero" | "percentual" | "pp" | "data" | "dias" | "texto";
 /** aditiva: pode somar entre grupos. Não aditiva: recalculada no total (nunca somada das linhas). */
 export const METRICAS: Record<MetricaId, { rotulo: string; unidade: Unidade; aditiva: boolean; casas?: number }> = {
   valor_liquido: { rotulo: "Valor líquido", unidade: "brl", aditiva: true },
@@ -44,13 +44,21 @@ export const METRICAS: Record<MetricaId, { rotulo: string; unidade: Unidade; adi
   ultima_compra: { rotulo: "Última compra", unidade: "data", aditiva: false },
   dias_sem_comprar: { rotulo: "Dias sem comprar", unidade: "dias", aditiva: false },
   pedidos_cancelados: { rotulo: "Cancelados", unidade: "numero", aditiva: true },
+  valor_devolvido: { rotulo: "Valor devolvido", unidade: "brl", aditiva: true },
+  percentual_devolucoes: { rotulo: "% devoluções", unidade: "percentual", aditiva: false },
+  share_anterior: { rotulo: "Share anterior", unidade: "percentual", aditiva: false },
+  variacao_share: { rotulo: "Variação (p.p.)", unidade: "pp", aditiva: false },
+  lider_representada: { rotulo: "Representada líder", unidade: "texto", aditiva: false },
+  marcas_por_cliente: { rotulo: "Marcas por cliente", unidade: "numero", aditiva: false, casas: 2 },
+  concentracao_top5: { rotulo: "Concentração top 5", unidade: "percentual", aditiva: false },
+  variacao_mix: { rotulo: "Variação de mix", unidade: "pp", aditiva: false },
 };
 
 /** Dias sem compra a partir dos quais o cliente é considerado "em risco". */
 export const DIAS_RISCO = 90;
 
 export const TIPOS_GRAFICO: Record<TipoGrafico, string> = {
-  barra_horizontal: "Barras", coluna: "Colunas", coluna_agrupada: "Colunas agrupadas", linha: "Linha", area: "Área", donut: "Rosca", dispersao: "Dispersão", histograma: "Histograma",
+  barra_horizontal: "Barras", coluna: "Colunas", coluna_agrupada: "Colunas agrupadas", linha: "Linha", area: "Área", donut: "Rosca", dispersao: "Dispersão", histograma: "Histograma", pareto: "Pareto",
 };
 
 export const ROTULO_CANAL: Record<string, string> = { app: "App", catalogo_web: "Catálogo web", whatsapp: "WhatsApp" };
@@ -75,7 +83,7 @@ export const analiseSpecSchema = z
       })
       .default({ representada_id: [], cliente_id: [], produto_id: [], status: [], uf: [], canal: [] }),
     dimensoes: z.array(z.enum(chaves(DIMENSOES))).min(1, "Escolha uma dimensão").max(6, "Máximo de 6 dimensões"),
-    metricas: z.array(z.enum(chaves(METRICAS))).min(1, "Escolha uma métrica").max(20),
+    metricas: z.array(z.enum(chaves(METRICAS))).min(1, "Escolha uma métrica").max(24),
     grafico: z.object({
       tipo: z.enum(chaves(TIPOS_GRAFICO)),
       dimensaoLinha: z.enum(chaves(DIMENSOES)),
@@ -86,6 +94,7 @@ export const analiseSpecSchema = z
       ordenacao: z.object({ campo: z.string().max(40), direcao: z.enum(["asc", "desc"]) }),
     }),
     limite: z.number().int().min(1).max(500).default(15),
+    matriz: z.object({ linha: z.enum(chaves(DIMENSOES)), coluna: z.enum(chaves(DIMENSOES)) }).nullable().optional(),
   })
   .refine((s) => s.periodo.ate >= s.periodo.de, { message: "A data final deve ser posterior à inicial", path: ["periodo"] })
   .refine((s) => new Set(s.dimensoes).size === s.dimensoes.length && new Set(s.metricas).size === s.metricas.length, "Item repetido na spec");

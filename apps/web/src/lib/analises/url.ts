@@ -48,6 +48,7 @@ export function formatarMetrica(m: MetricaId, v: number | string | null | undefi
   if (!Number.isFinite(n)) return "—";
   const s = def.unidade === "brl" ? brl.format(n)
     : def.unidade === "percentual" ? `${pct.format(n)}%`
+    : def.unidade === "pp" ? `${n > 0 ? "+" : ""}${pct.format(n)} p.p.`
     : def.unidade === "dias" ? `${num(0).format(n)} d`
     : num(def.casas ?? 0).format(n);
   return s.replace(/\u00a0/g, " ");

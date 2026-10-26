@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { analiseSpecSchema, bloqueioGrafico, hashSpec, METRICAS } from "@/lib/analises/catalogo";
-import { agrupar, histograma, somarPor } from "@/lib/analises/grafico";
+import { agrupar, histograma, pareto, somarPor } from "@/lib/analises/grafico";
 import { PRESETS, resolverPeriodo, specDoPreset } from "@/lib/analises/presets";
 import { escreverEstado, formatarMetrica, lerEstado, variacao } from "@/lib/analises/url";
 
@@ -110,5 +110,36 @@ describe("análises — fase 2 (Cliente, Produto, Pedido)", () => {
     expect(formatarMetrica("ultima_compra", "2026-10-11")).toBe("11/10/2026");
     expect(formatarMetrica("dias_sem_comprar", 95)).toBe("95 d");
     expect(formatarMetrica("classe_abc", "A")).toBe("A");
+  });
+});
+
+describe("análises — fase 3 (Mix) e % devoluções", () => {
+  const periodo = resolverPeriodo(null, null, null, AGORA).periodo;
+
+  it("preset Mix: Pareto por categoria, matriz representada × categoria, colunas de share", () => {
+    const s = specDoPreset("mix", periodo, vazio, "pedidos");
+    expect(analiseSpecSchema.safeParse(s).success).toBe(true);
+    expect(s).toMatchObject({ granularidade: "itens", dimensoes: ["categoria"], grafico: { tipo: "pareto" }, matriz: { linha: "representada", coluna: "categoria" } });
+    expect(s.tabela.colunas).toEqual(["categoria", "share", "share_anterior", "variacao_share", "lider_representada", "clientes_ativos"]);
+    expect(PRESETS.mix.kpis).toEqual(["concentracao_top5", "marcas_por_cliente", { derivado: "lider" }, "variacao_mix"]);
+    expect(analiseSpecSchema.safeParse({ ...s, matriz: { linha: "representada; drop", coluna: "categoria" } }).success).toBe(false);
+  });
+
+  it("Por Produto inclui % devoluções (KPI e coluna)", () => {
+    expect(PRESETS.produto.kpis).toContain("percentual_devolucoes");
+    expect(specDoPreset("produto", periodo, vazio, "itens").tabela.colunas).toContain("percentual_devolucoes");
+    expect(METRICAS.percentual_devolucoes.aditiva).toBe(false);
+    expect(METRICAS.valor_devolvido.aditiva).toBe(true);
+  });
+
+  it("Pareto: ordenado por valor com % acumulado chegando a 100", () => {
+    const p = pareto([{ categoria: "B", valor_liquido: 20 }, { categoria: "A", valor_liquido: 60 }, { categoria: "C", valor_liquido: 20 }], "categoria", "valor_liquido");
+    expect(p.map((x) => [x.nome, x.acumulado])).toEqual([["A", 60], ["B", 80], ["C", 100]]);
+  });
+
+  it("variação em pontos percentuais", () => {
+    expect(formatarMetrica("variacao_share", 2.345)).toBe("+2,3 p.p.");
+    expect(formatarMetrica("variacao_share", -1.5)).toBe("-1,5 p.p.");
+    expect(formatarMetrica("lider_representada", "Marca Alfa")).toBe("Marca Alfa");
   });
 });

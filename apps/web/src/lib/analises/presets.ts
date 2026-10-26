@@ -19,6 +19,7 @@ export interface PresetAba extends Preset {
   microbarra?: MetricaId;
   busca?: boolean;
   compacta?: boolean;
+  matriz?: { linha: DimensaoId; coluna: DimensaoId };
 }
 
 export const PRESETS: Record<PresetId, PresetAba> = {
@@ -43,12 +44,12 @@ export const PRESETS: Record<PresetId, PresetAba> = {
   },
   produto: {
     id: "produto", fase: 2, titulo: "Por Produto",
-    kpis: ["skus_ativos", "quantidade", "preco_medio", { indisponivel: "% devoluções", motivo: "sem dados de devolução" }],
+    kpis: ["skus_ativos", "quantidade", "preco_medio", "percentual_devolucoes"],
     dimensaoPadrao: "produto", dimensoes: ["produto", "categoria", "representada"], granularidade: "itens",
-    metricasPadrao: ["valor_liquido", "quantidade", "preco_medio", "share", "numero_pedidos", "skus_ativos"],
+    metricasPadrao: ["valor_liquido", "quantidade", "preco_medio", "share", "numero_pedidos", "percentual_devolucoes", "skus_ativos"],
     graficoTipo: "coluna_agrupada", graficoDims: { linha: "categoria", serie: "representada" }, graficos: ["coluna_agrupada", "barra_horizontal", "donut"],
-    colunas: ["produto", "categoria", "representada", "quantidade", "valor_liquido", "preco_medio", "share", "numero_pedidos"],
-    rotulos: { numero_pedidos: "Giro (pedidos)" }, microbarra: "numero_pedidos",
+    colunas: ["produto", "categoria", "representada", "quantidade", "valor_liquido", "preco_medio", "share", "numero_pedidos", "percentual_devolucoes"],
+    rotulos: { numero_pedidos: "Giro (pedidos)", percentual_devolucoes: "% devol." }, microbarra: "numero_pedidos",
     ordenacao: { campo: "valor_liquido", direcao: "desc" },
     limite: 500,
   },
@@ -65,12 +66,16 @@ export const PRESETS: Record<PresetId, PresetAba> = {
   },
   mix: {
     id: "mix", fase: 3, titulo: "Análise de Mix",
-    kpis: ["valor_liquido", "clientes_ativos", "share", "variacao_percentual"],
-    dimensaoPadrao: "categoria",
-    metricasPadrao: ["valor_liquido", "share", "clientes_ativos"],
-    graficoTipo: "coluna", graficos: ["coluna"],
-    colunas: ["categoria", "share", "clientes_ativos"],
-    limite: 15,
+    kpis: ["concentracao_top5", "marcas_por_cliente", { derivado: "lider" }, "variacao_mix"],
+    dimensaoPadrao: "categoria", granularidade: "itens",
+    metricasPadrao: ["valor_liquido", "share", "share_anterior", "variacao_share", "lider_representada", "clientes_ativos",
+      "concentracao_top5", "marcas_por_cliente", "variacao_mix"],
+    graficoTipo: "pareto", graficos: ["pareto", "donut"],
+    colunas: ["categoria", "share", "share_anterior", "variacao_share", "lider_representada", "clientes_ativos"],
+    rotulos: { share: "Share atual", clientes_ativos: "Clientes que compram" },
+    ordenacao: { campo: "valor_liquido", direcao: "desc" },
+    matriz: { linha: "representada", coluna: "categoria" },
+    limite: 500,
   },
 };
 
@@ -91,6 +96,7 @@ export function specDoPreset(id: PresetId, periodo: Periodo, filtros: FiltrosSpe
     grafico: { tipo: p.graficoTipo, dimensaoLinha: p.graficoDims?.linha ?? p.dimensaoPadrao, dimensaoSerie: p.graficoDims?.serie ?? null },
     tabela: { colunas: [...p.colunas], ordenacao: p.ordenacao ?? { campo: p.metricasPadrao[0]!, direcao: "desc" } },
     limite: p.limite,
+    matriz: p.matriz ?? null,
   };
 }
 

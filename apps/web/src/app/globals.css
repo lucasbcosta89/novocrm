@@ -926,3 +926,4 @@ h1.titulo-icone .icone, h2.titulo-icone .icone, h3.titulo-icone .icone { color: 
 .btn-link.texto-esquerda { text-align: left; }
 .dica-grafico { background: var(--surface); border: 1px solid var(--borda-suave); border-radius: 10px; padding: 8px 10px; font-size: 13px; color: var(--text); }
 .campo-busca-itens { max-width: 320px; margin-bottom: 8px; }
+.matriz-calor tbody th { font-weight: 500; white-space: nowrap; }

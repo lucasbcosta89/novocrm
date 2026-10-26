@@ -3,16 +3,16 @@
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, ComposedChart, Legend, Line, Pie, PieChart, ReferenceLine, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from "recharts";
 import { Abas } from "@/components/abas";
 import { CardKpi } from "@/components/card-kpi";
 import { Icone, type NomeIcone } from "@/components/icones";
 import { MultiSelect } from "@/components/multi-select";
 import { StatusPedido } from "@/components/status";
 import { DIAS_RISCO, DIMENSOES, hashSpec, METRICAS, ROTULO_CANAL, TIPOS_GRAFICO } from "@/lib/analises/catalogo";
-import { agrupar, histograma, somarPor } from "@/lib/analises/grafico";
+import { agrupar, histograma, pareto, somarPor } from "@/lib/analises/grafico";
 import { ORDEM_PRESETS, PERIODOS_PRESET, PRESETS, specDoPreset, type PeriodoPreset, type PresetAba } from "@/lib/analises/presets";
-import type { AnaliseSpec, DimensaoId, FiltrosSpec, KpiPreset, MetricaId, PresetId, ResultadoAgregado, TipoGrafico } from "@/lib/analises/tipos";
+import type { AnaliseSpec, CelulaMatriz, DimensaoId, FiltrosSpec, KpiPreset, MetricaId, PresetId, ResultadoAgregado, TipoGrafico } from "@/lib/analises/tipos";
 import { escreverEstado, formatarMetrica, lerEstado, quantosFiltros, variacao, type EstadoGlobal } from "@/lib/analises/url";
 import { ROTULO_STATUS_PEDIDO } from "@/lib/rotulos";
 import type { OpcoesFiltro } from "@/server/analises";
@@ -27,12 +27,15 @@ const ICONE_KPI: Partial<Record<MetricaId, [NomeIcone, string]>> = {
   representadas_ativas: ["predio", "tom-ok"], clientes_ativos: ["pessoas", "tom-ok"], skus_ativos: ["pacote", "tom-rosa"],
   clientes_novos: ["mais", "tom-azul"], clientes_em_risco: ["alerta", "tom-perigo"], concentracao: ["alvo", "tom-violeta"],
   quantidade: ["pacote", "tom-ciano"], preco_medio: ["etiqueta", "tom-violeta"], itens_por_pedido: ["arquivo", "tom-ciano"],
-  pedidos_cancelados: ["cancelado", "tom-neutro"],
+  pedidos_cancelados: ["cancelado", "tom-neutro"], percentual_devolucoes: ["historico", "tom-perigo"],
+  concentracao_top5: ["alvo", "tom-violeta"], marcas_por_cliente: ["predio", "tom-ciano"], variacao_mix: ["tendencia", "tom-azul"],
 };
 /** KPIs em que subir é ruim. */
-const INVERSOS = new Set<MetricaId>(["clientes_em_risco", "pedidos_cancelados", "concentracao"]);
+const INVERSOS = new Set<MetricaId>(["clientes_em_risco", "pedidos_cancelados", "concentracao", "concentracao_top5", "percentual_devolucoes"]);
 /** KPIs cuja variação é em pontos percentuais. */
-const EM_PONTOS = new Set<MetricaId>(["concentracao", "share"]);
+const EM_PONTOS = new Set<MetricaId>(["concentracao", "concentracao_top5", "share", "percentual_devolucoes"]);
+/** KPIs sem comparação direta com o período anterior: texto explicativo no lugar da variação. */
+const NOTA_KPI: Partial<Record<MetricaId, string>> = { variacao_mix: "mudança de composição vs período anterior" };
 /** Dimensão → filtro global aplicado no drill-down (clique na barra/linha). */
 const FILTRO_DA_DIM: Partial<Record<DimensaoId, keyof FiltrosSpec>> = {
   representada: "representada_id", cliente: "cliente_id", produto: "produto_id", uf: "uf", canal: "canal", status: "status",
@@ -80,7 +83,7 @@ export function TelaAnalise({ aba, opcoes }: { aba: PresetId; opcoes: OpcoesFilt
   const emCache = cache.get(chave);
   const estado: Estado = emCache ? { tipo: "ok", dados: emCache } : resposta?.chave === chave ? resposta.estado : { tipo: "carregando" };
   useEffect(() => {
-    if (preset.fase > 2 || cache.has(chave)) return;
+    if (cache.has(chave)) return;
     const ctrl = new AbortController();
     const setEstado = (e: Estado) => setResposta({ chave, estado: e });
     fetch("/api/analises", { method: "POST", headers: { "content-type": "application/json" }, body: chave, signal: ctrl.signal })
@@ -92,7 +95,7 @@ export function TelaAnalise({ aba, opcoes }: { aba: PresetId; opcoes: OpcoesFilt
       })
       .catch((e: unknown) => { if (!ctrl.signal.aborted) setEstado({ tipo: "erro", mensagem: e instanceof Error ? e.message : "Erro inesperado." }); });
     return () => ctrl.abort();
-  }, [chave, preset.fase, tentativa]);
+  }, [chave, tentativa]);
 
   function aplicar(novo: Partial<EstadoGlobal>) {
     const q = escreverEstado({ ...global, ...novo });
@@ -218,9 +221,7 @@ export function TelaAnalise({ aba, opcoes }: { aba: PresetId; opcoes: OpcoesFilt
         </div>
       )}
 
-      {preset.fase > 2 ? (
-        <div className="card vazio"><p><strong>{preset.titulo}</strong> chega na próxima etapa do módulo Análises.</p></div>
-      ) : estado.tipo === "erro" ? (
+      {estado.tipo === "erro" ? (
         <div className="aviso aviso-erro" role="alert">
           {estado.mensagem} <button type="button" className="btn-link" onClick={() => { setResposta(null); setTentativa((t) => t + 1); }}>Tentar de novo</button>
         </div>
@@ -228,7 +229,7 @@ export function TelaAnalise({ aba, opcoes }: { aba: PresetId; opcoes: OpcoesFilt
         <>
           <section className="dash-kpis analise-kpis" aria-busy={!dados} aria-label="Indicadores">
             {dados
-              ? preset.kpis.map((k) => <Kpi key={typeof k === "string" ? k : k.indisponivel} kpi={k} totais={dados.totais} />)
+              ? preset.kpis.map((k) => <Kpi key={typeof k === "string" ? k : "indisponivel" in k ? k.indisponivel : k.derivado} kpi={k} dados={dados} />)
               : preset.kpis.map((_, i) => <div key={i} className="dash-card esqueleto esqueleto-kpi" />)}
           </section>
 
@@ -268,6 +269,18 @@ export function TelaAnalise({ aba, opcoes }: { aba: PresetId; opcoes: OpcoesFilt
                 </p>
               </div>
 
+              {spec.matriz && (
+                <div className="dash-card">
+                  <div className="analise-card-topo">
+                    <div>
+                      <h2 className="titulo-icone"><Icone nome="grafico" tamanho={20} /> Matriz {DIMENSOES[spec.matriz.linha].rotulo.toLowerCase()} × {DIMENSOES[spec.matriz.coluna].rotulo.toLowerCase()}</h2>
+                      <p className="dica">Cor = participação de cada {DIMENSOES[spec.matriz.coluna].rotulo.toLowerCase()} no total da {DIMENSOES[spec.matriz.linha].rotulo.toLowerCase()} (composição do mix)</p>
+                    </div>
+                  </div>
+                  {dados?.matriz ? <MatrizCalor celulas={dados.matriz} /> : <div className="esqueleto esqueleto-lista" />}
+                </div>
+              )}
+
               <div className="dash-card">
                 <div className="analise-card-topo">
                   <h2 className="titulo-icone"><Icone nome="arquivo" tamanho={20} /> Detalhamento</h2>
@@ -297,7 +310,7 @@ export function TelaAnalise({ aba, opcoes }: { aba: PresetId; opcoes: OpcoesFilt
                             {preset.colunas.map((c) => {
                               const ativa = ordenacao.campo === c;
                               return (
-                                <th key={c} className={ehDimensao(c) || c === "classe_abc" ? undefined : "num"} aria-sort={ativa ? (ordenacao.direcao === "asc" ? "ascending" : "descending") : "none"}>
+                                <th key={c} className={ehTexto(c) ? undefined : "num"} aria-sort={ativa ? (ordenacao.direcao === "asc" ? "ascending" : "descending") : "none"}>
                                   <button type="button" className="th-ordenar" onClick={() => { setPagina(0); setOrdenacao({ campo: c, direcao: ativa && ordenacao.direcao === "desc" ? "asc" : "desc" }); }}>
                                     {rotuloColuna(preset, c)} {ativa ? (ordenacao.direcao === "desc" ? "↓" : "↑") : ""}
                                   </button>
@@ -319,7 +332,7 @@ export function TelaAnalise({ aba, opcoes }: { aba: PresetId; opcoes: OpcoesFilt
                         <tfoot>
                           <tr>
                             {preset.colunas.map((c, i) => (
-                              <th key={c} className={ehDimensao(c) || c === "classe_abc" ? undefined : "num"}>
+                              <th key={c} className={ehTexto(c) ? undefined : "num"}>
                                 {i === 0 ? "Total" : ehDimensao(c) ? "" : formatarMetrica(c as MetricaId, dados.totais[c])}
                               </th>
                             ))}
@@ -345,14 +358,25 @@ export function TelaAnalise({ aba, opcoes }: { aba: PresetId; opcoes: OpcoesFilt
   );
 }
 
-function Kpi({ kpi, totais }: { kpi: KpiPreset; totais: ResultadoAgregado["totais"] }) {
-  if (typeof kpi !== "string") return <CardKpi titulo={kpi.indisponivel} valor="—" variacao={null} icone="alerta" tom="tom-neutro" nota={kpi.motivo} />;
+function Kpi({ kpi, dados }: { kpi: KpiPreset; dados: ResultadoAgregado }) {
+  const totais = dados.totais;
+  if (typeof kpi !== "string") {
+    if ("indisponivel" in kpi) return <CardKpi titulo={kpi.indisponivel} valor="—" variacao={null} icone="alerta" tom="tom-neutro" nota={kpi.motivo} />;
+    // item líder da 1ª dimensão (ex.: categoria): maior share do período, com a variação do share em p.p.
+    const lider = [...dados.linhas].sort((a, b) => Number(b.share ?? 0) - Number(a.share ?? 0))[0];
+    const dim = (Object.keys(DIMENSOES) as DimensaoId[]).find((d) => lider && d in lider);
+    return (
+      <CardKpi titulo={`${dim ? DIMENSOES[dim].rotulo : "Item"} líder`} icone="alvo" tom="tom-ok" pontos
+        valor={lider && dim ? `${String(lider[dim])} · ${formatarMetrica("share", lider.share)}` : "—"}
+        variacao={lider?.variacao_share == null ? null : Number(lider.variacao_share)} />
+    );
+  }
   const [icone, tom] = ICONE_KPI[kpi] ?? ["grafico", "tom-azul"];
   const atual = totais[kpi];
   const anterior = totais[`${kpi}__ant`];
   const pontos = EM_PONTOS.has(kpi);
   const v = pontos ? (atual == null || anterior == null ? null : Math.round((Number(atual) - Number(anterior)) * 10) / 10) : variacao(atual, anterior);
-  return <CardKpi titulo={METRICAS[kpi].rotulo} valor={formatarMetrica(kpi, atual)} icone={icone} tom={tom} variacao={v} pontos={pontos} inverso={INVERSOS.has(kpi)} />;
+  return <CardKpi titulo={METRICAS[kpi].rotulo} valor={formatarMetrica(kpi, atual)} icone={icone} tom={tom} variacao={v} pontos={pontos} inverso={INVERSOS.has(kpi)} nota={NOTA_KPI[kpi]} />;
 }
 
 function Celula({ coluna: c, linha: l, preset, maxMicro, aoFiltrar }: {
@@ -368,6 +392,17 @@ function Celula({ coluna: c, linha: l, preset, maxMicro, aoFiltrar }: {
     return <td>{rotuloDim(c, l[c])}</td>;
   }
   const m = c as MetricaId;
+  if (m === "variacao_share") {
+    const v = l[m] == null ? null : Number(l[m]);
+    return (
+      <td className="num">
+        {v == null ? "—" : v === 0 ? formatarMetrica(m, v) : (
+          <span className={`etiqueta ${v > 0 ? "etiqueta-confirmado" : "etiqueta-atrasada"}`}>{v > 0 ? "▲ ganho" : "▼ perda"} {formatarMetrica(m, v)}</span>
+        )}
+      </td>
+    );
+  }
+  if (METRICAS[m]?.unidade === "texto" && m !== "classe_abc") return <td>{formatarMetrica(m, l[m])}</td>;
   if (m === "classe_abc") return <td><span className={`etiqueta ${ETIQUETA_ABC[String(l[m])] ?? ""}`}>{String(l[m] ?? "—")}</span></td>;
   if (m === "dias_sem_comprar") {
     const risco = Number(l[m] ?? 0) > DIAS_RISCO;
@@ -412,6 +447,28 @@ function GraficoAnalise({ tipo, spec, metrica, linhas, aoClicar }: {
               );
             })}
           </ScatterChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  }
+
+  if (tipo === "pareto") {
+    const dados = pareto(linhas, dim, metrica);
+    return (
+      <div className="dash-grafico" role="img" aria-label={`Pareto: ${dados.map((d) => `${d.nome} ${fmt(d.valor)} (acumulado ${d.acumulado}%)`).join(", ")}`}>
+        <ResponsiveContainer width="100%" height={ALTURA}>
+          <ComposedChart data={dados} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+            <CartesianGrid vertical={false} stroke="var(--borda-suave)" />
+            <XAxis dataKey="nome" tick={EIXO} axisLine={false} tickLine={false} interval={0} />
+            <YAxis yAxisId="v" tickFormatter={curto} tick={EIXO} axisLine={false} tickLine={false} width={64} />
+            <YAxis yAxisId="p" orientation="right" domain={[0, 100]} unit="%" tick={EIXO} axisLine={false} tickLine={false} width={44} />
+            <Tooltip {...DICA} formatter={(v, n) => (n === "% acumulado" ? [`${String(v).replace(".", ",")}%`, String(n)] : [fmt(v), String(n)])} />
+            <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, color: "var(--muted)" }} />
+            <ReferenceLine yAxisId="p" y={80} stroke="var(--danger)" strokeDasharray="4 4" label={{ value: "80%", position: "insideTopRight", fill: "var(--danger)", fontSize: 11 }} />
+            <Bar yAxisId="v" dataKey="valor" name={METRICAS[metrica].rotulo} fill="var(--accent)" radius={[6, 6, 0, 0]} maxBarSize={44} cursor="pointer"
+              onClick={(_, i) => { const id = dados[i]?.id; if (id && FILTRO_DA_DIM[dim]) aoClicar(dim, id); }} />
+            <Line yAxisId="p" type="monotone" dataKey="acumulado" name="% acumulado" stroke="#D97706" strokeWidth={2.5} dot={{ r: 3, fill: "#D97706" }} />
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
     );
@@ -493,6 +550,7 @@ function GraficoAnalise({ tipo, spec, metrica, linhas, aoClicar }: {
 function tituloGrafico(tipo: TipoGrafico, spec: AnaliseSpec, metrica: MetricaId) {
   if (tipo === "dispersao") return `${METRICAS[metrica].rotulo} × dias sem comprar`;
   if (tipo === "histograma") return "Pedidos por faixa de ticket";
+  if (tipo === "pareto") return `Pareto de ${METRICAS[metrica].rotulo.toLowerCase()} por ${DIMENSOES[spec.grafico.dimensaoLinha].rotulo.toLowerCase()}`;
   const dim = tipo === "coluna_agrupada" ? spec.grafico.dimensaoLinha : spec.dimensoes[0]!;
   return `${METRICAS[metrica].rotulo} por ${DIMENSOES[dim].rotulo.toLowerCase()}`;
 }
@@ -502,12 +560,15 @@ function subtituloGrafico(tipo: TipoGrafico, spec: AnaliseSpec, dados: Resultado
   const n = dados.linhas.length;
   if (tipo === "dispersao") return `${n} cliente(s) · cor pela classe ABC (A até 80% do valor, B até 95%) · clique para filtrar`;
   if (tipo === "histograma") return `${n} pedido(s) distribuídos por valor`;
+  if (tipo === "pareto") return `${n} ${DIMENSOES[spec.grafico.dimensaoLinha].rotulo.toLowerCase()}(s) · barras = valor, linha = % acumulado, referência em 80%`;
   if (tipo === "coluna_agrupada" && spec.grafico.dimensaoSerie) return `Série por ${DIMENSOES[spec.grafico.dimensaoSerie].rotulo.toLowerCase()} · top ${TOP_GRAFICO}`;
   const d = DIMENSOES[spec.dimensoes[0]!].rotulo.toLowerCase();
   return `${n > TOP_GRAFICO ? `Top ${TOP_GRAFICO} de ${dados.totalLinhas}` : `${n} ${d}(s)`} · clique para filtrar`;
 }
 
 const ehDimensao = (c: string): c is DimensaoId => c in DIMENSOES;
+/** Colunas alinhadas à esquerda (dimensões e métricas de texto). */
+const ehTexto = (c: string) => ehDimensao(c) || METRICAS[c as MetricaId]?.unidade === "texto";
 const rotuloColuna = (p: PresetAba, c: string) => p.rotulos?.[c] ?? (ehDimensao(c) ? DIMENSOES[c].rotulo : METRICAS[c as MetricaId]?.rotulo ?? c);
 const dataBR = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
 const classeVariacao = (v: unknown) => (v == null ? "" : Number(v) > 0 ? " texto-ok" : Number(v) < 0 ? " texto-perigo" : "");
@@ -540,4 +601,45 @@ function filtrosAtivos(f: FiltrosSpec, o: OpcoesFiltro): { campo: keyof FiltrosS
     ...f.uf.map((id) => ({ campo: "uf" as const, id, rotulo: id })),
     ...f.canal.map((id) => ({ campo: "canal" as const, id, rotulo: ROTULO_CANAL[id] ?? id })),
   ];
+}
+
+/** Matriz de calor: linhas × colunas; cor = participação da coluna no total da linha (composição). */
+function MatrizCalor({ celulas }: { celulas: CelulaMatriz[] }) {
+  if (celulas.length === 0) return <p className="dica">Sem vendas no período para cruzar.</p>;
+  const somar = (chave: "linha" | "coluna") => {
+    const m = new Map<string, number>();
+    for (const c of celulas) m.set(c[chave], (m.get(c[chave]) ?? 0) + Number(c.valor));
+    return [...m.entries()].sort((a, b) => b[1] - a[1]);
+  };
+  const linhas = somar("linha");
+  const colunas = somar("coluna");
+  const valor = new Map(celulas.map((c) => [`${c.linha}|${c.coluna}`, Number(c.valor)] as const));
+  const pct = (p: number) => `${p.toFixed(1).replace(".", ",")}%`;
+  return (
+    <div className="tabela-wrap">
+      <table className="tabela tabela-compacta matriz-calor">
+        <thead>
+          <tr><th />{colunas.map(([c]) => <th key={c} className="num">{c}</th>)}<th className="num">Total</th></tr>
+        </thead>
+        <tbody>
+          {linhas.map(([l, tl]) => (
+            <tr key={l}>
+              <th scope="row">{l}</th>
+              {colunas.map(([c]) => {
+                const v = valor.get(`${l}|${c}`) ?? 0;
+                const p = tl ? (v / tl) * 100 : 0;
+                return (
+                  <td key={c} className="num" title={`${l} · ${c}: ${formatarMetrica("valor_liquido", v)} (${pct(p)} da linha)`}
+                    style={{ background: v ? `color-mix(in srgb, var(--accent) ${Math.round(8 + p * 0.6)}%, transparent)` : undefined }}>
+                    {v ? pct(p) : "—"}
+                  </td>
+                );
+              })}
+              <td className="num">{formatarMetrica("valor_liquido", tl)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
