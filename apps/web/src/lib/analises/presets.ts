@@ -1,3 +1,4 @@
+import { DIMS_DE_ITEM, METRICAS } from "./catalogo";
 import type { AnaliseSpec, DimensaoId, FiltrosSpec, Granularidade, MetricaId, Periodo, Preset, PresetId, TipoGrafico } from "./tipos";
 
 /**
@@ -5,10 +6,8 @@ import type { AnaliseSpec, DimensaoId, FiltrosSpec, Granularidade, MetricaId, Pe
  * dimensões e métricas padrão, gráfico inicial e colunas da tabela.
  * Opcionais: dimensoes (tabela com mais de uma dimensão), granularidade fixa da aba, gráfico (linha/série),
  * graficos permitidos no seletor, ordenação e limite iniciais, rótulos de coluna, micro barra, busca e densidade.
- * `fase`: em que fase da entrega a aba fica disponível (as outras mostram "em breve").
  */
 export interface PresetAba extends Preset {
-  fase: 1 | 2 | 3;
   dimensoes?: DimensaoId[];
   granularidade?: Granularidade;
   graficoDims?: { linha: DimensaoId; serie: DimensaoId | null };
@@ -24,7 +23,7 @@ export interface PresetAba extends Preset {
 
 export const PRESETS: Record<PresetId, PresetAba> = {
   representada: {
-    id: "representada", fase: 1, titulo: "Por Representada",
+    id: "representada", titulo: "Por Representada",
     kpis: ["valor_liquido", "numero_pedidos", "ticket_medio", "representadas_ativas"],
     dimensaoPadrao: "representada",
     metricasPadrao: ["valor_liquido", "share", "numero_pedidos", "ticket_medio", "clientes_ativos", "variacao_percentual", "representadas_ativas"],
@@ -33,7 +32,7 @@ export const PRESETS: Record<PresetId, PresetAba> = {
     limite: 15,
   },
   cliente: {
-    id: "cliente", fase: 2, titulo: "Por Cliente",
+    id: "cliente", titulo: "Por Cliente",
     kpis: ["clientes_ativos", "clientes_novos", "clientes_em_risco", "concentracao"],
     dimensaoPadrao: "cliente",
     metricasPadrao: ["valor_liquido", "numero_pedidos", "ticket_medio", "clientes_ativos", "clientes_novos", "clientes_em_risco", "concentracao", "classe_abc", "ultima_compra", "dias_sem_comprar"],
@@ -43,7 +42,7 @@ export const PRESETS: Record<PresetId, PresetAba> = {
     limite: 500, busca: true,
   },
   produto: {
-    id: "produto", fase: 2, titulo: "Por Produto",
+    id: "produto", titulo: "Por Produto",
     kpis: ["skus_ativos", "quantidade", "preco_medio", "percentual_devolucoes"],
     dimensaoPadrao: "produto", dimensoes: ["produto", "categoria", "representada"], granularidade: "itens",
     metricasPadrao: ["valor_liquido", "quantidade", "preco_medio", "share", "numero_pedidos", "percentual_devolucoes", "skus_ativos"],
@@ -54,7 +53,7 @@ export const PRESETS: Record<PresetId, PresetAba> = {
     limite: 500,
   },
   pedido: {
-    id: "pedido", fase: 2, titulo: "Por Pedido",
+    id: "pedido", titulo: "Por Pedido",
     kpis: ["numero_pedidos", "ticket_medio", "itens_por_pedido", "pedidos_cancelados"],
     dimensaoPadrao: "pedido", dimensoes: ["pedido", "dia", "cliente", "representada", "status"], granularidade: "pedidos",
     metricasPadrao: ["valor_liquido", "itens_por_pedido", "numero_pedidos", "ticket_medio", "pedidos_cancelados"],
@@ -65,7 +64,7 @@ export const PRESETS: Record<PresetId, PresetAba> = {
     limite: 500, compacta: true,
   },
   mix: {
-    id: "mix", fase: 3, titulo: "Análise de Mix",
+    id: "mix", titulo: "Análise de Mix",
     kpis: ["concentracao_top5", "marcas_por_cliente", { derivado: "lider" }, "variacao_mix"],
     dimensaoPadrao: "categoria", granularidade: "itens",
     metricasPadrao: ["valor_liquido", "share", "share_anterior", "variacao_share", "lider_representada", "clientes_ativos",
@@ -123,4 +122,38 @@ export function resolverPeriodo(p: string | null, de: string | null, ate: string
       return resolverPeriodo("90d", null, null, agora);
     default: return { preset: "90d", periodo: { campo: "data", de: menosDias(hoje, 89), ate: hoje } };
   }
+}
+
+/* ---------- Personalização (drawer, drill-down, visão salva) ---------- */
+
+/** O que o usuário pode mudar sobre o preset. Período, filtros e granularidade ficam na URL (globais). */
+export interface Personalizacao { dimensoes: DimensaoId[]; metricas: MetricaId[]; linha: DimensaoId; serie: DimensaoId | null; limite: number }
+
+const ehMetrica = (c: string): c is MetricaId => c in METRICAS;
+
+/** Personalização equivalente a uma spec (ponto de partida do drawer e restauração de visão salva). */
+export const personalizacaoDaSpec = (s: AnaliseSpec): Personalizacao => ({
+  dimensoes: [...s.dimensoes], metricas: s.tabela.colunas.filter(ehMetrica), linha: s.grafico.dimensaoLinha, serie: s.grafico.dimensaoSerie, limite: s.limite,
+});
+
+/**
+ * Spec efetiva = preset + personalização. Colunas da tabela = dimensões + métricas escolhidas (as só-de-total ficam de fora);
+ * as métricas dos KPIs da aba sempre entram na consulta (uma consulta só alimenta KPIs, gráfico e tabela).
+ */
+export function aplicarPersonalizacao(base: AnaliseSpec, id: PresetId, p: Personalizacao | null): AnaliseSpec {
+  if (!p) return base;
+  const unico = <T,>(v: T, i: number, a: T[]) => a.indexOf(v) === i;
+  const dims = p.dimensoes.filter(unico).filter((d) => !(base.granularidade === "pedidos" && DIMS_DE_ITEM.includes(d))).slice(0, 6);
+  const dimensoes = dims.length ? dims : base.dimensoes;
+  const visiveis = p.metricas.filter(unico).filter((m) => METRICAS[m] && !METRICAS[m].soTotal).slice(0, 20 - dimensoes.length);
+  const kpis = PRESETS[id].kpis.flatMap((k): MetricaId[] => (typeof k === "string" ? [k] : "derivado" in k ? ["share", "variacao_share"] : []));
+  const metricas = [...new Set<MetricaId>([...visiveis, ...kpis])].slice(0, 24);
+  const linha = dimensoes.includes(p.linha) ? p.linha : dimensoes[0]!;
+  const serie = p.serie && p.serie !== linha && dimensoes.includes(p.serie) ? p.serie : null;
+  return {
+    ...base, dimensoes, metricas: metricas.length ? metricas : base.metricas,
+    grafico: { ...base.grafico, dimensaoLinha: linha, dimensaoSerie: serie },
+    tabela: { ...base.tabela, colunas: [...dimensoes, ...visiveis] },
+    limite: Math.min(500, Math.max(1, Math.round(p.limite))),
+  };
 }

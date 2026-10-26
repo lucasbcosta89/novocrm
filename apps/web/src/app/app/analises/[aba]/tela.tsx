@@ -2,17 +2,17 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
-import { Bar, BarChart, CartesianGrid, Cell, ComposedChart, Legend, Line, Pie, PieChart, ReferenceLine, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from "recharts";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, ComposedChart, Legend, Line, LineChart, Pie, PieChart, ReferenceLine, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from "recharts";
 import { Abas } from "@/components/abas";
 import { CardKpi } from "@/components/card-kpi";
 import { Icone, type NomeIcone } from "@/components/icones";
 import { MultiSelect } from "@/components/multi-select";
 import { StatusPedido } from "@/components/status";
-import { DIAS_RISCO, DIMENSOES, hashSpec, METRICAS, ROTULO_CANAL, TIPOS_GRAFICO } from "@/lib/analises/catalogo";
+import { bloqueioGrafico, CHAVE_OUTROS, DIAS_RISCO, DIMENSOES, DIMS_DE_ITEM, hashSpec, LIMITES, METRICAS, proximaDimensao, ROTULO_CANAL, SIGLA_UNIDADE, TIPOS_GRAFICO } from "@/lib/analises/catalogo";
 import { agrupar, histograma, pareto, somarPor } from "@/lib/analises/grafico";
-import { ORDEM_PRESETS, PERIODOS_PRESET, PRESETS, specDoPreset, type PeriodoPreset, type PresetAba } from "@/lib/analises/presets";
-import type { AnaliseSpec, CelulaMatriz, DimensaoId, FiltrosSpec, KpiPreset, MetricaId, PresetId, ResultadoAgregado, TipoGrafico } from "@/lib/analises/tipos";
+import { aplicarPersonalizacao, ORDEM_PRESETS, PERIODOS_PRESET, personalizacaoDaSpec, PRESETS, specDoPreset, type PeriodoPreset, type Personalizacao, type PresetAba } from "@/lib/analises/presets";
+import type { AnaliseSpec, CelulaMatriz, DimensaoId, FiltrosSpec, KpiPreset, MetricaId, PresetId, ResultadoAgregado, TipoGrafico, VisaoSalva } from "@/lib/analises/tipos";
 import { escreverEstado, formatarMetrica, lerEstado, quantosFiltros, variacao, type EstadoGlobal } from "@/lib/analises/url";
 import { ROTULO_STATUS_PEDIDO } from "@/lib/rotulos";
 import type { OpcoesFiltro } from "@/server/analises";
@@ -50,6 +50,10 @@ const DICA = {
   cursor: { fill: "var(--accent-suave)" },
 };
 const POR_PAGINA = 20;
+/** Tipos de gráfico que servem para qualquer dimensão (os específicos — dispersão, histograma — só no preset). */
+const GRAFICOS_GERAIS: TipoGrafico[] = ["barra_horizontal", "coluna", "coluna_agrupada", "linha", "area", "donut", "pareto"];
+const ESPECIFICOS = new Set<TipoGrafico>(["dispersao", "histograma"]);
+const ehMetrica = (c: string): c is MetricaId => c in METRICAS;
 const TOP_GRAFICO = 15;
 
 type Estado = { tipo: "carregando" } | { tipo: "erro"; mensagem: string } | { tipo: "ok"; dados: ResultadoAgregado };
@@ -70,13 +74,37 @@ export function TelaAnalise({ aba, opcoes }: { aba: PresetId; opcoes: OpcoesFilt
   const [texto, setTexto] = useState("");
   const [soRisco, setSoRisco] = useState(false);
   const [tentativa, setTentativa] = useState(0);
+  // personalização (drawer / drill-down / visão salva): sobrevive ao fechar o drawer; null = preset da aba
+  const [pers, setPers] = useState<Personalizacao | null>(null);
+  const [drawerAberto, setDrawerAberto] = useState(false);
 
   const spec = useMemo<AnaliseSpec>(() => {
-    const s = specDoPreset(aba, global.periodo, global.filtros, global.granularidade);
+    const s = aplicarPersonalizacao(specDoPreset(aba, global.periodo, global.filtros, global.granularidade), aba, pers);
     return { ...s, grafico: { ...s.grafico, tipo: tipoGrafico }, tabela: { ...s.tabela, ordenacao } };
-  }, [aba, global, tipoGrafico, ordenacao]);
+  }, [aba, global, tipoGrafico, ordenacao, pers]);
   // o tipo de gráfico não muda a consulta: fica fora da chave do cache
   const chave = hashSpec({ ...spec, grafico: { ...spec.grafico, tipo: preset.graficoTipo } });
+  const colunas = spec.tabela.colunas;
+  const graficosPermitidos = pers ? GRAFICOS_GERAIS : [...new Set([...preset.graficos, ...GRAFICOS_GERAIS])];
+  const bloqueio = bloqueioGrafico(spec);
+
+  /** Muda a personalização a partir da spec atual (aplicação imediata, sem botão "aplicar"). */
+  function personalizar(mudar: (p: Personalizacao) => Partial<Personalizacao>) {
+    const atual = pers ?? personalizacaoDaSpec(spec);
+    const novo = { ...atual, ...mudar(atual) };
+    setPers(novo);
+    setPagina(0);
+    if (ESPECIFICOS.has(tipoGrafico)) setTipoGrafico("barra_horizontal");
+    if (!novo.dimensoes.includes(ordenacao.campo as DimensaoId) && !novo.metricas.includes(ordenacao.campo as MetricaId)) {
+      setOrdenacao({ campo: novo.metricas[0] ?? novo.dimensoes[0]!, direcao: "desc" });
+    }
+  }
+  function restaurarPreset() {
+    setPers(null);
+    setTipoGrafico(preset.graficoTipo);
+    setOrdenacao(inicial.tabela.ordenacao);
+    setPagina(0);
+  }
 
   // resposta da última consulta disparada; o estado exibido deriva do cache + chave atual
   const [resposta, setResposta] = useState<{ chave: string; estado: Estado } | null>(null);
@@ -103,11 +131,20 @@ export function TelaAnalise({ aba, opcoes }: { aba: PresetId; opcoes: OpcoesFilt
     router.replace(q ? `${caminho}?${q}` : caminho, { scroll: false });
   }
   const filtrar = (campo: keyof FiltrosSpec, ids: string[]) => aplicar({ filtros: { ...global.filtros, [campo]: ids } });
-  const drill = (d: DimensaoId, id: string) => { const f = FILTRO_DA_DIM[d]; if (f && id) filtrar(f, [id]); };
+  /** Drill-down: filtra pelo item clicado e adiciona a próxima dimensão sugerida (nova consulta, servida pelo cache se repetida). */
+  function drill(d: DimensaoId, id: string) {
+    const f = FILTRO_DA_DIM[d];
+    if (!f || !id || id === CHAVE_OUTROS) return;
+    const prox = proximaDimensao(d, spec.dimensoes, spec.granularidade);
+    if (prox) personalizar((p) => ({ dimensoes: [...p.dimensoes, prox], linha: prox, serie: null }));
+    filtrar(f, [id]);
+  }
 
   const dados = estado.tipo === "ok" ? estado.dados : null;
   const dimensao = spec.dimensoes[0]!;
-  const metricaGrafico: MetricaId = aba === "pedido" ? "valor_liquido" : spec.metricas[0]!;
+  // 1ª métrica numérica escolhida (texto/data não viram eixo)
+  const metricaGrafico: MetricaId = aba === "pedido" && !pers ? "valor_liquido"
+    : colunas.filter(ehMetrica).find((m) => !["texto", "data"].includes(METRICAS[m].unidade)) ?? "valor_liquido";
 
   // busca e "só em risco" (Por Cliente) filtram as linhas já carregadas; totais seguem os da consulta
   const linhasVisiveis = useMemo(() => {
@@ -123,9 +160,9 @@ export function TelaAnalise({ aba, opcoes }: { aba: PresetId; opcoes: OpcoesFilt
 
   async function exportar(formato: "csv" | "xlsx") {
     if (!dados) return;
-    const cab = preset.colunas.map((c) => rotuloColuna(preset, c));
-    const linhas = [...dados.linhas.map((l) => preset.colunas.map((c) => valorExportado(c, l[c]))),
-      preset.colunas.map((c, i) => (i === 0 ? "Total" : ehDimensao(c) ? "" : valorExportado(c, dados.totais[c])))];
+    const cab = colunas.map((c) => rotuloColuna(preset, c));
+    const linhas = [...dados.linhas.map((l) => colunas.map((c) => valorExportado(c, l[c]))),
+      colunas.map((c, i) => (i === 0 ? "Total" : ehDimensao(c) ? "" : valorExportado(c, dados.totais[c])))];
     const nome = `analise-${aba}-${spec.periodo.de}_${spec.periodo.ate}`;
     if (formato === "xlsx") {
       const XLSX = await import("xlsx");
@@ -164,8 +201,16 @@ export function TelaAnalise({ aba, opcoes }: { aba: PresetId; opcoes: OpcoesFilt
               </div>
             )}
           </details>
-          <button type="button" className="btn-secundario btn-peq" disabled title="Disponível em breve">Salvar visão</button>
-          <button type="button" className="btn btn-peq" disabled title="Disponível em breve">Personalizar</button>
+          <Visoes aba={aba} spec={spec} aoAplicar={(v) => {
+            setPers(personalizacaoDaSpec(v.spec));
+            setTipoGrafico(v.spec.grafico.tipo);
+            setOrdenacao(v.spec.tabela.ordenacao);
+            setPagina(0);
+            aplicar({ preset: "personalizado", periodo: v.spec.periodo, filtros: v.spec.filtros, granularidade: v.spec.granularidade });
+          }} />
+          <button type="button" className="btn btn-peq" aria-expanded={drawerAberto} aria-controls="drawer-personalizar" onClick={() => setDrawerAberto((a) => !a)}>
+            <Icone nome="filtro" tamanho={16} /> Personalizar{pers ? " •" : ""}
+          </button>
         </div>
       </div>
 
@@ -251,16 +296,14 @@ export function TelaAnalise({ aba, opcoes }: { aba: PresetId; opcoes: OpcoesFilt
                     <h2 className="titulo-icone"><Icone nome="grafico" tamanho={20} /> {tituloGrafico(tipoGrafico, spec, metricaGrafico)}</h2>
                     <p className="dica">{subtituloGrafico(tipoGrafico, spec, dados)}</p>
                   </div>
-                  {preset.graficos.length > 1 && (
-                    <label className="campo campo-inline">
-                      <span className="sr-only">Tipo de gráfico</span>
-                      <select value={tipoGrafico} onChange={(e) => setTipoGrafico(e.target.value as TipoGrafico)}>
-                        {preset.graficos.map((t) => <option key={t} value={t}>{TIPOS_GRAFICO[t]}</option>)}
-                      </select>
-                    </label>
-                  )}
+                  <label className="campo campo-inline">
+                    <span className="sr-only">Tipo de gráfico</span>
+                    <select value={tipoGrafico} onChange={(e) => setTipoGrafico(e.target.value as TipoGrafico)}>
+                      {graficosPermitidos.map((t) => <option key={t} value={t}>{TIPOS_GRAFICO[t]}</option>)}
+                    </select>
+                  </label>
                 </div>
-                {dados ? (
+                {bloqueio ? <p className="aviso">{bloqueio}</p> : dados ? (
                   <GraficoAnalise tipo={tipoGrafico} spec={spec} metrica={metricaGrafico} linhas={dados.linhas} aoClicar={drill} />
                 ) : <div className="esqueleto esqueleto-grafico" />}
                 <p className="analise-total">
@@ -300,6 +343,9 @@ export function TelaAnalise({ aba, opcoes }: { aba: PresetId; opcoes: OpcoesFilt
                 </div>
                 {!dados ? <div className="esqueleto esqueleto-lista" /> : (
                   <>
+                    {dados.agrupouOutros && (
+                      <p className="dica">Acima de {spec.limite} itens por dimensão, o excedente foi agrupado em “Outros” (calculado no banco, não clicável). Aumente o limite em Personalizar.</p>
+                    )}
                     {dados.totalLinhas > dados.linhas.length && (
                       <p className="dica">Mostrando {dados.linhas.length} de {dados.totalLinhas} linhas (ordenadas pela coluna escolhida). Os totais consideram todas.</p>
                     )}
@@ -307,7 +353,7 @@ export function TelaAnalise({ aba, opcoes }: { aba: PresetId; opcoes: OpcoesFilt
                       <table className={compacta ? "tabela tabela-compacta" : "tabela"}>
                         <thead>
                           <tr>
-                            {preset.colunas.map((c) => {
+                            {colunas.map((c) => {
                               const ativa = ordenacao.campo === c;
                               return (
                                 <th key={c} className={ehTexto(c) ? undefined : "num"} aria-sort={ativa ? (ordenacao.direcao === "asc" ? "ascending" : "descending") : "none"}>
@@ -321,17 +367,17 @@ export function TelaAnalise({ aba, opcoes }: { aba: PresetId; opcoes: OpcoesFilt
                         </thead>
                         <tbody>
                           {linhasPagina.length === 0 && (
-                            <tr><td colSpan={preset.colunas.length} className="dica">Nenhuma linha com essa busca.</td></tr>
+                            <tr><td colSpan={colunas.length} className="dica">Nenhuma linha com essa busca.</td></tr>
                           )}
                           {linhasPagina.map((l, i) => (
                             <tr key={spec.dimensoes.map((d) => String(l[`${d}__id`] ?? "")).join("|") || i}>
-                              {preset.colunas.map((c) => <Celula key={c} coluna={c} linha={l} preset={preset} maxMicro={maxMicro} aoFiltrar={drill} />)}
+                              {colunas.map((c) => <Celula key={c} coluna={c} linha={l} preset={preset} maxMicro={maxMicro} aoFiltrar={drill} />)}
                             </tr>
                           ))}
                         </tbody>
                         <tfoot>
                           <tr>
-                            {preset.colunas.map((c, i) => (
+                            {colunas.map((c, i) => (
                               <th key={c} className={ehTexto(c) ? undefined : "num"}>
                                 {i === 0 ? "Total" : ehDimensao(c) ? "" : formatarMetrica(c as MetricaId, dados.totais[c])}
                               </th>
@@ -354,6 +400,9 @@ export function TelaAnalise({ aba, opcoes }: { aba: PresetId; opcoes: OpcoesFilt
           )}
         </>
       )}
+
+      <Personalizar aberto={drawerAberto} aoFechar={() => setDrawerAberto(false)} spec={spec} tipo={tipoGrafico} graficos={graficosPermitidos}
+        personalizado={!!pers} aoMudar={personalizar} aoMudarTipo={setTipoGrafico} aoRestaurar={restaurarPreset} bloqueio={bloqueio} />
     </>
   );
 }
@@ -386,7 +435,7 @@ function Celula({ coluna: c, linha: l, preset, maxMicro, aoFiltrar }: {
     const id = String(l[`${c}__id`] ?? "");
     if (c === "pedido") return <td><Link href={`/app/pedidos/${id}`}>{String(l[c] ?? "—")}</Link></td>;
     if (c === "status") return <td><StatusPedido status={String(l[c] ?? "")} /></td>;
-    if (FILTRO_DA_DIM[c] && id) {
+    if (FILTRO_DA_DIM[c] && id && id !== CHAVE_OUTROS) {
       return <td><button type="button" className="btn-link texto-esquerda" title={`Filtrar por ${DIMENSOES[c].rotulo.toLowerCase()}`} onClick={() => aoFiltrar(c, id)}>{rotuloDim(c, l[c])}</button></td>;
     }
     return <td>{rotuloDim(c, l[c])}</td>;
@@ -509,9 +558,11 @@ function GraficoAnalise({ tipo, spec, metrica, linhas, aoClicar }: {
     );
   }
 
-  // barras / colunas / rosca sobre a dimensão principal do gráfico (top N; o total vem de `totais`)
-  const dimSimples = tipo === "coluna_agrupada" ? dim : spec.dimensoes[0]!;
-  const dados = somarPor(linhas, dimSimples, metrica).slice(0, TOP_GRAFICO).map((p) => ({ ...p, nome: rotuloDim(dimSimples, p.nome) }));
+  // barras / colunas / linha / área / rosca sobre a dimensão do gráfico (top N; o total vem de `totais`)
+  const dimSimples = dimensaoSimples(tipo, spec);
+  const temporal = dimSimples === "tempo" || dimSimples === "dia";
+  const pontos = somarPor(linhas, dimSimples, metrica);
+  const dados = (temporal ? pontos.sort((a, b) => a.id.localeCompare(b.id)) : pontos.slice(0, TOP_GRAFICO)).map((p) => ({ ...p, nome: rotuloDim(dimSimples, p.nome) }));
   const clique = FILTRO_DA_DIM[dimSimples] ? (_: unknown, i: number) => { const id = dados[i]?.id; if (id) aoClicar(dimSimples, id); } : undefined;
   const rotulo = `${METRICAS[metrica].rotulo} por ${DIMENSOES[dimSimples].rotulo}: ${dados.map((d) => `${d.nome} ${fmt(d.valor)}`).join(", ")}`;
   const altura = tipo === "barra_horizontal" ? Math.max(260, dados.length * 36 + 40) : ALTURA;
@@ -522,16 +573,36 @@ function GraficoAnalise({ tipo, spec, metrica, linhas, aoClicar }: {
           <PieChart>
             <Tooltip {...DICA} formatter={(v, n) => [fmt(v), String(n)]} />
             <Pie data={dados} dataKey="valor" nameKey="nome" innerRadius="55%" outerRadius="85%" paddingAngle={1} onClick={clique} cursor={clique ? "pointer" : undefined}>
-              {dados.map((d, i) => <Cell key={d.id} fill={CORES[i % CORES.length]} />)}
+              {dados.map((d, i) => <Cell key={d.id} fill={d.id === CHAVE_OUTROS ? "#94A3B8" : CORES[i % CORES.length]} />)}
             </Pie>
           </PieChart>
+        ) : tipo === "linha" || tipo === "area" ? (
+          tipo === "linha" ? (
+            <LineChart data={dados} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+              <CartesianGrid vertical={false} stroke="var(--borda-suave)" />
+              <XAxis dataKey="nome" tick={EIXO} axisLine={false} tickLine={false} />
+              <YAxis tickFormatter={curto} tick={EIXO} axisLine={false} tickLine={false} width={64} />
+              <Tooltip {...DICA} formatter={(v) => [fmt(v), METRICAS[metrica].rotulo]} />
+              <Line type="monotone" dataKey="valor" stroke="var(--accent)" strokeWidth={2.5} dot={{ r: 3, fill: "var(--accent)" }} />
+            </LineChart>
+          ) : (
+            <AreaChart data={dados} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+              <CartesianGrid vertical={false} stroke="var(--borda-suave)" />
+              <XAxis dataKey="nome" tick={EIXO} axisLine={false} tickLine={false} />
+              <YAxis tickFormatter={curto} tick={EIXO} axisLine={false} tickLine={false} width={64} />
+              <Tooltip {...DICA} formatter={(v) => [fmt(v), METRICAS[metrica].rotulo]} />
+              <Area type="monotone" dataKey="valor" stroke="var(--accent)" strokeWidth={2} fill="var(--accent-suave)" />
+            </AreaChart>
+          )
         ) : tipo === "barra_horizontal" ? (
           <BarChart data={dados} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>
             <CartesianGrid horizontal={false} stroke="var(--borda-suave)" />
             <XAxis type="number" tickFormatter={curto} tick={EIXO} axisLine={false} tickLine={false} />
             <YAxis type="category" dataKey="nome" tick={EIXO} axisLine={false} tickLine={false} width={140} />
             <Tooltip {...DICA} formatter={(v) => [fmt(v), METRICAS[metrica].rotulo]} />
-            <Bar dataKey="valor" fill="var(--accent)" radius={[0, 6, 6, 0]} maxBarSize={28} onClick={clique} cursor={clique ? "pointer" : undefined} />
+            <Bar dataKey="valor" fill="var(--accent)" radius={[0, 6, 6, 0]} maxBarSize={28} onClick={clique} cursor={clique ? "pointer" : undefined}>
+              {dados.map((d) => <Cell key={d.id} fill={d.id === CHAVE_OUTROS ? "#94A3B8" : "var(--accent)"} cursor={d.id === CHAVE_OUTROS ? "default" : undefined} />)}
+            </Bar>
           </BarChart>
         ) : (
           <BarChart data={dados} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -539,7 +610,9 @@ function GraficoAnalise({ tipo, spec, metrica, linhas, aoClicar }: {
             <XAxis dataKey="nome" tick={EIXO} axisLine={false} tickLine={false} interval={0} />
             <YAxis tickFormatter={curto} tick={EIXO} axisLine={false} tickLine={false} width={64} />
             <Tooltip {...DICA} formatter={(v) => [fmt(v), METRICAS[metrica].rotulo]} />
-            <Bar dataKey="valor" fill="var(--accent)" radius={[6, 6, 0, 0]} maxBarSize={44} onClick={clique} cursor={clique ? "pointer" : undefined} />
+            <Bar dataKey="valor" fill="var(--accent)" radius={[6, 6, 0, 0]} maxBarSize={44} onClick={clique} cursor={clique ? "pointer" : undefined}>
+              {dados.map((d) => <Cell key={d.id} fill={d.id === CHAVE_OUTROS ? "#94A3B8" : "var(--accent)"} cursor={d.id === CHAVE_OUTROS ? "default" : undefined} />)}
+            </Bar>
           </BarChart>
         )}
       </ResponsiveContainer>
@@ -551,7 +624,7 @@ function tituloGrafico(tipo: TipoGrafico, spec: AnaliseSpec, metrica: MetricaId)
   if (tipo === "dispersao") return `${METRICAS[metrica].rotulo} × dias sem comprar`;
   if (tipo === "histograma") return "Pedidos por faixa de ticket";
   if (tipo === "pareto") return `Pareto de ${METRICAS[metrica].rotulo.toLowerCase()} por ${DIMENSOES[spec.grafico.dimensaoLinha].rotulo.toLowerCase()}`;
-  const dim = tipo === "coluna_agrupada" ? spec.grafico.dimensaoLinha : spec.dimensoes[0]!;
+  const dim = dimensaoSimples(tipo, spec);
   return `${METRICAS[metrica].rotulo} por ${DIMENSOES[dim].rotulo.toLowerCase()}`;
 }
 
@@ -562,11 +635,14 @@ function subtituloGrafico(tipo: TipoGrafico, spec: AnaliseSpec, dados: Resultado
   if (tipo === "histograma") return `${n} pedido(s) distribuídos por valor`;
   if (tipo === "pareto") return `${n} ${DIMENSOES[spec.grafico.dimensaoLinha].rotulo.toLowerCase()}(s) · barras = valor, linha = % acumulado, referência em 80%`;
   if (tipo === "coluna_agrupada" && spec.grafico.dimensaoSerie) return `Série por ${DIMENSOES[spec.grafico.dimensaoSerie].rotulo.toLowerCase()} · top ${TOP_GRAFICO}`;
-  const d = DIMENSOES[spec.dimensoes[0]!].rotulo.toLowerCase();
+  const d = DIMENSOES[dimensaoSimples(tipo, spec)].rotulo.toLowerCase();
   return `${n > TOP_GRAFICO ? `Top ${TOP_GRAFICO} de ${dados.totalLinhas}` : `${n} ${d}(s)`} · clique para filtrar`;
 }
 
 const ehDimensao = (c: string): c is DimensaoId => c in DIMENSOES;
+/** Dimensão do gráfico simples: com série, a 1ª da tabela (o agrupado usa linha × série); sem série, a escolhida (preset/drill). */
+const dimensaoSimples = (tipo: TipoGrafico, spec: AnaliseSpec): DimensaoId =>
+  tipo === "coluna_agrupada" || !spec.grafico.dimensaoSerie ? spec.grafico.dimensaoLinha : spec.dimensoes[0]!;
 /** Colunas alinhadas à esquerda (dimensões e métricas de texto). */
 const ehTexto = (c: string) => ehDimensao(c) || METRICAS[c as MetricaId]?.unidade === "texto";
 const rotuloColuna = (p: PresetAba, c: string) => p.rotulos?.[c] ?? (ehDimensao(c) ? DIMENSOES[c].rotulo : METRICAS[c as MetricaId]?.rotulo ?? c);
@@ -641,5 +717,167 @@ function MatrizCalor({ celulas }: { celulas: CelulaMatriz[] }) {
         </tbody>
       </table>
     </div>
+  );
+}
+
+/** Drawer "Personalizar": dimensões (chips), métricas (checkbox com unidade), tipo de gráfico e limite. Aplicação imediata. */
+function Personalizar({ aberto, aoFechar, spec, tipo, graficos, personalizado, aoMudar, aoMudarTipo, aoRestaurar, bloqueio }: {
+  aberto: boolean; aoFechar: () => void; spec: AnaliseSpec; tipo: TipoGrafico; graficos: TipoGrafico[]; personalizado: boolean;
+  aoMudar: (f: (p: Personalizacao) => Partial<Personalizacao>) => void; aoMudarTipo: (t: TipoGrafico) => void; aoRestaurar: () => void; bloqueio: string | null;
+}) {
+  const ref = useRef<HTMLDialogElement>(null);
+  // não modal: a tela atrás continua visível e reage a cada mudança
+  useEffect(() => {
+    const d = ref.current;
+    if (!d) return;
+    if (aberto && !d.open) d.show();
+    if (!aberto && d.open) d.close();
+  }, [aberto]);
+  const visiveis = spec.tabela.colunas.filter(ehMetrica);
+  const porItem = spec.granularidade === "pedidos";
+  return (
+    <dialog ref={ref} id="drawer-personalizar" className="drawer-analise" aria-label="Personalizar análise" onClose={aoFechar}
+      onKeyDown={(e) => e.key === "Escape" && aoFechar()}>
+      <div className="drawer-topo">
+        <h2>Personalizar</h2>
+        <button type="button" className="botao-icone" aria-label="Fechar" onClick={aoFechar}><Icone nome="fechar" tamanho={18} /></button>
+      </div>
+      <p className="dica">As mudanças aplicam na hora. Fechar não descarta.</p>
+
+      <section>
+        <h3>Dimensões <span className="dica">(ordem = colunas da tabela)</span></h3>
+        <div className="chips-drawer">
+          {(Object.keys(DIMENSOES) as DimensaoId[]).map((d) => {
+            const pos = spec.dimensoes.indexOf(d);
+            const ativa = pos >= 0;
+            const indisponivel = porItem && DIMS_DE_ITEM.includes(d);
+            return (
+              <button key={d} type="button" className={ativa ? "chip-filtro ativo" : "chip-filtro"} aria-pressed={ativa}
+                disabled={indisponivel || (ativa && spec.dimensoes.length === 1) || (!ativa && spec.dimensoes.length >= 6)}
+                title={indisponivel ? "Indisponível na granularidade Pedidos" : undefined}
+                onClick={() => aoMudar((p) => {
+                  const dimensoes = ativa ? p.dimensoes.filter((x) => x !== d) : [...p.dimensoes, d];
+                  return { dimensoes, linha: dimensoes[0]!, serie: dimensoes[1] ?? null };
+                })}>
+                {ativa && <span className="chip-ordem">{pos + 1}</span>}{DIMENSOES[d].rotulo}
+              </button>
+            );
+          })}
+        </div>
+        {bloqueio && <p className="dica texto-perigo">{bloqueio}</p>}
+      </section>
+
+      <section>
+        <h3>Métricas</h3>
+        <div className="lista-metricas">
+          {(Object.keys(METRICAS) as MetricaId[]).filter((m) => !METRICAS[m].soTotal).map((m) => {
+            const marcada = visiveis.includes(m);
+            return (
+              <label key={m} className="check-metrica">
+                <input type="checkbox" checked={marcada} disabled={marcada && visiveis.length === 1}
+                  onChange={() => aoMudar((p) => ({ metricas: marcada ? p.metricas.filter((x) => x !== m) : [...p.metricas, m] }))} />
+                <span>{METRICAS[m].rotulo}</span>
+                <span className="etiqueta">{SIGLA_UNIDADE[METRICAS[m].unidade]}</span>
+              </label>
+            );
+          })}
+        </div>
+      </section>
+
+      <section>
+        <h3>Gráfico</h3>
+        <div className="chips-drawer">
+          {graficos.map((g) => (
+            <button key={g} type="button" className={tipo === g ? "chip-filtro ativo" : "chip-filtro"} aria-pressed={tipo === g} onClick={() => aoMudarTipo(g)}>{TIPOS_GRAFICO[g]}</button>
+          ))}
+        </div>
+      </section>
+
+      <section>
+        <h3>Limite por dimensão</h3>
+        <div className="chips-drawer">
+          {LIMITES.map((n) => (
+            <button key={n} type="button" className={spec.limite === n ? "chip-filtro ativo" : "chip-filtro"} aria-pressed={spec.limite === n}
+              onClick={() => aoMudar(() => ({ limite: n }))}>{n}</button>
+          ))}
+        </div>
+        <p className="dica">Acima do limite, o excedente vira “Outros”.</p>
+      </section>
+
+      {personalizado && <button type="button" className="btn-suave btn-peq" onClick={aoRestaurar}>Restaurar padrão da aba</button>}
+    </dialog>
+  );
+}
+
+/** Visões salvas: { nome, spec }. Da aba onde foi criada, ou compartilhada com todas as abas. Reaplicar restaura a spec. */
+function Visoes({ aba, spec, aoAplicar }: { aba: PresetId; spec: AnaliseSpec; aoAplicar: (v: VisaoSalva) => void }) {
+  const [lista, setLista] = useState<VisaoSalva[] | null>(null);
+  const [nome, setNome] = useState("");
+  const [compartilhar, setCompartilhar] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const salvarRef = useRef<HTMLDetailsElement>(null);
+
+  useEffect(() => {
+    const ctrl = new AbortController();
+    fetch(`/api/analises/visoes?aba=${aba}`, { signal: ctrl.signal })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((v: VisaoSalva[]) => setLista(v))
+      .catch(() => { if (!ctrl.signal.aborted) setLista([]); });
+    return () => ctrl.abort();
+  }, [aba]);
+
+  async function salvar(e: React.FormEvent) {
+    e.preventDefault();
+    setMsg(null);
+    const r = await fetch("/api/analises/visoes", {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ aba, nome, escopo: compartilhar ? "compartilhada" : "subpagina", spec }),
+    });
+    const corpo = await r.json().catch(() => null);
+    if (!r.ok) { setMsg(corpo?.erro ?? "Não foi possível salvar."); return; }
+    setLista((l) => [corpo as VisaoSalva, ...(l ?? [])]);
+    setNome("");
+    setCompartilhar(false);
+    salvarRef.current?.removeAttribute("open");
+  }
+
+  async function excluir(id: string) {
+    const r = await fetch(`/api/analises/visoes/${id}`, { method: "DELETE" });
+    if (r.ok) setLista((l) => (l ?? []).filter((v) => v.id !== id));
+  }
+
+  return (
+    <>
+      {lista && lista.length > 0 && (
+        <details className="menu-exportar">
+          <summary className="btn-secundario btn-peq"><Icone nome="arquivo" tamanho={16} /> Visões ({lista.length})</summary>
+          <div className="menu-exportar-opcoes menu-visoes">
+            {lista.map((v) => (
+              <div key={v.id} className="linha-visao">
+                <button type="button" className="btn-link" title="Aplicar visão" onClick={(e) => { aoAplicar(v); e.currentTarget.closest("details")?.removeAttribute("open"); }}>
+                  {v.nome}
+                </button>
+                {v.escopo === "compartilhada" && <span className="etiqueta">todas as abas</span>}
+                <button type="button" className="botao-icone" aria-label={`Excluir visão ${v.nome}`} onClick={() => excluir(v.id)}><Icone nome="lixeira" tamanho={14} /></button>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+      <details className="menu-exportar" ref={salvarRef}>
+        <summary className="btn-secundario btn-peq">Salvar visão</summary>
+        <form className="menu-exportar-opcoes menu-visoes" onSubmit={salvar}>
+          <label className="campo"><span>Nome</span>
+            <input value={nome} onChange={(e) => setNome(e.target.value)} maxLength={60} required placeholder="Ex.: Top clientes do trimestre" />
+          </label>
+          <label className="check-metrica">
+            <input type="checkbox" checked={compartilhar} onChange={(e) => setCompartilhar(e.target.checked)} />
+            <span>Compartilhar com todas as abas</span>
+          </label>
+          {msg && <p className="dica texto-perigo">{msg}</p>}
+          <button type="submit" className="btn btn-peq">Salvar</button>
+        </form>
+      </details>
+    </>
   );
 }

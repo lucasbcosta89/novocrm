@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { analiseSpecSchema, bloqueioGrafico, hashSpec, METRICAS } from "@/lib/analises/catalogo";
+import { analiseSpecSchema, bloqueioGrafico, CHAVE_OUTROS, hashSpec, METRICAS, proximaDimensao, visaoSchema } from "@/lib/analises/catalogo";
 import { agrupar, histograma, pareto, somarPor } from "@/lib/analises/grafico";
-import { PRESETS, resolverPeriodo, specDoPreset } from "@/lib/analises/presets";
+import { aplicarPersonalizacao, personalizacaoDaSpec, PRESETS, resolverPeriodo, specDoPreset } from "@/lib/analises/presets";
 import { escreverEstado, formatarMetrica, lerEstado, variacao } from "@/lib/analises/url";
 
 const AGORA = new Date("2026-10-24T15:00:00Z");
@@ -77,7 +77,6 @@ describe("análises — fase 2 (Cliente, Produto, Pedido)", () => {
       const s = specDoPreset(id, periodo, vazio, "itens");
       expect(analiseSpecSchema.safeParse(s).success).toBe(true);
       expect(PRESETS[id].kpis).toHaveLength(4);
-      expect(PRESETS[id].fase).toBe(2);
     }
     expect(specDoPreset("cliente", periodo, vazio, "itens").metricas).toContain("dias_sem_comprar");
     expect(specDoPreset("produto", periodo, vazio, "itens").grafico).toMatchObject({ tipo: "coluna_agrupada", dimensaoLinha: "categoria", dimensaoSerie: "representada" });
@@ -141,5 +140,50 @@ describe("análises — fase 3 (Mix) e % devoluções", () => {
     expect(formatarMetrica("variacao_share", 2.345)).toBe("+2,3 p.p.");
     expect(formatarMetrica("variacao_share", -1.5)).toBe("-1,5 p.p.");
     expect(formatarMetrica("lider_representada", "Marca Alfa")).toBe("Marca Alfa");
+  });
+});
+
+describe("análises — fase 4 (drawer, drill-down, Outros, visões)", () => {
+  const periodo = resolverPeriodo(null, null, null, AGORA).periodo;
+  const base = specDoPreset("representada", periodo, vazio, "itens");
+
+  it("drawer: personalização vira spec válida; colunas = dimensões + métricas; KPIs sempre na consulta", () => {
+    const p = { ...personalizacaoDaSpec(base), dimensoes: ["representada", "uf"] as const, metricas: ["valor_liquido", "quantidade", "concentracao"] as const };
+    const s = aplicarPersonalizacao(base, "representada", { ...p, dimensoes: [...p.dimensoes], metricas: [...p.metricas] });
+    expect(analiseSpecSchema.safeParse(s).success).toBe(true);
+    expect(s.tabela.colunas).toEqual(["representada", "uf", "valor_liquido", "quantidade"]);
+    expect(s.metricas).toEqual(expect.arrayContaining(["numero_pedidos", "ticket_medio", "representadas_ativas"]));
+    expect(s.grafico).toMatchObject({ dimensaoLinha: "representada", dimensaoSerie: null });
+    expect(aplicarPersonalizacao(base, "representada", null)).toBe(base);
+  });
+
+  it("granularidade Pedidos descarta dimensões de item; Mix derivado leva share", () => {
+    const ped = specDoPreset("pedido", periodo, vazio, "itens");
+    const s = aplicarPersonalizacao(ped, "pedido", { ...personalizacaoDaSpec(ped), dimensoes: ["produto", "cliente"] });
+    expect(s.dimensoes).toEqual(["cliente"]);
+    const mix = specDoPreset("mix", periodo, vazio, "itens");
+    expect(aplicarPersonalizacao(mix, "mix", { ...personalizacaoDaSpec(mix), metricas: ["valor_liquido"] }).metricas).toContain("share");
+  });
+
+  it("drill-down: próxima dimensão sugerida, ausente e válida na granularidade", () => {
+    expect(proximaDimensao("representada", ["representada"], "itens")).toBe("categoria");
+    expect(proximaDimensao("representada", ["representada", "categoria"], "itens")).toBe("produto");
+    expect(proximaDimensao("cliente", ["cliente"], "pedidos")).toBe("representada");
+    expect(proximaDimensao("tempo", ["tempo"], "itens")).toBeNull();
+  });
+
+  it("gráfico bloqueia acima de 2 dimensões, exceto quando consolida por uma dimensão escolhida", () => {
+    expect(bloqueioGrafico({ dimensoes: ["representada", "uf", "cliente"], grafico: { dimensaoLinha: "representada" } })).toMatch(/no máximo 2/);
+    expect(bloqueioGrafico({ dimensoes: ["representada", "uf", "cliente"], grafico: { dimensaoLinha: "cliente" } })).toBeNull();
+  });
+
+  it("visão salva: spec validada no catálogo e restaurada como personalização", () => {
+    const s = aplicarPersonalizacao(base, "representada", { ...personalizacaoDaSpec(base), dimensoes: ["representada", "categoria"], limite: 50 });
+    const v = visaoSchema.parse({ aba: "representada", nome: "  Marcas × categoria ", escopo: "compartilhada", spec: JSON.parse(JSON.stringify(s)) });
+    expect(v.nome).toBe("Marcas × categoria");
+    expect(aplicarPersonalizacao(base, "representada", personalizacaoDaSpec(v.spec))).toEqual(s);
+    expect(visaoSchema.safeParse({ aba: "x", nome: "a", spec: s }).success).toBe(false);
+    expect(visaoSchema.safeParse({ aba: "mix", nome: "", spec: s }).success).toBe(false);
+    expect(CHAVE_OUTROS).toBe("__outros__");
   });
 });
