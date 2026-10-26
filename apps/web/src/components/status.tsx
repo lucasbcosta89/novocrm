@@ -1,4 +1,4 @@
-import { ROTULO_STATUS_PEDIDO } from "@/lib/rotulos";
+import { ROTULO_STATUS_DEVOLUCAO, ROTULO_STATUS_PEDIDO } from "@/lib/rotulos";
 import { Icone, type NomeIcone } from "./icones";
 
 /** Badge de status com ícone + cor (verde = concluído, azul = em aberto, cinza = cancelado). */
@@ -15,4 +15,10 @@ const ICONE_PEDIDO: Record<string, NomeIcone> = { rascunho: "relogio", confirmad
 
 export function StatusPedido({ status }: { status: string }) {
   return <Status classe={status} icone={ICONE_PEDIDO[status] ?? "circulo"} rotulo={ROTULO_STATUS_PEDIDO[status] ?? status} />;
+}
+
+const ICONE_DEVOLUCAO: Record<string, NomeIcone> = { pendente: "relogio", aprovada: "check", recusada: "cancelado", concluida: "concluido" };
+
+export function StatusDevolucao({ status }: { status: string }) {
+  return <Status classe={`dev-${status}`} icone={ICONE_DEVOLUCAO[status] ?? "circulo"} rotulo={ROTULO_STATUS_DEVOLUCAO[status] ?? status} />;
 }

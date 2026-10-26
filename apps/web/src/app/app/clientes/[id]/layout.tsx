@@ -18,6 +18,7 @@ export default async function ClienteLayout({ children, params }: { children: Re
           { href: "", rotulo: "Início", icone: "painel" },
           { href: "visitas", rotulo: "Visitas", icone: "calendario" },
           { href: "pedidos", rotulo: "Pedidos", icone: "carrinho" },
+          { href: "devolucoes", rotulo: "Devoluções", icone: "historico" },
           { href: "oportunidades", rotulo: "Oportunidades", icone: "funil" },
           { href: "representadas", rotulo: "Representadas", icone: "predio" },
         ]}

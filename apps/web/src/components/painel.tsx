@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { formatarData, formatarDataHora, formatarMoeda } from "@/lib/formato";
-import type { Painel } from "@/server/dashboards";
+import { DIAS_DEVOLUCOES, type Painel } from "@/server/dashboards";
 import { Icone, type NomeIcone } from "./icones";
 
 function Kpi({ icone, tom, rotulo, valor }: { icone: NomeIcone; tom: string; rotulo: string; valor: React.ReactNode }) {
@@ -22,6 +22,10 @@ export function PainelResumo({ painel, rotuloVisitas }: { painel: Painel; rotulo
           <Kpi icone="tendencia" tom="tom-violeta" rotulo="Vendas no mês" valor={formatarMoeda(painel.vendasMes)} />
           <Kpi icone="carrinho" tom="tom-ciano" rotulo="Pedidos" valor={painel.pedidos} />
           <Kpi icone="calendario" tom="tom-rosa" rotulo={rotuloVisitas} valor={painel.visitas} />
+          {painel.devolucoes && painel.devolucoes.quantidade > 0 && (
+            <Kpi icone="historico" tom="tom-neutro" rotulo={`Devoluções no período (${DIAS_DEVOLUCOES} dias)`}
+              valor={`${painel.devolucoes.quantidade} · ${formatarMoeda(painel.devolucoes.valor)}`} />
+          )}
         </dl>
         <p className="dica">Vendas = pedidos confirmados ou entregues.</p>
       </section>

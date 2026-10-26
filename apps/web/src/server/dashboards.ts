@@ -6,7 +6,13 @@ import { erroBanco } from "./erros";
 
 /** Alertas: tarefas pendentes e visitas com data nos próximos 7 dias (visita com data futura = agendada). */
 export type Alerta = { tipo: "tarefa" | "visita"; id: string; titulo: string; data: string; href: string };
-export type Painel = { vendasTotal: number; vendasMes: number; pedidos: number; visitas: number; alertas: Alerta[] };
+export type Painel = {
+  vendasTotal: number; vendasMes: number; pedidos: number; visitas: number; alertas: Alerta[];
+  /** devoluções não recusadas nos últimos DIAS_DEVOLUCOES dias (só no painel do cliente) */
+  devolucoes?: { quantidade: number; valor: number };
+};
+
+export const DIAS_DEVOLUCOES = 90;
 
 const DIAS_ALERTA = 7;
 const VALIDOS = ["confirmado", "entregue"]; // rascunho e cancelado não contam como venda
@@ -76,22 +82,27 @@ export async function painelRepresentada({ supabase }: Contexto, representadaId:
 export async function painelCliente({ supabase }: Contexto, clienteId: string): Promise<Painel> {
   const id = idSchema.parse(clienteId);
   const j = janela();
-  const [pedidos, visitas, tarefas, agendadas] = await Promise.all([
+  const desde = new Date(Date.parse(`${j.hoje}T12:00:00Z`) - (DIAS_DEVOLUCOES - 1) * 864e5).toISOString().slice(0, 10);
+  const [pedidos, visitas, tarefas, agendadas, devolucoes] = await Promise.all([
     supabase.from("pedidos").select("valor_total, data").eq("cliente_id", id).in("status", VALIDOS).returns<{ valor_total: number; data: string }[]>(),
     supabase.from("visitas").select("id", { count: "exact", head: true }).eq("cliente_id", id).lte("data", j.agoraIso),
     supabase.from("tarefas").select("id, titulo, data, cliente_id").eq("concluida", false).eq("cliente_id", id)
       .gte("data", j.hoje).lte("data", j.fim).returns<TarefaRow[]>(),
     supabase.from("visitas").select("id, data, tipo, cliente:clientes(id, nome)").eq("cliente_id", id)
       .gt("data", j.agoraIso).lte("data", j.fimIso).returns<VisitaRow[]>(),
+    supabase.from("devolucoes").select("valor_total").eq("cliente_id", id).neq("status", "recusada")
+      .gte("data", desde).lte("data", j.hoje).returns<{ valor_total: number }[]>(),
   ]);
-  for (const r of [pedidos, visitas, tarefas, agendadas]) if (r.error) throw erroBanco(r.error);
+  for (const r of [pedidos, visitas, tarefas, agendadas, devolucoes]) if (r.error) throw erroBanco(r.error);
   const ped = pedidos.data ?? [];
+  const dev = devolucoes.data ?? [];
   return {
     vendasTotal: soma(ped),
     vendasMes: soma(ped.filter((p) => p.data >= inicioMes())),
     pedidos: ped.length,
     visitas: visitas.count ?? 0,
     alertas: montarAlertas(tarefas.data ?? [], agendadas.data ?? []),
+    devolucoes: { quantidade: dev.length, valor: soma(dev) },
   };
 }
 

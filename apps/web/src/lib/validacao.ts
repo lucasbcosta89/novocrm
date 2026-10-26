@@ -220,6 +220,19 @@ export const funilSchema = z.object({
   modelo: z.enum(MODELOS_FUNIL, "Modelo de funil inválido"),
 });
 
+/** Itens com preço unitário informado pelo usuário (edição de pedido e devolução). */
+const itensComPrecoSchema = z
+  .array(
+    z.object({
+      produto_id: idSchema,
+      quantidade: numero(0.001, 1_000_000, "Quantidade inválida"),
+      preco_unitario: numero(0, 99_999_999, "Preço inválido"),
+      desconto_percentual: numero(0, 100, "Desconto deve estar entre 0% e 100%").default(0),
+    }),
+  )
+  .min(1, "Adicione ao menos um item")
+  .max(500);
+
 /** Edição de pedido (rascunho ou confirmado): o preço unitário passa a ser informado pelo usuário. */
 export const edicaoPedidoSchema = z
   .object({
@@ -229,17 +242,7 @@ export const edicaoPedidoSchema = z
       (v) => (v === "" || v == null ? null : Number(v)),
       z.number("Prazo inválido").int("Prazo deve ser em dias inteiros").min(1, "Prazo mínimo de 1 dia").max(365, "Prazo máximo de 365 dias").nullable().optional(),
     ),
-    itens: z
-      .array(
-        z.object({
-          produto_id: idSchema,
-          quantidade: numero(0.001, 1_000_000, "Quantidade inválida"),
-          preco_unitario: numero(0, 99_999_999, "Preço inválido"),
-          desconto_percentual: numero(0, 100, "Desconto deve estar entre 0% e 100%").default(0),
-        }),
-      )
-      .min(1, "Adicione ao menos um item")
-      .max(500),
+    itens: itensComPrecoSchema,
   })
   .refine((p) => p.prazo_tipo === "a_vista" || p.prazo_dias != null, { message: "Informe o prazo em dias", path: ["prazo_dias"] })
   .transform((p) => (p.prazo_tipo === "a_vista" ? { ...p, prazo_dias: null } : p));
@@ -291,3 +294,28 @@ export const produtoOportunidadeSchema = z.object({
   produto_id: idSchema,
   quantidade: numero(0.001, 1_000_000, "Quantidade inválida").default(1),
 });
+
+export const MOTIVOS_DEVOLUCAO = ["produto_avariado", "produto_incorreto", "desistencia", "prazo_entrega", "outro"] as const;
+export const STATUS_DEVOLUCAO = ["pendente", "aprovada", "recusada", "concluida"] as const;
+
+/** Devolução: mesmos campos do pedido (itens com preço informado, pagamento, prazo) + pedido de origem, motivo e status. */
+export const devolucaoSchema = z
+  .object({
+    cliente_id: idSchema,
+    representada_id: idSchema,
+    pedido_id: z.preprocess(vazioParaNull, idSchema.nullable().optional()),
+    data: z.iso.date("Data inválida"),
+    motivo: z.enum(MOTIVOS_DEVOLUCAO, "Escolha o motivo"),
+    status: z.enum(STATUS_DEVOLUCAO, "Status inválido").default("pendente"),
+    forma_pagamento: z.preprocess(vazioParaNull, z.enum(FORMAS_PAGAMENTO, "Forma de pagamento inválida").nullable().optional()),
+    prazo_tipo: z.enum(PRAZOS_PAGAMENTO, "Prazo de pagamento inválido").default("a_vista"),
+    prazo_dias: z.preprocess(
+      (v) => (v === "" || v == null ? null : Number(v)),
+      z.number("Prazo inválido").int("Prazo deve ser em dias inteiros").min(1, "Prazo mínimo de 1 dia").max(365, "Prazo máximo de 365 dias").nullable().optional(),
+    ),
+    observacoes: textoOpcional(2000),
+    itens: itensComPrecoSchema,
+  })
+  .refine((p) => p.prazo_tipo === "a_vista" || p.prazo_dias != null, { message: "Informe o prazo em dias", path: ["prazo_dias"] })
+  .transform((p) => (p.prazo_tipo === "a_vista" ? { ...p, prazo_dias: null } : p));
+export type DevolucaoInput = z.infer<typeof devolucaoSchema>;

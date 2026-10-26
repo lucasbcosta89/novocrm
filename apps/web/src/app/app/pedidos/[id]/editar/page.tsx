@@ -8,7 +8,7 @@ import { listarTabelaPrecos } from "@/server/consultas";
 import { obterPedido } from "@/server/pedidos";
 import { listarProdutos } from "@/server/produtos";
 import { editarPedidoAction } from "../../actions";
-import { ItensEditaveis, type LinhaEdicao } from "./itens-editaveis";
+import { ItensEditaveis, type LinhaEdicao } from "@/components/itens-editaveis";
 
 /** Edição do pedido (rascunho ou confirmado): produtos, quantidades, preços, descontos, pagamento e prazo. */
 export default async function EditarPedidoPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Busca }) {

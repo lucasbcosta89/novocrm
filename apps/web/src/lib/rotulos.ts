@@ -36,3 +36,16 @@ export const ROTULO_FORMA_PAGAMENTO: Record<string, string> = {
   outros: "Outros",
 };
 export const ROTULO_PRAZO: Record<string, string> = { a_vista: "À vista", a_prazo: "À prazo" };
+export const ROTULO_MOTIVO_DEVOLUCAO: Record<string, string> = {
+  produto_avariado: "Produto avariado",
+  produto_incorreto: "Produto incorreto",
+  desistencia: "Desistência",
+  prazo_entrega: "Prazo de entrega",
+  outro: "Outro",
+};
+export const ROTULO_STATUS_DEVOLUCAO: Record<string, string> = {
+  pendente: "Pendente",
+  aprovada: "Aprovada",
+  recusada: "Recusada",
+  concluida: "Concluída",
+};

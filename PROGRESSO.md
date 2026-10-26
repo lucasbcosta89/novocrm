@@ -96,6 +96,12 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Telefone normalizado com DDI 55; sem telefone ou inválido = botão desabilitado com o motivo
   - [x] Histórico em mensagens_whatsapp gravado no clique (via wa.me)
   - [x] Critério verificado (ícone; PDF baixa + wa.me em nova aba; desabilitado sem telefone; sem Cloud API no fluxo; cache; PDF idêntico)
+- [ ] Fase 13 — Cadastro de Devoluções (subpágina do cliente)
+  - [x] Migration: devolucoes + devolucao_itens (mesma estrutura de pedido_itens), numeração DV000001, RLS, índices; função salvar_devolucao (atômica, subtotais e total no banco)
+  - [x] /app/clientes/[id]/devolucoes: Registrar (mesmos campos do pedido + pedido de origem, motivo, status), tabela, editar/excluir, filtros de período e status
+  - [x] Pedido de origem pré-carrega os itens; quantidade limitada ao vendido menos o já devolvido (formulário e banco); cliente sem pedidos = avulsa com aviso
+  - [x] Card "Devoluções no período" (90 dias, não recusadas) no painel do cliente, oculto quando não há devoluções
+  - [ ] Critério verificado pelo usuário (avulsa; vinculada; total; tabela; editar/excluir; filtros; bloqueio de quantidade; card)
 - [x] Fase 4 — Oportunidades e desafios por cliente + plano de ação
   - [x] Bloco "Oportunidades e Desafios" na página do cliente (+ Novo, tabela tipo/título/prioridade/status/data/ações)
   - [x] Plano de ação em /app/clientes/:id/oportunidades/:opId (adicionar, concluir, editar, excluir ações)

@@ -321,6 +321,9 @@ section[id] { scroll-margin-top: 16px; }
 .etiqueta-recebida, .etiqueta-confirmado, .etiqueta-entregue { background: var(--ok-suave); color: var(--ok-texto); }
 .etiqueta-atrasada { background: var(--danger-suave); color: var(--danger-texto); }
 .etiqueta-cancelada, .etiqueta-cancelado { background: var(--bg); color: var(--muted); }
+.etiqueta-dev-pendente { background: var(--accent-suave); color: var(--accent-fg); }
+.etiqueta-dev-aprovada, .etiqueta-dev-concluida { background: var(--ok-suave); color: var(--ok-texto); }
+.etiqueta-dev-recusada { background: var(--danger-suave); color: var(--danger-texto); }
 
 /* Fase 6: planos e limites */
 .aviso-limite { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -922,3 +925,4 @@ h1.titulo-icone .icone, h2.titulo-icone .icone, h3.titulo-icone .icone { color: 
 .texto-perigo.forte { font-weight: 600; }
 .btn-link.texto-esquerda { text-align: left; }
 .dica-grafico { background: var(--surface); border: 1px solid var(--borda-suave); border-radius: 10px; padding: 8px 10px; font-size: 13px; color: var(--text); }
+.campo-busca-itens { max-width: 320px; margin-bottom: 8px; }
