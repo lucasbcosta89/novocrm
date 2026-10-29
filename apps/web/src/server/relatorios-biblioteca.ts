@@ -17,7 +17,7 @@ const rotuloMes = (m: string) => `${m.slice(5, 7)}/${m.slice(0, 4)}`;
 
 type Item = { quantidade: number; preco_unitario: number; desconto_percentual: number; subtotal: number; descricao: string | null; produto: { sku: string; nome: string } | null };
 export type PedidoVenda = {
-  id: string; numero: string; data: string; valor_total: number;
+  id: string; codigo_pedido: string; data: string; valor_total: number;
   cliente: { id: string; nome: string } | null;
   representada: { id: string; nome: string } | null;
   itens?: Item[];
@@ -28,7 +28,7 @@ async function pedidosVenda(ctx: Contexto, periodo: string, filtro: { cliente_id
   let q = ctx.supabase
     .from("pedidos")
     .select(
-      `id, numero, data, valor_total, cliente:clientes(id, nome), representada:representadas(id, nome)${
+      `id, codigo_pedido, data, valor_total, cliente:clientes(id, nome), representada:representadas(id, nome)${
         comItens ? ", itens:pedido_itens(quantidade, preco_unitario, desconto_percentual, subtotal, descricao, produto:produtos(sku, nome))" : ""
       }`,
     )
@@ -127,7 +127,7 @@ export function pdfVendasCliente(d: DadosVendasCliente, rep?: Representante): Pr
   if (d.pedidos.length === 0) conteudo.push({ text: "Nenhum pedido do cliente no período.", style: "vazio" });
   for (const p of d.pedidos) {
     conteudo.push(
-      secao(`Pedido ${p.numero} · ${formatarData(p.data)} · ${p.representada?.nome ?? "—"} · ${formatarMoeda(p.valor_total)}`),
+      secao(`Pedido ${p.codigo_pedido} · ${formatarData(p.data)} · ${p.representada?.nome ?? "—"} · ${formatarMoeda(p.valor_total)}`),
       tabela(
         [
           { titulo: "SKU", valor: (i: Item) => i.produto?.sku ?? "—", largura: "auto" },

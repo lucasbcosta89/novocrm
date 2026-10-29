@@ -16,7 +16,7 @@ export type ItemPdf = {
   produto: { sku: string; nome: string; ncm: string | null; imagem_url: string | null } | null;
 };
 export type DadosPedidoPdf = {
-  id: string; numero: string; data: string; status: string; valor_total: number;
+  id: string; numero: string; codigo_pedido: string; data: string; status: string; valor_total: number;
   forma_pagamento: string | null; prazo_tipo: string; prazo_dias: number | null;
   cliente: { id: string; nome: string; whatsapp: string | null; celular: string | null } | null;
   representada: { nome: string } | null;
@@ -27,7 +27,7 @@ export async function dadosPedidoPdf({ supabase }: Contexto, pedidoId: string): 
   const { data, error } = await supabase
     .from("pedidos")
     .select(
-      `id, numero, data, status, valor_total, forma_pagamento, prazo_tipo, prazo_dias,
+      `id, numero, codigo_pedido, data, status, valor_total, forma_pagamento, prazo_tipo, prazo_dias,
        cliente:clientes(id, nome, whatsapp, celular), representada:representadas(nome),
        itens:pedido_itens(produto_id, descricao, quantidade, preco_unitario, desconto_percentual, subtotal, produto:produtos(sku, nome, ncm, imagem_url))`,
     )
@@ -96,7 +96,7 @@ export async function pdfPedido(d: DadosPedidoPdf, representante?: Representante
   else if (d.prazo_tipo === "a_vista") pagamento.push("Prazo: À vista");
 
   const conteudo: Content[] = [
-    cabecalho(`Pedido nº ${d.numero} — ${d.cliente?.nome ?? "Cliente"}`, `${d.representada?.nome ?? ""} · ${dataBR(d.data)}`),
+    cabecalho(`Pedido nº ${d.codigo_pedido} — ${d.cliente?.nome ?? "Cliente"}`, `${d.representada?.nome ?? ""} · ${dataBR(d.data)}`),
     {
       table: {
         headerRows: 1,
@@ -116,5 +116,5 @@ export async function pdfPedido(d: DadosPedidoPdf, representante?: Representante
     },
     ...(pagamento.length ? [{ text: pagamento.join("   ·   "), margin: [0, 6, 0, 0] as [number, number, number, number] }] : []),
   ];
-  return gerarPdf(conteudo, { titulo: `Pedido ${d.numero}`, representante });
+  return gerarPdf(conteudo, { titulo: `Pedido ${d.codigo_pedido}`, representante });
 }

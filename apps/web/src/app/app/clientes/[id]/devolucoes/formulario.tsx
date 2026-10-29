@@ -102,7 +102,7 @@ export async function FormDevolucao({ cliente, devolucao, representadaId, pedido
                 <span>Pedido de origem (opcional)</span>
                 <select name="pedido" defaultValue={pedido?.id ?? ""}>
                   <option value="">Sem pedido (devolução avulsa)</option>
-                  {pedidos.map((p) => <option key={p.id} value={p.id}>{p.numero} · {p.representada?.nome ?? "—"}</option>)}
+                  {pedidos.map((p) => <option key={p.id} value={p.id}>{p.codigo_pedido} · {p.representada?.nome ?? "—"}</option>)}
                 </select>
               </label>
             )}
@@ -124,7 +124,7 @@ export async function FormDevolucao({ cliente, devolucao, representadaId, pedido
           <input type="hidden" name="pedido_id" value={pedido?.id ?? ""} />
           <h2 className="titulo-icone">
             <Icone nome="pacote" tamanho={20} /> {devolucao ? "Itens" : "2. Itens"} — {rep.nome}
-            {pedido && <span className="dica"> · pedido {pedido.numero}</span>}
+            {pedido && <span className="dica"> · pedido {pedido.codigo_pedido}</span>}
           </h2>
           <div className="grade">
             <label className="campo"><span>Data *</span><input type="date" name="data" defaultValue={devolucao?.data ?? hoje()} required /></label>

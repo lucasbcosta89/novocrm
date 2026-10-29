@@ -65,7 +65,7 @@ export default async function ClienteDevolucoes({ params, searchParams }: {
                   <tr key={d.id}>
                     <td data-rotulo="Nº">{d.numero}</td>
                     <td data-rotulo="Data">{formatarData(`${d.data}T12:00:00Z`)}</td>
-                    <td data-rotulo="Pedido de origem">{d.pedido ? <Link href={`/app/pedidos/${d.pedido.id}`}>{d.pedido.numero}</Link> : <span className="dica">Avulsa</span>}</td>
+                    <td data-rotulo="Pedido de origem">{d.pedido ? <Link href={`/app/pedidos/${d.pedido.id}`}>{d.pedido.codigo_pedido}</Link> : <span className="dica">Avulsa</span>}</td>
                     <td className="num" data-rotulo="Itens (qtd)">{d.itens.length} ({qtd(d.itens.reduce((t, i) => t + Number(i.quantidade), 0))})</td>
                     <td className="num" data-rotulo="Valor">{formatarMoeda(Number(d.valor_total))}</td>
                     <td data-rotulo="Motivo">{ROTULO_MOTIVO_DEVOLUCAO[d.motivo] ?? d.motivo}</td>

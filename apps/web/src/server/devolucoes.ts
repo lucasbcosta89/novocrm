@@ -25,12 +25,12 @@ export type Devolucao = {
   observacoes: string | null;
   cliente_id: string;
   representada: { id: string; nome: string } | null;
-  pedido: { id: string; numero: string } | null;
+  pedido: { id: string; codigo_pedido: string } | null;
   itens: DevolucaoItem[];
 };
 
 const CAMPOS = `id, numero, data, motivo, status, valor_total, forma_pagamento, prazo_tipo, prazo_dias, observacoes, cliente_id,
-  representada:representadas(id, nome), pedido:pedidos(id, numero),
+  representada:representadas(id, nome), pedido:pedidos(id, codigo_pedido),
   itens:devolucao_itens(id, produto_id, quantidade, preco_unitario, desconto_percentual, subtotal, produto:produtos(sku, nome))`;
 
 export type FiltroDevolucoes = { de?: string | null; ate?: string | null; status?: string | null };

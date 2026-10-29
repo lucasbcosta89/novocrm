@@ -102,6 +102,12 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Pedido de origem pré-carrega os itens; quantidade limitada ao vendido menos o já devolvido (formulário e banco); cliente sem pedidos = avulsa com aviso
   - [x] Card "Devoluções no período" (90 dias, não recusadas) no painel do cliente, oculto quando não há devoluções
   - [x] Critério verificado pelo usuário (avulsa; vinculada; total; tabela; editar/excluir; filtros; bloqueio de quantidade; card)
+- [x] Fase 14 — Código do Pedido (gerado ou externo)
+  - [x] Migration: pedidos.codigo_pedido (not null, unique por usuário) + codigo_gerado; backfill = numero; numero interno inalterado
+  - [x] Trigger: inserção sem código recebe o numero no servidor; código gerado imutável; origem (gerado/externo) fixa
+  - [x] Cadastro: checkbox "Gerar Código do Pedido" (preview bloqueado do próximo código) ou código do ERP (obrigatório, foco automático); duplicado avisado sem perder o formulário
+  - [x] Edição: código externo editável; gerado bloqueado com aviso
+  - [x] Tabelas (cliente/representada), devoluções, comissões, relatórios, PDF, WhatsApp e sync mobile exibem codigo_pedido; busca por código; nº interno no detalhe
 - [x] Fase 4 — Oportunidades e desafios por cliente + plano de ação
   - [x] Bloco "Oportunidades e Desafios" na página do cliente (+ Novo, tabela tipo/título/prioridade/status/data/ações)
   - [x] Plano de ação em /app/clientes/:id/oportunidades/:opId (adicionar, concluir, editar, excluir ações)

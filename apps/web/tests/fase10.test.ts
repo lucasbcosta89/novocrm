@@ -4,7 +4,7 @@ vi.mock("next/server", () => ({ after: () => {} }));
 
 const asc = (b: Uint8Array) => String.fromCharCode(...b.slice(0, 5));
 const ped = (data: string, valor: number, cli = "c1", rep = "r1") => ({
-  id: `${data}-${valor}`, numero: "P1", data, valor_total: valor, cliente: { id: cli, nome: `Cliente ${cli}` }, representada: { id: rep, nome: `Rep ${rep}` },
+  id: `${data}-${valor}`, codigo_pedido: "P1", data, valor_total: valor, cliente: { id: cli, nome: `Cliente ${cli}` }, representada: { id: rep, nome: `Rep ${rep}` },
   itens: [{ quantidade: 2, preco_unitario: valor / 2, desconto_percentual: 0, subtotal: valor, descricao: "Produto", produto: { sku: "A", nome: "Produto A" } }],
 });
 

@@ -226,14 +226,14 @@ export async function enviarFollowUp(ctx: Contexto, tarefaId: string): Promise<E
 export async function enviarConfirmacaoPedido(db: SupabaseClient, userId: string, pedidoId: string): Promise<Envio> {
   const { data: p, error } = await db
     .from("pedidos")
-    .select("numero, valor_total, user_id, cliente:clientes(id, nome, whatsapp, celular), representada:representadas(nome)")
+    .select("codigo_pedido, valor_total, user_id, cliente:clientes(id, nome, whatsapp, celular), representada:representadas(nome)")
     .eq("id", idSchema.parse(pedidoId))
     .eq("user_id", userId)
-    .single<{ numero: string; valor_total: number; cliente: ClienteContato | null; representada: { nome: string } | null }>();
+    .single<{ codigo_pedido: string; valor_total: number; cliente: ClienteContato | null; representada: { nome: string } | null }>();
   if (error) throw erroBanco(error);
   if (!p.cliente) throw new AppError(400, "Pedido sem cliente", "validacao");
   return enviarTemplate(userId, { telefone: p.cliente.whatsapp ?? p.cliente.celular, clienteId: p.cliente.id }, "confirmacao_pedido", [
-    primeiroNome(p.cliente.nome), p.numero, p.representada?.nome ?? "", formatarMoeda(Number(p.valor_total)),
+    primeiroNome(p.cliente.nome), p.codigo_pedido, p.representada?.nome ?? "", formatarMoeda(Number(p.valor_total)),
   ]);
 }
 

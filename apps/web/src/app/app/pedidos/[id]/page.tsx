@@ -26,7 +26,7 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
         {p.representada && <Link href={`/app/representadas/${p.representada.id}/pedidos`}>{p.representada.nome}</Link>}
       </p>
       <div className="cabecalho-pagina">
-        <h1 className="titulo-icone"><Icone nome="carrinho" tamanho={24} /> Pedido {p.numero} <StatusPedido status={p.status} /></h1>
+        <h1 className="titulo-icone"><Icone nome="carrinho" tamanho={24} /> Pedido {p.codigo_pedido} <StatusPedido status={p.status} /></h1>
         {editavel && <Link className="btn-suave" href={`/app/pedidos/${p.id}/editar`}><Icone nome="lapis" tamanho={16} /> Editar</Link>}
       </div>
       <Mensagens erro={erro} ok={ok} />
@@ -52,6 +52,8 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
 
       <section className="card">
         <dl className="resumo">
+          <div><dt>Código do pedido</dt><dd>{p.codigo_pedido}{!p.codigo_gerado && <span className="dica"> (ERP externo)</span>}</dd></div>
+          <div><dt>Nº interno</dt><dd>{p.numero}</dd></div>
           <div><dt>Data</dt><dd>{formatarDataHora(p.data)}</dd></div>
           <div><dt>Valor total</dt><dd>{formatarMoeda(p.valor_total)}</dd></div>
           <div><dt>Comissão total</dt><dd>{formatarMoeda(p.comissao_total)}</dd></div>

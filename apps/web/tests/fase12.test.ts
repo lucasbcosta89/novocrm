@@ -10,7 +10,7 @@ const item = (sku: string, q: number, preco: number, desc: number, foto: string 
   produto: { sku, nome: `Produto ${sku}`, ncm: "12345678", imagem_url: foto },
 });
 const pedido = {
-  id: "p", numero: "P000010", data: "2026-10-20T15:00:00Z", status: "confirmado", forma_pagamento: "pix", prazo_tipo: "a_prazo", prazo_dias: 30,
+  id: "p", numero: "P000010", codigo_pedido: "P000010", data: "2026-10-20T15:00:00Z", status: "confirmado", forma_pagamento: "pix", prazo_tipo: "a_prazo", prazo_dias: 30,
   cliente: { id: "c", nome: "Maria Souza", whatsapp: "62999998888", celular: null }, representada: { nome: "Marca A" },
   itens: [item("A", 2, 100, 0, "fotos/a.png"), item("B", 3, 50, 10, null), item("C", 1, 80, 0, "fotos/c.png")],
   valor_total: 0,

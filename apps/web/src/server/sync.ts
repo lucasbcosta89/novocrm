@@ -13,7 +13,8 @@ const SOBREPOSICAO_MS = 5000;
 
 const CAMPOS_CLIENTE = "id, nome, documento, email, celular, whatsapp, cidade, uf, cep, segmento, anotacoes, status, updated_at";
 const CAMPOS_VISITA = "id, cliente_id, representada_id, data, tipo, anotacoes, resultado, updated_at";
-const CAMPOS_PEDIDO = "id, numero, data, status, valor_total, cliente_id, representada_id, origem, updated_at";
+// app mobile exibe "numero": envia o código do pedido (Fase 14) no mesmo campo, sem migrar o SQLite local
+const CAMPOS_PEDIDO = "id, numero:codigo_pedido, data, status, valor_total, cliente_id, representada_id, origem, updated_at";
 
 export async function pull({ supabase }: Contexto, since: string | null) {
   const servidor_em = new Date().toISOString();

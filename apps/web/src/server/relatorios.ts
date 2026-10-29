@@ -56,7 +56,7 @@ export type DadosMensal = {
   representada: Rep;
   periodo: string;
   visitas: { data: string; tipo: string; resultado: string | null; cliente: { nome: string } | null }[];
-  pedidos: { numero: string; data: string; status: string; valor_total: number; comissao_total: number; cliente_id: string; cliente: { nome: string } | null }[];
+  pedidos: { codigo_pedido: string; data: string; status: string; valor_total: number; comissao_total: number; cliente_id: string; cliente: { nome: string } | null }[];
   comissoes: { valor: number; status: string }[];
   carteira: number;
 };
@@ -69,7 +69,7 @@ export async function dadosMensal(ctx: Contexto, representadaId: string, periodo
     supabase.from("visitas").select("data, tipo, resultado, cliente:clientes(nome)")
       .eq("representada_id", rep.id).gte("data", inicio).lt("data", fim).order("data")
       .returns<DadosMensal["visitas"]>(),
-    supabase.from("pedidos").select("numero, data, status, valor_total, comissao_total, cliente_id, cliente:clientes(nome)")
+    supabase.from("pedidos").select("codigo_pedido, data, status, valor_total, comissao_total, cliente_id, cliente:clientes(nome)")
       .eq("representada_id", rep.id).in("status", ["confirmado", "entregue"]).gte("data", inicio).lt("data", fim).order("data")
       .returns<DadosMensal["pedidos"]>(),
     supabase.from("comissoes").select("valor, status, pedido:pedidos!inner(data)")
@@ -121,7 +121,7 @@ function corpoMensal(d: DadosMensal): Content[] {
     secao("Pedidos"),
     tabela(
       [
-        { titulo: "Nº", valor: (p: DadosMensal["pedidos"][number]) => p.numero, largura: "auto" },
+        { titulo: "Código", valor: (p: DadosMensal["pedidos"][number]) => p.codigo_pedido, largura: "auto" },
         { titulo: "Data", valor: (p) => formatarData(p.data), largura: "auto" },
         { titulo: "Cliente", valor: (p) => p.cliente?.nome ?? "—" },
         { titulo: "Status", valor: (p) => ROTULO_STATUS_PEDIDO[p.status] ?? p.status, largura: "auto" },
@@ -202,7 +202,7 @@ export type DadosComissoes = {
     valor: number;
     status: string;
     data_prevista: string | null;
-    pedido: { numero: string; data: string; valor_total: number; cliente: { nome: string } | null };
+    pedido: { codigo_pedido: string; data: string; valor_total: number; cliente: { nome: string } | null };
   }[];
   /** Detalhe por produto: soma de pedido_itens.comissao_valor (snapshot da confirmação; nunca recalcula). */
   produtos: ProdutoComissao[];
@@ -234,7 +234,7 @@ export async function dadosComissoes(ctx: Contexto, representadaId: string, peri
   const [com, itens] = await Promise.all([
     ctx.supabase
       .from("comissoes")
-      .select("percentual, valor, status, data_prevista, pedido:pedidos!inner(numero, data, valor_total, cliente:clientes(nome))")
+      .select("percentual, valor, status, data_prevista, pedido:pedidos!inner(codigo_pedido, data, valor_total, cliente:clientes(nome))")
       .eq("representada_id", rep.id)
       .gte("pedido.data", inicio)
       .lt("pedido.data", fim)
@@ -269,7 +269,7 @@ function corpoComissoes(d: DadosComissoes): Content[] {
     ]),
     tabela(
       [
-        { titulo: "Pedido", valor: (c: DadosComissoes["comissoes"][number]) => c.pedido.numero, largura: "auto" },
+        { titulo: "Pedido", valor: (c: DadosComissoes["comissoes"][number]) => c.pedido.codigo_pedido, largura: "auto" },
         { titulo: "Data", valor: (c) => formatarData(c.pedido.data), largura: "auto" },
         { titulo: "Cliente", valor: (c) => c.pedido.cliente?.nome ?? "—" },
         { titulo: "Valor pedido", valor: (c) => formatarMoeda(c.pedido.valor_total), alinhar: "right", largura: "auto" },

@@ -1,3 +1,5 @@
+import type { PostgrestError } from "@supabase/supabase-js";
+import { z } from "zod";
 import { edicaoPedidoSchema, idSchema, pedidoSchema } from "@/lib/validacao";
 import type { Contexto } from "./contexto";
 import { AppError, erroBanco } from "./erros";
@@ -19,6 +21,8 @@ export type PedidoItem = {
 export type Pedido = {
   id: string;
   numero: string;
+  codigo_pedido: string;
+  codigo_gerado: boolean;
   data: string;
   status: string;
   valor_total: number;
@@ -34,7 +38,7 @@ export type Pedido = {
   comissao: { id: string; status: string; valor: number; percentual: number; data_prevista: string | null }[];
 };
 
-const CAMPOS = `id, numero, data, status, valor_total, comissao_total, forma_pagamento, prazo_tipo, prazo_dias, origem, observacoes,
+const CAMPOS = `id, numero, codigo_pedido, codigo_gerado, data, status, valor_total, comissao_total, forma_pagamento, prazo_tipo, prazo_dias, origem, observacoes,
   cliente:clientes(id, nome), representada:representadas(id, nome),
   itens:pedido_itens(id, produto_id, descricao, quantidade, preco_unitario, desconto_percentual, desconto_acima_max, subtotal, comissao_percentual, comissao_valor, produto:produtos(sku)),
   comissao:comissoes(id, status, valor, percentual, data_prevista)`;
@@ -56,8 +60,9 @@ export async function criarPedido(ctx: Contexto, input: unknown): Promise<Pedido
     p_confirmar: p.confirmar,
     p_prazo_tipo: p.prazo_tipo,
     p_prazo_dias: p.prazo_dias,
+    p_codigo: p.codigo_pedido,
   });
-  if (error) throw erroBanco(error, "Número de pedido em uso; tente novamente");
+  if (error) throw erroPedido(error, "Número de pedido em uso; tente novamente");
   return obterPedido(ctx, data as string);
 }
 
@@ -70,9 +75,45 @@ export async function editarPedido(ctx: Contexto, id: string, input: unknown): P
     p_forma_pagamento: p.forma_pagamento ?? null,
     p_prazo_tipo: p.prazo_tipo,
     p_prazo_dias: p.prazo_dias,
+    p_codigo: p.codigo_pedido ?? null,
   });
-  if (error) throw erroBanco(error);
+  if (error) throw erroPedido(error);
   return obterPedido(ctx, id);
+}
+
+export const MSG_CODIGO_DUPLICADO = "Já existe um pedido com este código";
+
+/** Unicidade (user_id, codigo_pedido) vira mensagem clara; demais duplicidades seguem a mensagem padrão. */
+function erroPedido(error: PostgrestError, duplicado?: string): AppError {
+  if (error.code === "23505" && `${error.message} ${error.details}`.includes("codigo_pedido")) {
+    return new AppError(409, MSG_CODIGO_DUPLICADO, "duplicado");
+  }
+  return erroBanco(error, duplicado);
+}
+
+/**
+ * Preview do próximo código gerado (mesma regra de numeração da função criar_pedido: P + contagem + 1).
+ * Só exibição: o código real é gravado no servidor ao salvar (sem corrida entre pedidos simultâneos).
+ */
+export async function proximoCodigoPedido({ supabase }: Contexto): Promise<string> {
+  const { count, error } = await supabase.from("pedidos").select("id", { count: "exact", head: true });
+  if (error) throw erroBanco(error);
+  return "P" + String((count ?? 0) + 1).padStart(6, "0");
+}
+
+const consultaCodigoSchema = z.object({
+  codigo: z.string().trim().min(1, "Informe o código do pedido").max(40, "Código do pedido muito longo (máx. 40)"),
+  ignorar: idSchema.nullable().optional(),
+});
+
+/** Checagem prévia de duplicidade (o formulário avisa sem perder os dados); a garantia final é a unique do banco. */
+export async function codigoPedidoDisponivel({ supabase }: Contexto, input: unknown): Promise<{ disponivel: boolean }> {
+  const { codigo, ignorar } = consultaCodigoSchema.parse(input);
+  let q = supabase.from("pedidos").select("id").eq("codigo_pedido", codigo).limit(1);
+  if (ignorar) q = q.neq("id", ignorar);
+  const { data, error } = await q.returns<{ id: string }[]>();
+  if (error) throw erroBanco(error);
+  return { disponivel: data.length === 0 };
 }
 
 /** Confirma rascunho: grava snapshot de comissão por item e a linha em comissoes. */

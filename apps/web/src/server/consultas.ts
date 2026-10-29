@@ -7,6 +7,8 @@ import { erroBanco } from "./erros";
 export type PedidoResumo = {
   id: string;
   numero: string;
+  /** Código exibido (Fase 14): gerado = numero, ou o código do ERP externo. */
+  codigo_pedido: string;
   data: string;
   status: string;
   valor_total: number;
@@ -16,15 +18,25 @@ export type PedidoResumo = {
 };
 
 const CAMPOS_PEDIDO =
-  "id, numero, data, status, valor_total, comissao_total, cliente:clientes(id, nome), representada:representadas(id, nome)";
+  "id, numero, codigo_pedido, data, status, valor_total, comissao_total, cliente:clientes(id, nome), representada:representadas(id, nome)";
 
+/** Termo de busca vira padrão ilike literal (%, _ e \ escapados); vazio = sem filtro. */
+export function padraoBusca(termo: string | null | undefined): string | null {
+  const t = (termo ?? "").trim().slice(0, 40);
+  return t ? `%${t.replace(/[\\%_]/g, (c) => `\\${c}`)}%` : null;
+}
+
+/** busca: parte do código do pedido (codigo_pedido), sem diferenciar maiúsculas. */
 export async function listarPedidos(
   { supabase }: Contexto,
   filtro?: { cliente_id: string } | { representada_id: string },
+  busca?: string | null,
 ): Promise<PedidoResumo[]> {
   let q = supabase.from("pedidos").select(CAMPOS_PEDIDO);
   if (filtro && "cliente_id" in filtro) q = q.eq("cliente_id", idSchema.parse(filtro.cliente_id));
   else if (filtro) q = q.eq("representada_id", idSchema.parse(filtro.representada_id));
+  const padrao = padraoBusca(busca);
+  if (padrao) q = q.ilike("codigo_pedido", padrao);
   const { data, error } = await q
     .order("data", { ascending: false })
     .limit(100)

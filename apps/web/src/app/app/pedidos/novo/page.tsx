@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { CodigoPedido } from "@/components/codigo-pedido";
 import { Mensagens } from "@/components/form";
 import { Icone } from "@/components/icones";
 import { formatarMoeda, formatarPercentual } from "@/lib/formato";
 import { carregar } from "@/server/acao";
 import { listarClientes } from "@/server/clientes";
 import { listarTabelaPrecos } from "@/server/consultas";
+import { proximoCodigoPedido } from "@/server/pedidos";
 import { listarProdutos } from "@/server/produtos";
 import { listarRepresentadas } from "@/server/representadas";
 import { PagamentoPedido } from "@/components/pagamento-pedido";
@@ -21,10 +23,10 @@ export default async function NovoPedidoPage({
   const cli = clientes.find((c) => c.id === cliId);
 
   // Preço do cliente (tabela específica) sobrepõe o padrão — mesma regra da função criar_pedido.
-  const [produtos, precos] =
+  const [produtos, precos, proximo] =
     rep && cli
-      ? await carregar((ctx) => Promise.all([listarProdutos(ctx, rep.id), listarTabelaPrecos(ctx, rep.id)]))
-      : [[], []];
+      ? await carregar((ctx) => Promise.all([listarProdutos(ctx, rep.id), listarTabelaPrecos(ctx, rep.id), proximoCodigoPedido(ctx)]))
+      : [[], [], ""];
   const precoCliente = new Map(
     precos.filter((t) => t.cliente?.id === cli?.id && t.produto).map((t) => [t.produto!.id, t] as const),
   );
@@ -94,6 +96,7 @@ export default async function NovoPedidoPage({
                 </table>
               </div>
               <div className="grade" style={{ marginTop: 12 }}>
+                <div className="bloco-codigo-pedido"><CodigoPedido proximo={proximo} /></div>
                 <PagamentoPedido />
                 <div className="acoes acoes-linha">
                   <button className="btn" type="submit" name="confirmar" value="1"><Icone nome="check" tamanho={16} /> Confirmar pedido</button>

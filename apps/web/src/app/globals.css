@@ -262,6 +262,7 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
 .campo input, .campo textarea { padding: 8px 10px; font-size: .95rem; width: 100%; }
 .acoes { grid-column: 1 / -1; }
 .check { display: inline-flex; gap: 6px; align-items: center; font-size: .95rem; }
+.bloco-codigo-pedido { display: flex; flex-direction: column; gap: 6px; }
 .checks { display: flex; flex-wrap: wrap; gap: 12px 20px; margin-bottom: 12px; }
 .aviso { padding: 10px 12px; border-radius: 8px; margin: 0 0 12px; border: 1px solid; }
 .aviso-erro { color: var(--danger-texto); border-color: var(--danger); background: var(--danger-suave); }

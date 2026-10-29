@@ -49,7 +49,7 @@ describe("geração com pdfmake", () => {
       representada: REP,
       periodo: "2026-10",
       visitas: [{ data: "2026-10-06T17:30:00Z", tipo: "presencial", resultado: "Pedido fechado", cliente: { nome: "Loja X" } }],
-      pedidos: [{ numero: "P000001", data: "2026-10-06T18:00:00Z", status: "confirmado", valor_total: 1000, comissao_total: 70, cliente_id: CLI, cliente: { nome: "Loja X" } }],
+      pedidos: [{ codigo_pedido: "P000001", data: "2026-10-06T18:00:00Z", status: "confirmado", valor_total: 1000, comissao_total: 70, cliente_id: CLI, cliente: { nome: "Loja X" } }],
       comissoes: [{ valor: 70, status: "a_receber" }],
       carteira: 1,
     });

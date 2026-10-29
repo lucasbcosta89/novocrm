@@ -107,7 +107,7 @@ export default async function ComissoesPage({
               <tbody>
                 {lista.map((c) => (
                   <tr key={c.id} className={c.status === "atrasada" ? "linha-alerta" : undefined}>
-                    <td>{c.pedido ? <Link href={`/app/pedidos/${c.pedido.id}`}>{c.pedido.numero}</Link> : "—"}</td>
+                    <td>{c.pedido ? <Link href={`/app/pedidos/${c.pedido.id}`}>{c.pedido.codigo_pedido}</Link> : "—"}</td>
                     <td>{c.pedido?.cliente?.nome ?? "—"}</td>
                     <td>{c.representada?.nome ?? "—"}</td>
                     <td className="num">{c.pedido ? formatarMoeda(c.pedido.valor_total) : "—"}</td>

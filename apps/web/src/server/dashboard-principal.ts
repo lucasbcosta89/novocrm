@@ -39,7 +39,7 @@ export type DashboardPrincipal = {
 type Nome = { nome: string } | null;
 type PedidoRow = { id: string; data: string; valor_total: number; cliente_id: string; representada_id: string; cliente: Nome; representada: Nome };
 type ItemRow = { quantidade: number; produto_id: string | null; produto: { nome: string; sku: string } | null };
-type ComissaoRow = { id: string; valor: number; status: string; data_prevista: string | null; pedido: { id: string; numero: string; cliente: Nome } | null };
+type ComissaoRow = { id: string; valor: number; status: string; data_prevista: string | null; pedido: { id: string; codigo_pedido: string; cliente: Nome } | null };
 type OpRow = {
   id: string; titulo: string; status: string; resultado: string | null; data_conclusao: string | null; criado_em: string;
   atualizado_em: string | null; arquivada: boolean; cliente_id: string | null; funil_id: string | null; cliente: Nome;
@@ -119,7 +119,7 @@ async function calcular(ctx: Contexto, periodo: Periodo, rep: string | null) {
     .gte("pedido.data", isoUtc(atual.inicio));
   let comissoesQ = supabase
     .from("comissoes")
-    .select("id, valor, status, data_prevista, pedido:pedidos(id, numero, cliente:clientes(nome))")
+    .select("id, valor, status, data_prevista, pedido:pedidos(id, codigo_pedido, cliente:clientes(nome))")
     .neq("status", "cancelada")
     .or(`data_prevista.gte."${isoUtc(anterior.inicio)}",status.eq.atrasada`);
   let opsQ = supabase
@@ -246,7 +246,7 @@ async function calcular(ctx: Contexto, periodo: Periodo, rep: string | null) {
     .filter((c) => c.status === "atrasada")
     .sort((a, b) => (a.data_prevista ?? "").localeCompare(b.data_prevista ?? ""))
     .map((c): ItemAlerta => ({
-      id: c.id, tipo: "comissao", titulo: `Comissão ${c.pedido?.numero ?? ""}`.trim(), data: c.data_prevista,
+      id: c.id, tipo: "comissao", titulo: `Comissão ${c.pedido?.codigo_pedido ?? ""}`.trim(), data: c.data_prevista,
       detalhe: [c.pedido?.cliente?.nome, `R$ ${Number(c.valor).toFixed(2).replace(".", ",")}`].filter(Boolean).join(" · "),
       rota_edicao: c.pedido ? `/app/pedidos/${c.pedido.id}` : "/app/comissoes?status=atrasada",
     }));

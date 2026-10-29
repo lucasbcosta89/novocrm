@@ -187,6 +187,9 @@ export const STATUS_COMISSAO = ["a_receber", "recebida", "atrasada", "cancelada"
 export const FORMAS_PAGAMENTO = ["dinheiro", "credito", "debito", "bonificacao", "pix", "outros"] as const;
 export const PRAZOS_PAGAMENTO = ["a_vista", "a_prazo"] as const;
 
+/** Código do pedido digitado (ERP externo); vazio = não informado. */
+const codigoPedido = z.preprocess(vazioParaNull, z.string().trim().max(40, "Código do pedido muito longo (máx. 40)").nullable().optional());
+
 export const pedidoSchema = z
   .object({
     representada_id: idSchema,
@@ -198,6 +201,9 @@ export const pedidoSchema = z
       z.number("Prazo inválido").int("Prazo deve ser em dias inteiros").min(1, "Prazo mínimo de 1 dia").max(365, "Prazo máximo de 365 dias").nullable().optional(),
     ),
     confirmar: z.boolean().default(false),
+    /** Fase 14: true = código gerado pela plataforma (igual ao numero, gravado no servidor); false = código do ERP externo. */
+    gerar_codigo: z.boolean().default(true),
+    codigo_pedido: codigoPedido,
     itens: z
       .array(
         z.object({
@@ -211,7 +217,8 @@ export const pedidoSchema = z
       .max(500),
   })
   .refine((p) => p.prazo_tipo === "a_vista" || p.prazo_dias != null, { message: "Informe o prazo em dias", path: ["prazo_dias"] })
-  .transform((p) => (p.prazo_tipo === "a_vista" ? { ...p, prazo_dias: null } : p));
+  .refine((p) => p.gerar_codigo || !!p.codigo_pedido, { message: "Informe o código do pedido", path: ["codigo_pedido"] })
+  .transform((p) => ({ ...p, prazo_dias: p.prazo_tipo === "a_vista" ? null : p.prazo_dias, codigo_pedido: p.gerar_codigo ? null : p.codigo_pedido }));
 export type PedidoInput = z.infer<typeof pedidoSchema>;
 
 export const MODELOS_FUNIL = ["vendas", "prospeccao", "personalizado"] as const;
@@ -243,6 +250,8 @@ export const edicaoPedidoSchema = z
       z.number("Prazo inválido").int("Prazo deve ser em dias inteiros").min(1, "Prazo mínimo de 1 dia").max(365, "Prazo máximo de 365 dias").nullable().optional(),
     ),
     itens: itensComPrecoSchema,
+    /** Só altera pedidos com código externo (codigo_gerado = false); ignorado no banco para código gerado. */
+    codigo_pedido: codigoPedido,
   })
   .refine((p) => p.prazo_tipo === "a_vista" || p.prazo_dias != null, { message: "Informe o prazo em dias", path: ["prazo_dias"] })
   .transform((p) => (p.prazo_tipo === "a_vista" ? { ...p, prazo_dias: null } : p));

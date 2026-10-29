@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CodigoPedido } from "@/components/codigo-pedido";
 import { Mensagens, type Busca } from "@/components/form";
 import { Icone } from "@/components/icones";
 import { PagamentoPedido } from "@/components/pagamento-pedido";
@@ -47,10 +48,10 @@ export default async function EditarPedidoPage({ params, searchParams }: { param
 
   return (
     <>
-      <p className="trilha"><Link href={`/app/pedidos/${p.id}`}>Pedido {p.numero}</Link> /</p>
+      <p className="trilha"><Link href={`/app/pedidos/${p.id}`}>Pedido {p.codigo_pedido}</Link> /</p>
       <div className="cabecalho-pagina">
         <div>
-          <h1 className="titulo-icone">Editar pedido {p.numero} <StatusPedido status={p.status} /></h1>
+          <h1 className="titulo-icone">Editar pedido {p.codigo_pedido} <StatusPedido status={p.status} /></h1>
           <p className="subtitulo">{p.cliente?.nome ?? "—"} · {p.representada?.nome ?? "—"}</p>
         </div>
       </div>
@@ -60,6 +61,9 @@ export default async function EditarPedidoPage({ params, searchParams }: { param
         <p className="aviso aviso-erro"><span className="circulo-icone"><Icone nome="alerta" tamanho={16} /></span>{bloqueio}</p>
       ) : (
         <form action={editarPedidoAction.bind(null, p.id)} className="card">
+          <div className="grade">
+            <div className="bloco-codigo-pedido"><CodigoPedido pedidoId={p.id} atual={p.codigo_pedido} gerado={p.codigo_gerado} /></div>
+          </div>
           <h2 className="titulo-icone"><Icone nome="pacote" tamanho={20} /> Itens</h2>
           {p.status !== "rascunho" && (
             <p className="aviso aviso-alerta">

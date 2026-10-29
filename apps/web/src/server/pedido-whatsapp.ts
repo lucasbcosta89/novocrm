@@ -21,7 +21,7 @@ export async function pdfParaEnvioWhatsApp(ctx: Contexto, pedidoId: string) {
   // histórico: data/hora (criado_em), pedido e telefone — gravado no clique que abre o wa.me
   const { error } = await supabaseAdmin().from("mensagens_whatsapp").insert({
     user_id: ctx.userId, cliente_id: pedido.cliente.id, direcao: "saida", contato, status: "link",
-    conteudo: { tipo: "documento", via: "wa.me", pedido_id: pedido.id, numero: pedido.numero, documento_id: pdf.documentoId, arquivo: pdf.nome, cache: pdf.cache },
+    conteudo: { tipo: "documento", via: "wa.me", pedido_id: pedido.id, numero: pedido.codigo_pedido, documento_id: pdf.documentoId, arquivo: pdf.nome, cache: pdf.cache },
   });
   if (error) console.error("Registro de envio do pedido", error.message);
   return pdf;

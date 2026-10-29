@@ -11,7 +11,7 @@ export type Comissao = {
   data_prevista: string | null;
   recebida_em: string | null;
   representada: { id: string; nome: string } | null;
-  pedido: { id: string; numero: string; valor_total: number; cliente: { id: string; nome: string } | null } | null;
+  pedido: { id: string; codigo_pedido: string; valor_total: number; cliente: { id: string; nome: string } | null } | null;
 };
 
 export type TotaisComissao = { a_receber: number; recebida: number; atrasada: number };
@@ -19,7 +19,7 @@ export type ResumoComissoes = { representada: { id: string; nome: string }; tota
 
 const CAMPOS = `id, representada_id, percentual, valor, status, data_prevista, recebida_em,
   representada:representadas(id, nome),
-  pedido:pedidos(id, numero, valor_total, cliente:clientes(id, nome))`;
+  pedido:pedidos(id, codigo_pedido, valor_total, cliente:clientes(id, nome))`;
 
 export async function listarComissoes(
   { supabase }: Contexto,

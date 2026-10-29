@@ -103,7 +103,7 @@ async function preparar(ctx: Contexto, s: Solicitacao, rep: Representante) {
     const pedido = await dadosPedidoPdf(ctx, s.pedido_id);
     // contato do cliente fora do hash: trocar o telefone não obriga a regerar o PDF
     const dados = { ...pedido, cliente: pedido.cliente ? { id: pedido.cliente.id, nome: pedido.cliente.nome } : null };
-    return { dados, titulo: `Pedido nº ${pedido.numero} — ${pedido.cliente?.nome ?? "Cliente"}`, gerar: () => pdfPedido(pedido, rep) };
+    return { dados, titulo: `Pedido nº ${pedido.codigo_pedido} — ${pedido.cliente?.nome ?? "Cliente"}`, gerar: () => pdfPedido(pedido, rep) };
   }
   if (s.tipo === "catalogo" || s.tipo === "catalogo_geral") {
     const geral = s.tipo === "catalogo_geral";
