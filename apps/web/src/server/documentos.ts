@@ -78,7 +78,7 @@ export type Documento = {
   representada: { nome: string } | null;
 };
 
-const CAMPOS = "id, tipo, titulo, periodo, status, erro, tamanho, criado_em, gerado_em, representada:representadas(nome)";
+const CAMPOS = "id, tipo, titulo, periodo, status, erro, tamanho, criado_em, gerado_em, representada:representadas(nome:razao_social)";
 const VERSAO_LAYOUT = 2; // mudar invalida o cache de todos os PDFs (2 = template da Fase 7b)
 
 export const urlDownload = (id: string) => `/api/documentos/${id}/download`;

@@ -101,7 +101,7 @@ async function calcular(ctx: Contexto, periodo: Periodo, rep: string | null) {
   // representada precisa ser do usuário (RLS esconde as de outros → 403)
   let representadaNome: string | null = null;
   if (rep) {
-    const { data, error } = await supabase.from("representadas").select("id, nome").eq("id", rep).maybeSingle<{ id: string; nome: string }>();
+    const { data, error } = await supabase.from("representadas").select("id, nome:razao_social").eq("id", rep).maybeSingle<{ id: string; nome: string }>();
     if (error) throw erroBanco(error);
     if (!data) throw new AppError(403, "Representada não encontrada ou sem acesso", "rls");
     representadaNome = data.nome;
@@ -109,7 +109,7 @@ async function calcular(ctx: Contexto, periodo: Periodo, rep: string | null) {
 
   let pedidosQ = supabase
     .from("pedidos")
-    .select("id, data, valor_total, cliente_id, representada_id, cliente:clientes(nome), representada:representadas(nome)")
+    .select("id, data, valor_total, cliente_id, representada_id, cliente:clientes(nome), representada:representadas(nome:razao_social)")
     .in("status", VENDA)
     .gte("data", isoUtc(inicioLeitura));
   let itensQ = supabase

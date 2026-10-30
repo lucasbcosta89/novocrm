@@ -56,7 +56,7 @@ export default async function RepresentadasPage({ searchParams }: { searchParams
                   <tr key={r.id}>
                     <td><span className="com-avatar"><Avatar nome={r.nome} /><Link href={`/app/representadas/${r.id}`}>{r.nome}</Link></span></td>
                     <td>{formatarDocumento(r.cnpj)}</td>
-                    <td>{r.municipio || r.estado ? <span className="com-icone"><Icone nome="mapa" tamanho={16} /> {[r.municipio, r.estado].filter(Boolean).join("/")}</span> : "—"}</td>
+                    <td>{r.cidade || r.uf ? <span className="com-icone"><Icone nome="mapa" tamanho={16} /> {[r.cidade, r.uf].filter(Boolean).join("/")}</span> : "—"}</td>
                     <td>{r.skus}</td>
                     <td className="acoes-linha">
                       <Link className="com-icone" href={`/app/representadas/${r.id}?editar=1`}><Icone nome="lapis" tamanho={16} /> Editar</Link>

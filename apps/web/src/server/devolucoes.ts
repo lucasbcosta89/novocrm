@@ -30,7 +30,7 @@ export type Devolucao = {
 };
 
 const CAMPOS = `id, numero, data, motivo, status, valor_total, forma_pagamento, prazo_tipo, prazo_dias, observacoes, cliente_id,
-  representada:representadas(id, nome), pedido:pedidos(id, codigo_pedido),
+  representada:representadas(id, nome:razao_social), pedido:pedidos(id, codigo_pedido),
   itens:devolucao_itens(id, produto_id, quantidade, preco_unitario, desconto_percentual, subtotal, produto:produtos(sku, nome))`;
 
 export type FiltroDevolucoes = { de?: string | null; ate?: string | null; status?: string | null };

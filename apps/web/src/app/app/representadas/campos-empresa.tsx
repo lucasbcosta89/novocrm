@@ -37,6 +37,15 @@ export function CamposEmpresa({ e, tituloEndereco = "Endereço da Matriz" }: { e
   );
 }
 
+/** Registro de representada (colunas do cadastro) → campos do formulário de empresa. */
+export const empresaDaRepresentada = (r: {
+  razao_social: string; cnpj: string | null; endereco: string | null; numero: string | null; complemento: string | null;
+  cep: string | null; cidade: string | null; uf: string | null; email_comercial: string | null; telefone: string | null;
+}): Empresa => ({
+  nome: r.razao_social, cnpj: r.cnpj, rua: r.endereco, numero: r.numero, complemento: r.complemento,
+  cep: r.cep, municipio: r.cidade, estado: r.uf, email: r.email_comercial, telefone: r.telefone,
+});
+
 /** Endereço em uma linha para exibição. */
 export function enderecoTexto(e: Empresa): string {
   const cep = e.cep ? `CEP ${e.cep.replace(/^(\d{5})(\d{3})$/, "$1-$2")}` : "";

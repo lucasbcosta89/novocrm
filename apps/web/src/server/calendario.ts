@@ -29,7 +29,7 @@ export async function listarEventos({ supabase }: Contexto, query: unknown): Pro
     quer("visita")
       ? supabase
           .from("visitas")
-          .select("id, data, cliente_id, cliente:clientes(nome), representada:representadas(nome)")
+          .select("id, data, cliente_id, cliente:clientes(nome), representada:representadas(nome:razao_social)")
           .gte("data", inicioDoDia(q.inicio))
           .lte("data", fimDoDia(q.fim))
           .returns<VisitaRow[]>()
@@ -37,7 +37,7 @@ export async function listarEventos({ supabase }: Contexto, query: unknown): Pro
     quer("subtarefa")
       ? supabase
           .from("plano_acao")
-          .select("id, descricao, prazo, status, oportunidade:oportunidades_desafios(id, titulo, cliente_id, funil_id, cliente:clientes(nome), representada:representadas(nome))")
+          .select("id, descricao, prazo, status, oportunidade:oportunidades_desafios(id, titulo, cliente_id, funil_id, cliente:clientes(nome), representada:representadas(nome:razao_social))")
           .gte("prazo", q.inicio)
           .lte("prazo", q.fim)
           .returns<AcaoRow[]>()
@@ -45,7 +45,7 @@ export async function listarEventos({ supabase }: Contexto, query: unknown): Pro
     quer("tarefa")
       ? supabase
           .from("tarefas")
-          .select("id, titulo, data, concluida, cliente_id, cliente:clientes(nome), representada:representadas(nome)")
+          .select("id, titulo, data, concluida, cliente_id, cliente:clientes(nome), representada:representadas(nome:razao_social)")
           .gte("data", q.inicio)
           .lte("data", q.fim)
           .returns<TarefaRow[]>()

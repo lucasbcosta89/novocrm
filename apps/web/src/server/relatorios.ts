@@ -45,7 +45,7 @@ export function periodoAnterior(periodo: string): string {
 type Rep = { id: string; nome: string; cnpj: string | null };
 
 async function representada({ supabase }: Contexto, id: string): Promise<Rep> {
-  const { data, error } = await supabase.from("representadas").select("id, nome, cnpj").eq("id", idSchema.parse(id)).single<Rep>();
+  const { data, error } = await supabase.from("representadas").select("id, nome:razao_social, cnpj").eq("id", idSchema.parse(id)).single<Rep>();
   if (error) throw erroBanco(error);
   return data;
 }
@@ -347,7 +347,7 @@ function secaoRepresentada(r: Rep): Content {
 
 /** Todas as representadas do usuário (para os relatórios gerais). */
 export async function idsRepresentadas({ supabase }: Contexto): Promise<string[]> {
-  const { data, error } = await supabase.from("representadas").select("id").order("nome").returns<{ id: string }[]>();
+  const { data, error } = await supabase.from("representadas").select("id").order("razao_social").returns<{ id: string }[]>();
   if (error) throw erroBanco(error);
   return data.map((r) => r.id);
 }
@@ -367,7 +367,7 @@ export type DadosCatalogo = { marcas: { representada: Rep; produtos: ProdutoCata
 
 /** representadaId = "todas" gera um catálogo com uma seção (página) por marca. */
 export async function dadosCatalogo(ctx: Contexto, representadaId: string): Promise<DadosCatalogo> {
-  let q = ctx.supabase.from("representadas").select("id, nome, cnpj").order("nome");
+  let q = ctx.supabase.from("representadas").select("id, nome:razao_social, cnpj").order("razao_social");
   if (representadaId !== "todas") q = q.eq("id", idSchema.parse(representadaId));
   const { data: reps, error } = await q.returns<Rep[]>();
   if (error) throw erroBanco(error);

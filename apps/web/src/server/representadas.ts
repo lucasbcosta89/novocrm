@@ -1,32 +1,33 @@
-import { idSchema, representadaSchema, representadaUpdateSchema, slugify } from "@/lib/validacao";
+import type { RegistroRepresentada } from "@/lib/cadastros/tipos";
+import { colunasRepresentada, idSchema, representadaSchema, representadaUpdateSchema, slugify } from "@/lib/validacao";
 import type { Contexto } from "./contexto";
 import { AppError, erroBanco } from "./erros";
 import { verificarLimite } from "./quota";
 
-export type Representada = {
-  id: string;
-  nome: string;
+/**
+ * Registro da tabela (contrato em lib/cadastros/tipos) + campos do catálogo digital.
+ * `nome` = alias de razao_social, mantido para as telas que só exibem o nome da representada.
+ * Cadastros antigos podem ter cnpj/email/cidade/uf nulos até serem completados na edição.
+ */
+export type Representada = Omit<RegistroRepresentada, "cnpj" | "email_comercial" | "cidade" | "uf"> & {
   cnpj: string | null;
-  rua: string | null;
-  numero: string | null;
-  complemento: string | null;
-  cep: string | null;
-  municipio: string | null;
-  estado: string | null;
-  email: string | null;
-  telefone: string | null;
+  email_comercial: string | null;
+  cidade: string | null;
+  uf: string | null;
+  nome: string;
   slug: string;
   catalogo_publico: boolean;
   criar_pedido_publico: boolean;
-  status: string;
-  criado_em: string;
 };
 
 const CAMPOS =
-  "id, nome, cnpj, rua, numero, complemento, cep, municipio, estado, email, telefone, slug, catalogo_publico, criar_pedido_publico, status, criado_em";
+  "id, codigo_representada, razao_social, nome:razao_social, nome_fantasia, cnpj, inscricao_estadual, email_comercial, telefone, " +
+  "contato_nome, contato_telefone, cep, endereco, numero, complemento, bairro, cidade, uf, comissao_percentual, prazo_pagamento_dias, " +
+  "tabela_preco, status, observacoes, criado_em, atualizado_em, excluido_em, slug, catalogo_publico, criar_pedido_publico";
 
+/** Representadas não excluídas (exclusão lógica). As inativas vêm junto; seletores de novo pedido filtram. */
 export async function listarRepresentadas({ supabase }: Contexto): Promise<Representada[]> {
-  const { data, error } = await supabase.from("representadas").select(CAMPOS).order("nome");
+  const { data, error } = await supabase.from("representadas").select(CAMPOS).is("excluido_em", null).order("razao_social").returns<Representada[]>();
   if (error) throw erroBanco(error);
   return data;
 }
@@ -44,24 +45,25 @@ export async function listarRepresentadasComSkus(ctx: Contexto): Promise<(Repres
 }
 
 export async function obterRepresentada({ supabase }: Contexto, id: string): Promise<Representada> {
-  const { data, error } = await supabase.from("representadas").select(CAMPOS).eq("id", idSchema.parse(id)).single();
+  const { data, error } = await supabase.from("representadas").select(CAMPOS).eq("id", idSchema.parse(id)).single<Representada>();
   if (error) throw erroBanco(error);
   return data;
 }
 
 export async function criarRepresentada(ctx: Contexto, input: unknown): Promise<Representada> {
-  const dados = representadaSchema.parse(input);
+  const entrada = representadaSchema.parse(input);
+  const dados = colunasRepresentada(entrada);
   await verificarLimite(ctx, "representadas");
 
   // Slug é global (URL pública do catálogo); em colisão tenta com sufixo aleatório.
-  const base = slugify(dados.nome);
+  const base = slugify(entrada.nome);
   for (let tentativa = 0; tentativa < 5; tentativa++) {
     const slug = tentativa === 0 ? base : `${base}-${crypto.randomUUID().slice(0, 4)}`;
     const { data, error } = await ctx.supabase
       .from("representadas")
       .insert({ ...dados, slug, user_id: ctx.userId })
       .select(CAMPOS)
-      .single();
+      .single<Representada>();
     if (!error) return data;
     if (error.code !== "23505" || !error.message.includes("slug")) throw erroBanco(error);
   }
@@ -69,22 +71,27 @@ export async function criarRepresentada(ctx: Contexto, input: unknown): Promise<
 }
 
 export async function atualizarRepresentada({ supabase }: Contexto, id: string, input: unknown): Promise<Representada> {
-  const dados = representadaUpdateSchema.parse(input);
+  const dados = colunasRepresentada(representadaUpdateSchema.parse(input));
   const { data, error } = await supabase
     .from("representadas")
     .update(dados)
     .eq("id", idSchema.parse(id))
     .select(CAMPOS)
-    .single();
+    .single<Representada>();
   if (error) throw erroBanco(error);
   return data;
 }
 
+/**
+ * Exclusão SEMPRE lógica (excluido_em + inativa): pedidos, comissões e vínculos históricos continuam
+ * apontando para o registro. A vaga do plano é devolvida pelo trigger de quota.
+ */
 export async function excluirRepresentada({ supabase }: Contexto, id: string): Promise<void> {
   const { error, count } = await supabase
     .from("representadas")
-    .delete({ count: "exact" })
-    .eq("id", idSchema.parse(id));
+    .update({ excluido_em: new Date().toISOString(), status: "inativa", catalogo_publico: false, criar_pedido_publico: false }, { count: "exact" })
+    .eq("id", idSchema.parse(id))
+    .is("excluido_em", null);
   if (error) throw erroBanco(error);
   if (!count) throw new AppError(404, "Não encontrado", "nao_encontrado");
 }

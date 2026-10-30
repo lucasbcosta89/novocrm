@@ -28,14 +28,14 @@ export async function carregarCatalogoPublico(slug: string): Promise<CatalogoPub
   const admin = supabaseAdmin();
   const { data: rep } = await admin
     .from("representadas")
-    .select("id, nome, slug, user_id, criar_pedido_publico")
+    .select("id, nome:razao_social, slug, user_id, criar_pedido_publico")
     .eq("slug", slug)
     .eq("catalogo_publico", true)
     .maybeSingle<{ id: string; nome: string; slug: string; user_id: string; criar_pedido_publico: boolean }>();
   if (!rep) return null;
 
   const [marcas, usuario, produtos] = await Promise.all([
-    admin.from("representadas").select("id, nome, slug").eq("user_id", rep.user_id).eq("catalogo_publico", true).order("nome")
+    admin.from("representadas").select("id, nome:razao_social, slug").eq("user_id", rep.user_id).eq("catalogo_publico", true).order("razao_social")
       .returns<MarcaPublica[]>(),
     admin.from("usuarios").select("nome, whatsapp").eq("id", rep.user_id).single<{ nome: string; whatsapp: string | null }>(),
     admin.from("produtos")

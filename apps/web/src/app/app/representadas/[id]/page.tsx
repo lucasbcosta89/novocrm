@@ -16,7 +16,7 @@ import {
   excluirPontoAction,
   excluirRepresentadaAction,
 } from "../actions";
-import { CamposEmpresa, enderecoTexto } from "../campos-empresa";
+import { CamposEmpresa, empresaDaRepresentada, enderecoTexto } from "../campos-empresa";
 import { Icone } from "@/components/icones";
 
 /** Início da representada: quadro da empresa → vendas → alertas → pontos de faturamento. */
@@ -42,8 +42,8 @@ export default async function RepresentadaInicio({
         </div>
         <dl className="resumo">
           <div><dt className="com-icone"><Icone nome="identidade" tamanho={16} /> CNPJ</dt><dd>{formatarDocumento(r.cnpj)}</dd></div>
-          <div><dt className="com-icone"><Icone nome="mapa" tamanho={16} /> Endereço</dt><dd>{enderecoTexto(r)}</dd></div>
-          <div><dt className="com-icone"><Icone nome="email" tamanho={16} /> E-mail</dt><dd>{r.email ?? "—"}</dd></div>
+          <div><dt className="com-icone"><Icone nome="mapa" tamanho={16} /> Endereço</dt><dd>{enderecoTexto(empresaDaRepresentada(r))}</dd></div>
+          <div><dt className="com-icone"><Icone nome="email" tamanho={16} /> E-mail</dt><dd>{r.email_comercial ?? "—"}</dd></div>
           <div><dt className="com-icone"><Icone nome="telefone" tamanho={16} /> Telefone</dt><dd>{r.telefone ?? "—"}</dd></div>
         </dl>
         <div>
@@ -93,7 +93,7 @@ export default async function RepresentadaInicio({
         <details open={editar === "1" || undefined}>
           <summary><Icone nome="lapis" tamanho={16} /> Editar dados</summary>
           <form action={atualizarRepresentadaAction.bind(null, r.id)} className="grade-1">
-            <CamposEmpresa e={r} />
+            <CamposEmpresa e={empresaDaRepresentada(r)} />
             <label className="check"><input type="checkbox" name="catalogo_publico" defaultChecked={r.catalogo_publico} /> Catálogo digital público</label>
             <label className="check"><input type="checkbox" name="criar_pedido_publico" defaultChecked={r.criar_pedido_publico} /> Aceitar pedidos pelo catálogo</label>
             <div className="acoes-linha"><button className="btn" type="submit">Salvar</button></div>

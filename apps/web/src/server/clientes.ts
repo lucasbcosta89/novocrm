@@ -25,7 +25,7 @@ type ClienteRow = Omit<Cliente, "representadas"> & {
 };
 
 const CAMPOS =
-  "id, nome, documento, email, celular, whatsapp, cidade, uf, cep, segmento, anotacoes, status, criado_em, cliente_representada(representadas(id, nome))";
+  "id, nome, documento, email, celular, whatsapp, cidade, uf, cep, segmento, anotacoes, status, criado_em, cliente_representada(representadas(id, nome:razao_social))";
 const DUPLICADO = "Já existe cliente com este CPF/CNPJ";
 
 function mapear({ cliente_representada, ...c }: ClienteRow): Cliente {

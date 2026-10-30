@@ -53,7 +53,7 @@ export type ProdutoOportunidade = {
 export type OportunidadeDetalhe = Omit<Oportunidade, "acoes"> & { acoes: Acao[]; produtos: ProdutoOportunidade[] };
 
 const CAMPOS =
-  "id, cliente_id, representada_id, tipo, titulo, descricao, valor_estimado, prioridade, status, cidade, estado, resultado, observacoes_resultado, data_conclusao, funil_id, etapa_id, arquivada, criado_em, atualizado_em, representada:representadas(nome), cliente:clientes(id, nome)";
+  "id, cliente_id, representada_id, tipo, titulo, descricao, valor_estimado, prioridade, status, cidade, estado, resultado, observacoes_resultado, data_conclusao, funil_id, etapa_id, arquivada, criado_em, atualizado_em, representada:representadas(nome:razao_social), cliente:clientes(id, nome)";
 const CAMPOS_ACAO = "id, oportunidade_id, descricao, responsavel, prazo, data_entrega, observacoes, status, criado_em";
 
 function erroReferencia(error: Parameters<typeof erroBanco>[0]) {

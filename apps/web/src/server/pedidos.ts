@@ -39,7 +39,7 @@ export type Pedido = {
 };
 
 const CAMPOS = `id, numero, codigo_pedido, codigo_gerado, data, status, valor_total, comissao_total, forma_pagamento, prazo_tipo, prazo_dias, origem, observacoes,
-  cliente:clientes(id, nome), representada:representadas(id, nome),
+  cliente:clientes(id, nome), representada:representadas(id, nome:razao_social),
   itens:pedido_itens(id, produto_id, descricao, quantidade, preco_unitario, desconto_percentual, desconto_acima_max, subtotal, comissao_percentual, comissao_valor, produto:produtos(sku)),
   comissao:comissoes(id, status, valor, percentual, data_prevista)`;
 

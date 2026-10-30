@@ -18,7 +18,7 @@ export type TotaisComissao = { a_receber: number; recebida: number; atrasada: nu
 export type ResumoComissoes = { representada: { id: string; nome: string }; totais: TotaisComissao; quantidade: number }[];
 
 const CAMPOS = `id, representada_id, percentual, valor, status, data_prevista, recebida_em,
-  representada:representadas(id, nome),
+  representada:representadas(id, nome:razao_social),
   pedido:pedidos(id, codigo_pedido, valor_total, cliente:clientes(id, nome))`;
 
 export async function listarComissoes(

@@ -28,7 +28,7 @@ async function pedidosVenda(ctx: Contexto, periodo: string, filtro: { cliente_id
   let q = ctx.supabase
     .from("pedidos")
     .select(
-      `id, codigo_pedido, data, valor_total, cliente:clientes(id, nome), representada:representadas(id, nome)${
+      `id, codigo_pedido, data, valor_total, cliente:clientes(id, nome), representada:representadas(id, nome:razao_social)${
         comItens ? ", itens:pedido_itens(quantidade, preco_unitario, desconto_percentual, subtotal, descricao, produto:produtos(sku, nome))" : ""
       }`,
     )
@@ -150,7 +150,7 @@ export function pdfVendasCliente(d: DadosVendasCliente, rep?: Representante): Pr
 export type DadosVendasRepresentada = { periodo: string; representada: { id: string; nome: string; cnpj: string | null }; pedidos: PedidoVenda[] };
 
 export async function dadosVendasRepresentada(ctx: Contexto, periodo: string, representadaId: string): Promise<DadosVendasRepresentada> {
-  const { data: representada, error } = await ctx.supabase.from("representadas").select("id, nome, cnpj").eq("id", idSchema.parse(representadaId)).maybeSingle<DadosVendasRepresentada["representada"]>();
+  const { data: representada, error } = await ctx.supabase.from("representadas").select("id, nome:razao_social, cnpj").eq("id", idSchema.parse(representadaId)).maybeSingle<DadosVendasRepresentada["representada"]>();
   if (error) throw erroBanco(error);
   if (!representada) throw new AppError(404, "Representada não encontrada", "nao_encontrado");
   return { periodo, representada, pedidos: await pedidosVenda(ctx, periodo, { representada_id: representada.id }, true) };

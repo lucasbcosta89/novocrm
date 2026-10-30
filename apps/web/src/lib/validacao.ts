@@ -53,13 +53,30 @@ const enderecoContato = {
 };
 
 export const representadaSchema = z.object({
-  nome: z.string().trim().min(2, "Informe o nome").max(120),
+  nome: z.string().trim().min(3, "Razão social deve ter de 3 a 150 caracteres").max(150, "Razão social deve ter de 3 a 150 caracteres"),
   cnpj: digitosOpcional([14], "CNPJ deve ter 14 dígitos"),
   ...enderecoContato,
   catalogo_publico: z.boolean().optional(),
   criar_pedido_publico: z.boolean().optional(),
 });
 export const representadaUpdateSchema = parcial(representadaSchema);
+
+/**
+ * Formulário atual (campos de empresa compartilhados com pontos de faturamento) → colunas da tabela
+ * representadas (nomes do cadastro de representadas). Telefone gravado só com dígitos.
+ */
+export function colunasRepresentada(d: Partial<z.infer<typeof representadaSchema>>) {
+  const { nome, rua, municipio, estado, email, telefone, ...resto } = d;
+  return {
+    ...resto,
+    ...(nome !== undefined && { razao_social: nome }),
+    ...(rua !== undefined && { endereco: rua }),
+    ...(municipio !== undefined && { cidade: municipio }),
+    ...(estado !== undefined && { uf: estado }),
+    ...(email !== undefined && { email_comercial: email }),
+    ...(telefone !== undefined && { telefone: telefone ? soDigitos(telefone) || null : telefone }),
+  };
+}
 
 export const pontoFaturamentoSchema = z.object({
   nome: z.string().trim().min(2, "Informe o nome").max(160),

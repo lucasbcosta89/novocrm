@@ -13,7 +13,7 @@ export type Visita = {
   representada: { nome: string } | null;
 };
 
-const CAMPOS = "id, cliente_id, representada_id, data, tipo, anotacoes, resultado, representada:representadas(nome)";
+const CAMPOS = "id, cliente_id, representada_id, data, tipo, anotacoes, resultado, representada:representadas(nome:razao_social)";
 
 function erroVisita(error: Parameters<typeof erroBanco>[0]) {
   // RLS (with check) falha quando cliente/representada não são do usuário.

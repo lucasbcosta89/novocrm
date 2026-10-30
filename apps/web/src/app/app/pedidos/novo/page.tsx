@@ -19,7 +19,9 @@ export default async function NovoPedidoPage({
 }) {
   const { representada: repId, cliente: cliId, erro } = await searchParams;
   const [representadas, clientes] = await carregar((ctx) => Promise.all([listarRepresentadas(ctx), listarClientes(ctx)]));
-  const rep = representadas.find((r) => r.id === repId);
+  // representada inativa não aparece no seletor de novo pedido (histórico e vínculos continuam visíveis)
+  const ativas = representadas.filter((r) => r.status === "ativa");
+  const rep = ativas.find((r) => r.id === repId);
   const cli = clientes.find((c) => c.id === cliId);
 
   // Preço do cliente (tabela específica) sobrepõe o padrão — mesma regra da função criar_pedido.
@@ -44,7 +46,7 @@ export default async function NovoPedidoPage({
             <span>Representada *</span>
             <select name="representada" defaultValue={rep?.id ?? ""} required>
               <option value="" disabled>Selecione…</option>
-              {representadas.map((r) => <option key={r.id} value={r.id}>{r.nome}</option>)}
+              {ativas.map((r) => <option key={r.id} value={r.id}>{r.nome}</option>)}
             </select>
           </label>
           <label className="campo">

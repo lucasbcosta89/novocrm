@@ -18,7 +18,7 @@ export type PedidoResumo = {
 };
 
 const CAMPOS_PEDIDO =
-  "id, numero, codigo_pedido, data, status, valor_total, comissao_total, cliente:clientes(id, nome), representada:representadas(id, nome)";
+  "id, numero, codigo_pedido, data, status, valor_total, comissao_total, cliente:clientes(id, nome), representada:representadas(id, nome:razao_social)";
 
 /** Termo de busca vira padrão ilike literal (%, _ e \ escapados); vazio = sem filtro. */
 export function padraoBusca(termo: string | null | undefined): string | null {

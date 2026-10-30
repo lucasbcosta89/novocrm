@@ -23,7 +23,7 @@ export type OpcoesFiltro = { representadas: { id: string; nome: string }[]; clie
 /** Opções dos filtros globais (só o que o usuário enxerga via RLS). */
 export async function opcoesFiltros({ supabase }: Contexto): Promise<OpcoesFiltro> {
   const [reps, clis, prods] = await Promise.all([
-    supabase.from("representadas").select("id, nome").order("nome"),
+    supabase.from("representadas").select("id, nome:razao_social").order("razao_social"),
     supabase.from("clientes").select("id, nome, uf").order("nome"),
     supabase.from("produtos").select("id, nome, sku").order("nome").limit(5000),
   ]);

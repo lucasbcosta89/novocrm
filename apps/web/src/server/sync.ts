@@ -29,7 +29,7 @@ export async function pull({ supabase }: Contexto, since: string | null) {
       ? supabase.from("sync_exclusoes").select("tabela, registro_id").gt("excluido_em", desde)
       : Promise.resolve({ data: [] as { tabela: string; registro_id: string }[], error: null }),
     // tabelas pequenas de referência: snapshot completo a cada sync
-    supabase.from("representadas").select("id, nome, slug, catalogo_publico").order("nome"),
+    supabase.from("representadas").select("id, nome:razao_social, slug, catalogo_publico").is("excluido_em", null).order("razao_social"),
     supabase
       .from("produtos")
       .select("id, representada_id, sku, nome, unidade, categoria, preco, tabelas_preco(preco)")

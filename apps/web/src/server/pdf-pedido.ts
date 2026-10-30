@@ -28,7 +28,7 @@ export async function dadosPedidoPdf({ supabase }: Contexto, pedidoId: string): 
     .from("pedidos")
     .select(
       `id, numero, codigo_pedido, data, status, valor_total, forma_pagamento, prazo_tipo, prazo_dias,
-       cliente:clientes(id, nome, whatsapp, celular), representada:representadas(nome),
+       cliente:clientes(id, nome, whatsapp, celular), representada:representadas(nome:razao_social),
        itens:pedido_itens(produto_id, descricao, quantidade, preco_unitario, desconto_percentual, subtotal, produto:produtos(sku, nome, ncm, imagem_url))`,
     )
     .eq("id", idSchema.parse(pedidoId))

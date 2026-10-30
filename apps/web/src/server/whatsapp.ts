@@ -191,7 +191,7 @@ export async function enviarCatalogo(ctx: Contexto, clienteId: string, represent
     dadosCliente(ctx, clienteId),
     ctx.supabase
       .from("representadas")
-      .select("nome, slug, catalogo_publico")
+      .select("nome:razao_social, slug, catalogo_publico")
       .eq("id", idSchema.parse(representadaId))
       .single<{ nome: string; slug: string; catalogo_publico: boolean }>(),
     nomeUsuario(ctx.supabase, ctx.userId),
@@ -226,7 +226,7 @@ export async function enviarFollowUp(ctx: Contexto, tarefaId: string): Promise<E
 export async function enviarConfirmacaoPedido(db: SupabaseClient, userId: string, pedidoId: string): Promise<Envio> {
   const { data: p, error } = await db
     .from("pedidos")
-    .select("codigo_pedido, valor_total, user_id, cliente:clientes(id, nome, whatsapp, celular), representada:representadas(nome)")
+    .select("codigo_pedido, valor_total, user_id, cliente:clientes(id, nome, whatsapp, celular), representada:representadas(nome:razao_social)")
     .eq("id", idSchema.parse(pedidoId))
     .eq("user_id", userId)
     .single<{ codigo_pedido: string; valor_total: number; cliente: ClienteContato | null; representada: { nome: string } | null }>();

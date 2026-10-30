@@ -10,7 +10,7 @@ type Row = {
   clientes: { cliente: { id: string; nome: string } | null }[];
 };
 const CAMPOS =
-  "id, descricao, data, valor, observacoes, representadas:despesa_representadas(representada:representadas(id, nome)), clientes:despesa_clientes(cliente:clientes(id, nome))";
+  "id, descricao, data, valor, observacoes, representadas:despesa_representadas(representada:representadas(id, nome:razao_social)), clientes:despesa_clientes(cliente:clientes(id, nome))";
 
 const mapear = (r: Row): DespesaLinha => ({
   id: r.id, descricao: r.descricao, data: r.data, valor: Number(r.valor), observacoes: r.observacoes,
