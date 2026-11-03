@@ -23,7 +23,7 @@ export interface Representada {
   bairro: string | null;
   cidade: string;
   uf: string;
-  comissao_percentual: number;
+  comissao_percentual: number | null; // comissão fixa (se houver); a do produto prevalece
   prazo_pagamento_dias: number | null;
   tabela_preco: string | null;
   status: StatusRepresentada;

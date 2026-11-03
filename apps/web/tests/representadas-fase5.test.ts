@@ -70,3 +70,24 @@ describe("representadas fase 5 — relatório de erros e reenvio", () => {
     expect(semAlteracaoRepresentada({ cnpj: "11222333000181", telefone: "62999998888" }, { codigo: "REP-0001", valores: { cnpj: "11222333000181", telefone: null } })).toBe(false);
   });
 });
+
+describe("comissão fixa da representada × comissão do produto", () => {
+  it("a do produto prevalece; sem ela, a fixa da representada; sem nenhuma, 0%", async () => {
+    const { comissaoEfetiva } = await import("@/lib/formato");
+    expect(comissaoEfetiva(10, 5.5)).toEqual({ valor: 10, origem: "produto" });
+    expect(comissaoEfetiva(0, 5.5)).toEqual({ valor: 0, origem: "produto" });
+    expect(comissaoEfetiva(null, 5.5)).toEqual({ valor: 5.5, origem: "representada" });
+    expect(comissaoEfetiva(null, null)).toEqual({ valor: 0, origem: "nenhuma" });
+  });
+
+  it("comissão fixa é opcional no cadastro e na planilha; produto aceita comissão vazia", async () => {
+    const { representadaFormSchema } = await import("@/lib/cadastros/representada");
+    const { produtoSchema } = await import("@/lib/validacao");
+    const base = { razao_social: "Alfa Ltda", cnpj: "11222333000181", email_comercial: "a@a.com", cidade: "Goiânia", uf: "GO" };
+    expect(representadaFormSchema.parse({ ...base, comissao_percentual: "" }).comissao_percentual).toBeNull();
+    expect(config.colunasObrigatorias).not.toContain("comissao_percentual");
+    expect(config.mensagens.notaModelo).toContain("deixe essa coluna vazia e informe as comissões no passo de cadastro de produtos");
+    expect(produtoSchema.parse({ sku: "A", nome: "Camisa", preco: "10", comissao: "" }).comissao).toBeNull();
+    expect(produtoSchema.parse({ sku: "A", nome: "Camisa", preco: "10", comissao: "7,5" }).comissao).toBe(7.5);
+  });
+});

@@ -13,7 +13,7 @@ export type Produto = {
   unidade: string | null;
   preco: number;
   desconto_max: number;
-  comissao: number;
+  comissao: number | null; // null = usa a comissão fixa da representada
   categoria: string | null;
   ncm: string | null;
   imagem_url: string | null;
@@ -71,7 +71,6 @@ export async function obterProduto(ctx: Contexto, id: string): Promise<Produto> 
 export async function criarProduto(ctx: Contexto, representadaId: string, input: unknown): Promise<Produto> {
   const { desconto_max, ...dados } = produtoSchema.parse(input);
   const representada_id = idSchema.parse(representadaId);
-  dados.comissao ??= 0; // comissão é por produto (a padrão da representada saiu na Fase 3d-1)
   const { data, error } = await ctx.supabase
     .from("produtos")
     .insert({ ...dados, representada_id })

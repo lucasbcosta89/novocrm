@@ -6,7 +6,7 @@ describe("importação: cabeçalho", () => {
   it("modelo, rótulos e obrigatórios", () => {
     expect(CAMPOS_MODELO).toEqual(["sku", "nome", "unidade", "ncm", "categoria", "preco_padrao", "desconto_maximo", "comissao", "descricao"]);
     expect(CAMPOS_MODELO.map((c) => ROTULOS[c])).toEqual(["SKU", "Nome", "Unidade", "NCM", "Categoria", "Preço Padrão", "Desconto Máximo", "Comissão", "Descrição"]);
-    expect(CAMPOS_OBRIGATORIOS).toEqual(["sku", "nome", "unidade", "ncm"]);
+    expect(CAMPOS_OBRIGATORIOS).toEqual(["sku", "nome", "unidade"]); // NCM opcional (sem emissão de NF)
   });
 
   it("normaliza acento, caixa, pontuação e espaços", () => {
@@ -23,7 +23,7 @@ describe("importação: cabeçalho", () => {
     expect(r.extras).toEqual(["Fornecedor", "Nome"]);
     const s = validarCabecalho(["Codigo SKU", "Nome do produto", "Unid."]);
     expect(s.indices).toEqual({});
-    expect(s.faltando).toEqual(["sku", "nome", "unidade", "ncm"]);
+    expect(s.faltando).toEqual(["sku", "nome", "unidade"]);
     expect(s.extras).toEqual(["Codigo SKU", "Nome do produto", "Unid."]);
   });
 });
@@ -89,10 +89,11 @@ describe("importação: Server Action (preview)", () => {
     expect(r.modo).toBe("preview");
     if (r.modo !== "preview") return;
     expect(r.total).toBe(6);
-    expect(r.validas).toBe(2);
+    expect(r.validas).toBe(3); // linha 3 (NCM vazio) agora é válida
     expect(r.amostra[0]).toEqual({ sku: "A1", nome: "Camiseta", unidade: "PC", ncm: "61091000", categoria: null, preco_padrao: 1234.56, desconto_maximo: 10, comissao: 5, descricao: null });
-    expect(r.amostra[1]).toMatchObject({ sku: "A5", unidade: "UN", preco_padrao: null, desconto_maximo: 0, comissao: 0 });
-    expect(r.erros).toContainEqual({ linha: 3, campo: "ncm", mensagem: "Informe o NCM" });
+    expect(r.amostra[1]).toMatchObject({ sku: "A2", ncm: null, comissao: null }); // sem NCM; sem comissão = vale a fixa da representada
+    expect(r.amostra[2]).toMatchObject({ sku: "A5", unidade: "UN", preco_padrao: null, desconto_maximo: 0, comissao: null });
+    expect(r.erros.some((e) => e.linha === 3)).toBe(false);
     expect(r.erros).toContainEqual({ linha: 4, campo: "ncm", mensagem: "NCM deve ter exatamente 8 dígitos" });
     expect(r.erros).toContainEqual({ linha: 5, campo: "sku", mensagem: 'SKU "A1" repetido no arquivo (já aparece na linha 2)' });
     expect(r.erros.filter((e) => e.linha === 6).map((e) => e.campo).sort()).toEqual(["comissao", "nome", "preco_padrao", "sku"]);

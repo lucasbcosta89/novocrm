@@ -37,11 +37,9 @@ const linhaSchema = z.object({
     (v) => texto(v)?.toUpperCase() ?? "UN",
     z.string().max(10, "Unidade com mais de 10 caracteres"),
   ),
+  // NCM opcional (a plataforma não emite NF); preenchido = 8 dígitos
   ncm: z.unknown().transform((v, ctx) => {
-    if (texto(v) === undefined) {
-      ctx.addIssue({ code: "custom", message: "Informe o NCM" });
-      return z.NEVER;
-    }
+    if (texto(v) === undefined) return null;
     const ncm = parseNcm(v);
     if (!ncm) {
       ctx.addIssue({ code: "custom", message: "NCM deve ter exatamente 8 dígitos" });
@@ -55,9 +53,10 @@ const linhaSchema = z.object({
     (v) => numeroOuNulo(parsePercentual)(v) ?? 0,
     z.number("Desconto máximo inválido").min(0, "Desconto máximo deve estar entre 0 e 100").max(100, "Desconto máximo deve estar entre 0 e 100"),
   ),
+  // vazio = sem comissão própria: vale a comissão fixa da representada (se houver)
   comissao: z.preprocess(
-    (v) => numeroOuNulo(parsePercentual)(v) ?? 0,
-    z.number("Comissão inválida").min(0, "Comissão deve estar entre 0 e 100").max(100, "Comissão deve estar entre 0 e 100"),
+    numeroOuNulo(parsePercentual),
+    z.number("Comissão inválida").min(0, "Comissão deve estar entre 0 e 100").max(100, "Comissão deve estar entre 0 e 100").nullable(),
   ),
   descricao: z.preprocess((v) => texto(v) ?? null, z.string().max(2000, "Descrição com mais de 2000 caracteres").nullable()),
 });

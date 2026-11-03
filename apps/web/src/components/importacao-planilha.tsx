@@ -113,6 +113,12 @@ export function ImportacaoPlanilha({ entidade, voltar }: { entidade: EntidadeImp
             <span className="circulo-icone tom-azul"><Icone nome="download" tamanho={16} /></span>
             <div>
               <p>{config.mensagemModelo}</p>
+              {config.mensagens.notaModelo && (
+                <p className="aviso aviso-alerta importar-aviso">
+                  <span className="circulo-icone"><Icone nome="alerta" tamanho={16} /></span>
+                  <span>{config.mensagens.notaModelo}</span>
+                </p>
+              )}
               <div className="acoes-linha">
                 <button type="button" className="btn-suave btn-peq" onClick={() => baixarModelo(config, "xlsx")}><Icone nome="download" tamanho={16} /> Modelo .xlsx</button>
                 <button type="button" className="btn-suave btn-peq" onClick={() => baixarModelo(config, "csv")}><Icone nome="download" tamanho={16} /> Modelo .csv</button>

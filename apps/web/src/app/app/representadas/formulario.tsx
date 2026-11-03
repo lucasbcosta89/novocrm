@@ -130,7 +130,7 @@ export function FormularioRepresentada({ acao, iniciais, edicao = false, catalog
       <fieldset className="secao-form">
         <legend>Condições Comerciais</legend>
         <div className="grade">
-          {C({ c: "comissao_percentual", rotulo: "Comissão (%)", inputMode: "decimal", placeholder: "Ex.: 7,5" })}
+          {C({ c: "comissao_percentual", rotulo: "Comissão fixa (se houver) (%)", inputMode: "decimal", placeholder: "Vazio = varia por produto" })}
           {C({ c: "prazo_pagamento_dias", rotulo: "Prazo de pagamento (dias)", inputMode: "numeric", placeholder: "0 a 365" })}
           {C({ c: "tabela_preco", rotulo: "Tabela de preço", maxLength: 60 })}
         </div>

@@ -41,7 +41,7 @@ describe("representadas fase 4 — importação genérica", () => {
     expect(r[2]!.erros.map((e) => [e.campo, e.mensagem])).toEqual([
       ["email_comercial", 'Campo obrigatório "email_comercial" está vazio'],
       ["uf", "UF inválida"],
-      ["comissao_percentual", "Comissão deve estar entre 0 e 100"],
+      ["comissao_percentual", "Comissão fixa deve estar entre 0 e 100"],
     ]);
     expect(resumirValidacao(r)).toEqual({ total_linhas: 3, validas: 1, com_alerta: 0, invalidas: 2 });
   });

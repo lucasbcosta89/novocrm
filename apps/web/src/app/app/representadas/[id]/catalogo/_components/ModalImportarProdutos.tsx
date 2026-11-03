@@ -165,8 +165,8 @@ export function ModalImportarProdutos({ representadaId, onRecarregar }: { repres
                   <span className="circulo-icone"><Icone nome="alerta" tamanho={16} /></span>
                   <ul>
                     <li>A importação aceita <strong>apenas o modelo fornecido</strong>; planilhas exportadas de outros sistemas não funcionarão.</li>
-                    <li><strong>Obrigatórios:</strong> Nome, SKU, Unidade e NCM.</li>
-                    <li>Preço, desconto e comissão são opcionais e podem ser preenchidos depois, manualmente, no produto.</li>
+                    <li><strong>Obrigatórios:</strong> Nome, SKU e Unidade. NCM é opcional.</li>
+                    <li>Preço, desconto e comissão são opcionais e podem ser preenchidos depois, manualmente, no produto. Comissão vazia = vale a comissão fixa da representada (se houver); preenchida, a do produto prevalece.</li>
                   </ul>
                 </div>
                 <label className="campo">

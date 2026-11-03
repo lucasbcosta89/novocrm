@@ -19,9 +19,9 @@ describe("representadas fase 3 — formulário", () => {
     expect(validarCampoRepresentada("cnpj", "11.222.333/0001-81")).toBeNull();
     expect(validarCampoRepresentada("email_comercial", "vendas@")).toBe("E-mail inválido");
     expect(validarCampoRepresentada("uf", "XX")).toBe("UF inválida");
-    expect(validarCampoRepresentada("comissao_percentual", "")).toBe("Informe a comissão (0 a 100)");
-    expect(validarCampoRepresentada("comissao_percentual", "101")).toBe("Comissão deve estar entre 0 e 100");
-    expect(validarCampoRepresentada("comissao_percentual", "7,555")).toBe("Comissão: no máximo 2 casas decimais");
+    expect(validarCampoRepresentada("comissao_percentual", "")).toBeNull(); // comissão fixa (se houver): opcional
+    expect(validarCampoRepresentada("comissao_percentual", "101")).toBe("Comissão fixa deve estar entre 0 e 100");
+    expect(validarCampoRepresentada("comissao_percentual", "7,555")).toBe("Comissão fixa: no máximo 2 casas decimais");
     expect(validarCampoRepresentada("prazo_pagamento_dias", "400")).toBe("Prazo entre 0 e 365 dias");
     expect(validarCampoRepresentada("observacoes", "x".repeat(501))).toBe("Observações: máximo de 500 caracteres");
   });
@@ -30,7 +30,7 @@ describe("representadas fase 3 — formulário", () => {
     expect(validarRepresentada({ ...valida, cnpj: "11.222.333/0001-82" })).toEqual({ cnpj: "CNPJ inválido (dígito verificador não confere)" });
     expect(validarRepresentada(valida)).toEqual({});
     expect(Object.keys(validarRepresentada(VALORES_VAZIOS_REPRESENTADA)).sort()).toEqual(
-      ["cidade", "cnpj", "comissao_percentual", "email_comercial", "razao_social", "uf"],
+      ["cidade", "cnpj", "email_comercial", "razao_social", "uf"],
     );
   });
 

@@ -48,7 +48,7 @@ export default async function RepresentadaInicio({
         <dl className="resumo">
           <div><dt>Código</dt><dd><code>{r.codigo_representada}</code></dd></div>
           {r.nome_fantasia && <div><dt>Nome fantasia</dt><dd>{r.nome_fantasia}</dd></div>}
-          <div><dt>Comissão</dt><dd>{formatarPercentual(Number(r.comissao_percentual))}</dd></div>
+          <div><dt>Comissão fixa (se houver)</dt><dd>{r.comissao_percentual == null ? "— (varia por produto)" : formatarPercentual(Number(r.comissao_percentual))}</dd></div>
           <div><dt className="com-icone"><Icone nome="identidade" tamanho={16} /> CNPJ</dt><dd>{formatarDocumento(r.cnpj)}</dd></div>
           <div><dt className="com-icone"><Icone nome="mapa" tamanho={16} /> Endereço</dt><dd>{enderecoTexto(empresaDaRepresentada(r))}</dd></div>
           <div><dt className="com-icone"><Icone nome="email" tamanho={16} /> E-mail</dt><dd>{r.email_comercial ?? "—"}</dd></div>

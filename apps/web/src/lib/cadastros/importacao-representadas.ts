@@ -88,7 +88,7 @@ function validarLinhaRepresentada(bruto: Record<string, string>, ctx: { linhasAn
 export const importacaoRepresentadas: ConfiguracaoImportacao<Representada> = {
   entidade: "representadas",
   colunasEsperadas: [...COLUNAS_REPRESENTADA],
-  colunasObrigatorias: ["razao_social", "cnpj", "email_comercial", "cidade", "uf", "comissao_percentual"],
+  colunasObrigatorias: ["razao_social", "cnpj", "email_comercial", "cidade", "uf"],
   chaveDedupe: "cnpj",
   chavesUnicas: ["inscricao_estadual", "codigo_representada"],
   maxLinhas: 5000,
@@ -100,11 +100,18 @@ export const importacaoRepresentadas: ConfiguracaoImportacao<Representada> = {
     plural: "representadas",
     obrigatorio: 'Campo obrigatório "{campo}" está vazio',
     chave: "CNPJ",
+    /** nota destacada junto ao download da planilha modelo */
+    notaModelo:
+      "Comissão: se a comissão da representada for fixa, preencha a coluna comissao_percentual na planilha. " +
+      "Se a comissão variar por produto, deixe essa coluna vazia e informe as comissões no passo de cadastro de produtos " +
+      "(catálogo da representada). Quando houver as duas, vale a comissão do produto.",
   },
   mensagemModelo:
     "Preencha uma representada por linha a partir da linha 2, sem mudar o cabeçalho (nomes e ordem das colunas). " +
-    "Obrigatórios: razao_social, cnpj, email_comercial, cidade, uf, comissao_percentual. " +
-    "CNPJ com ou sem máscara; comissão de 0 a 100 (vírgula ou ponto); status Ativa ou Inativa (vazio = Ativa); " +
+    "Obrigatórios: razao_social, cnpj, email_comercial, cidade, uf. " +
+    "comissao_percentual = comissão fixa (se houver), de 0 a 100 (vírgula ou ponto): se a comissão da representada é fixa, " +
+    "preencha aqui; se varia por produto, deixe vazio e informe as comissões no cadastro de produtos (a do produto prevalece). " +
+    "CNPJ com ou sem máscara; status Ativa ou Inativa (vazio = Ativa); " +
     "codigo_representada vazio = gerado (REP-0001…). CNPJ já cadastrado: só os campos preenchidos são atualizados. " +
     "Apague a linha de exemplo antes de importar.",
   linhaExemplo: {

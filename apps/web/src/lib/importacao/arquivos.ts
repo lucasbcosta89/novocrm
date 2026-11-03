@@ -79,7 +79,7 @@ export async function baixarModelo<T>(config: ConfiguracaoImportacao<T>, formato
   const aba = XLSX.utils.aoa_to_sheet([config.colunasEsperadas, exemplo]);
   aba["!cols"] = config.colunasEsperadas.map((c) => ({ wch: Math.max(c.length, (config.linhaExemplo[c] ?? "").length) + 2 }));
   XLSX.utils.book_append_sheet(wb, aba, config.entidade);
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([["Instruções"], [config.mensagemModelo]]), "Instruções");
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([["Instruções"], [config.mensagemModelo], ...(config.mensagens.notaModelo ? [[config.mensagens.notaModelo]] : [])]), "Instruções");
   XLSX.writeFile(wb, `${nome}.xlsx`);
 }
 

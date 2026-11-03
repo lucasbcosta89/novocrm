@@ -10,6 +10,16 @@ const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" 
 export const formatarMoeda = (v: number) => brl.format(v);
 export const formatarPercentual = (v: number) => `${String(v).replace(".", ",")}%`;
 
+/**
+ * Comissão efetiva de um produto: a do produto prevalece; sem ela, a comissão fixa da representada; sem
+ * nenhuma, 0% (mesma regra do banco, trigger pedido_itens_comissao_efetiva).
+ */
+export function comissaoEfetiva(produto: number | null | undefined, fixaRepresentada: number | null | undefined) {
+  if (produto != null) return { valor: Number(produto), origem: "produto" as const };
+  if (fixaRepresentada != null) return { valor: Number(fixaRepresentada), origem: "representada" as const };
+  return { valor: 0, origem: "nenhuma" as const };
+}
+
 const TZ = "America/Sao_Paulo";
 const dataHoraFmt = new Intl.DateTimeFormat("pt-BR", { timeZone: TZ, dateStyle: "short", timeStyle: "short" });
 const dataFmt = new Intl.DateTimeFormat("pt-BR", { timeZone: TZ, dateStyle: "short" });

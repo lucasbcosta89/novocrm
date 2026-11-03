@@ -129,7 +129,7 @@ export async function listarRepresentadasListagem(
   q = paginar ? q.range((f.pagina - 1) * POR_PAGINA, f.pagina * POR_PAGINA - 1) : q.limit(5000);
   const { data, error, count } = await q.returns<LinhaListagemRepresentada[]>();
   if (error) throw erroBanco(error);
-  return { linhas: data.map((l) => ({ ...l, comissao_percentual: Number(l.comissao_percentual), valor_vendido_90d: Number(l.valor_vendido_90d) })), total: count ?? 0, filtro: f };
+  return { linhas: data.map((l) => ({ ...l, comissao_percentual: l.comissao_percentual == null ? null : Number(l.comissao_percentual), valor_vendido_90d: Number(l.valor_vendido_90d) })), total: count ?? 0, filtro: f };
 }
 
 /** Inativar/reativar (ação da linha). Inativa some do seletor de novo pedido; histórico e vínculos ficam. */

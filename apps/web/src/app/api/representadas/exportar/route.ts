@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const ctx = await obterContexto();
     const { linhas } = await listarRepresentadasListagem(ctx, Object.fromEntries(req.nextUrl.searchParams), { paginar: false });
     const csv = gerarCsv(
-      ["Código", "Razão social", "Nome fantasia", "CNPJ", "Cidade", "UF", "Comissão (%)", "Status", "Clientes vinculados", "Vendido 90 dias (R$)"],
+      ["Código", "Razão social", "Nome fantasia", "CNPJ", "Cidade", "UF", "Comissão fixa (%)", "Status", "Clientes vinculados", "Vendido 90 dias (R$)"],
       linhas.map((r) => [
         r.codigo_representada, r.razao_social, r.nome_fantasia, formatarDocumento(r.cnpj), r.cidade, r.uf,
         r.comissao_percentual, r.status === "ativa" ? "Ativa" : "Inativa", r.clientes_vinculados, r.valor_vendido_90d,

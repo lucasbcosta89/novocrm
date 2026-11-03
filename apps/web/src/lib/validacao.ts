@@ -92,8 +92,11 @@ export const produtoSchema = z.object({
   ncm: digitosOpcional([8], "NCM deve ter 8 dígitos"),
   preco: numero(0, 99_999_999, "Preço inválido"),
   desconto_max: numero(0, 100, "Desconto máximo deve estar entre 0 e 100").default(0),
-  /** % de comissão do produto; se omitido, usa a comissão padrão da representada. */
-  comissao: numero(0, 100, "Comissão deve estar entre 0 e 100").optional(),
+  /** % de comissão do produto; vazio = usa a comissão fixa da representada (se houver). A do produto prevalece. */
+  comissao: z.preprocess(
+    (v) => (v === "" || v == null ? null : typeof v === "string" ? Number(v.replace(",", ".")) : v),
+    z.number("Comissão deve estar entre 0 e 100").min(0, "Comissão deve estar entre 0 e 100").max(100, "Comissão deve estar entre 0 e 100").nullable(),
+  ).optional(),
   ativo: z.preprocess((v) => (v === "on" ? true : v === "off" ? false : v), z.boolean()).default(true),
 });
 export const produtoUpdateSchema = parcial(produtoSchema);

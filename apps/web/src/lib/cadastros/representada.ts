@@ -47,12 +47,14 @@ export const CAMPOS_REPRESENTADA = {
   bairro: textoOpcional(80, "Bairro"),
   cidade: z.preprocess(obrigatorio, z.string("Informe a cidade").trim().min(2, "Cidade deve ter de 2 a 80 caracteres").max(80, "Cidade deve ter de 2 a 80 caracteres")),
   uf: z.preprocess((v) => normalizarUf(v) ?? undefined, z.string("Informe a UF").refine(ufValida, "UF inválida")),
+  /** Comissão fixa (se houver): vale para os produtos SEM comissão própria no catálogo; vazio = não há. */
   comissao_percentual: z.preprocess(
-    (v) => normalizarDecimal(v) ?? undefined,
-    z.number("Informe a comissão (0 a 100)")
-      .min(0, "Comissão deve estar entre 0 e 100")
-      .max(100, "Comissão deve estar entre 0 e 100")
-      .refine((n) => Math.abs(Math.round(n * 100) - n * 100) < 1e-6, "Comissão: no máximo 2 casas decimais"),
+    normalizarDecimal,
+    z.number("Comissão fixa deve ser um número de 0 a 100")
+      .min(0, "Comissão fixa deve estar entre 0 e 100")
+      .max(100, "Comissão fixa deve estar entre 0 e 100")
+      .refine((n) => Math.abs(Math.round(n * 100) - n * 100) < 1e-6, "Comissão fixa: no máximo 2 casas decimais")
+      .nullable(),
   ),
   prazo_pagamento_dias: z.preprocess(
     (v) => (vazio(v) ? null : normalizarDecimal(v)),
@@ -67,7 +69,7 @@ export type CampoRepresentada = keyof typeof CAMPOS_REPRESENTADA;
 export const CAMPOS_FORM_REPRESENTADA = Object.keys(CAMPOS_REPRESENTADA) as CampoRepresentada[];
 
 /** Obrigatórios do cadastro (marcados com * no formulário). */
-export const OBRIGATORIOS_REPRESENTADA: readonly CampoRepresentada[] = ["razao_social", "cnpj", "email_comercial", "cidade", "uf", "comissao_percentual"];
+export const OBRIGATORIOS_REPRESENTADA: readonly CampoRepresentada[] = ["razao_social", "cnpj", "email_comercial", "cidade", "uf"];
 
 export const representadaFormSchema = z.object({
   ...CAMPOS_REPRESENTADA,

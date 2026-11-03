@@ -11,7 +11,7 @@ import { carregar } from "@/server/acao";
 import { podeImportar } from "@/server/importacao";
 import { obterUso } from "@/server/quota";
 import { listarRepresentadasListagem } from "@/server/representadas";
-import { alterarStatusRepresentadaAction } from "./actions";
+import { alterarStatusRepresentadaAction, excluirRepresentadaAction } from "./actions";
 
 type Busca = Promise<Record<string, string | string[] | undefined>>;
 
@@ -60,6 +60,7 @@ export default async function RepresentadasPage({ searchParams }: { searchParams
       </div>
       <Mensagens erro={erro} ok={ok} />
       <AvisoLimite uso={uso} recurso="representadas" />
+      {bloqueado && <p className="dica">Para liberar uma vaga, use “Remover permanentemente” (ícone de lixeira) em uma representada que você não atende mais.</p>}
 
       <section className="card">
         {total === 0 && !filtrando ? (
@@ -109,7 +110,7 @@ export default async function RepresentadasPage({ searchParams }: { searchParams
                       <Th f={f} col="razao_social">Razão social</Th>
                       <Th f={f} col="cnpj">CNPJ</Th>
                       <Th f={f} col="cidade_uf">Cidade/UF</Th>
-                      <Th f={f} col="comissao" num>Comissão</Th>
+                      <Th f={f} col="comissao" num>Comissão fixa</Th>
                       <Th f={f} col="status">Status</Th>
                       <Th f={f} col="clientes" num>Clientes</Th>
                       <Th f={f} col="vendido_90d" num>Vendido 90 dias</Th>
@@ -126,7 +127,7 @@ export default async function RepresentadasPage({ searchParams }: { searchParams
                         </td>
                         <td data-rotulo="CNPJ">{formatarDocumento(r.cnpj)}</td>
                         <td data-rotulo="Cidade/UF">{[r.cidade, r.uf].filter(Boolean).join("/") || "—"}</td>
-                        <td className="num" data-rotulo="Comissão">{formatarPercentual(r.comissao_percentual)}</td>
+                        <td className="num" data-rotulo="Comissão fixa">{r.comissao_percentual == null ? <span className="dica">por produto</span> : formatarPercentual(r.comissao_percentual)}</td>
                         <td data-rotulo="Status"><StatusRepresentada status={r.status} /></td>
                         <td className="num" data-rotulo="Clientes">{r.clientes_vinculados}</td>
                         <td className="num" data-rotulo="Vendido 90 dias">{formatarMoeda(r.valor_vendido_90d)}</td>
@@ -155,6 +156,14 @@ export default async function RepresentadasPage({ searchParams }: { searchParams
                                   <button className="botao-icone botao-acao" type="submit" aria-label={`Reativar ${r.razao_social}`}><Icone nome="concluido" tamanho={17} /></button>
                                 </span>
                               )}
+                            </form>
+                            <form action={excluirRepresentadaAction.bind(null, r.id)}>
+                              <BotaoConfirmar
+                                className="botao-icone botao-acao botao-excluir"
+                                icone={<Icone nome="lixeira" tamanho={17} />}
+                                rotulo="Remover permanentemente"
+                                pergunta={`Remover "${r.razao_social}" permanentemente? Ela sai da conta e libera a vaga do plano; pedidos e comissões já lançados continuam no histórico. Esta ação não pode ser desfeita.`}
+                              />
                             </form>
                           </span>
                         </td>

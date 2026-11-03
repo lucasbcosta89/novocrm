@@ -2,7 +2,7 @@ import { BotaoCatalogoPdf, BotaoCatalogoWeb } from "@/components/catalogo-acoes"
 import { EnviarCatalogo } from "@/components/enviar-catalogo";
 import { Campo, Mensagens, type Busca } from "@/components/form";
 import { AvisoLimite } from "@/components/limite";
-import { formatarMoeda, formatarPercentual } from "@/lib/formato";
+import { formatarMoeda, comissaoEfetiva, formatarPercentual } from "@/lib/formato";
 import { carregar } from "@/server/acao";
 import { listarClientesDaRepresentada } from "@/server/consultas";
 import { listarProdutos } from "@/server/produtos";
@@ -71,7 +71,7 @@ export default async function RepresentadaCatalogo({ params, searchParams }: { p
                     <td>{p.unidade ?? "—"}</td>
                     <td>{formatarMoeda(p.preco)}</td>
                     <td>{formatarPercentual(p.desconto_max)}</td>
-                    <td>{formatarPercentual(p.comissao)}</td>
+                    <td>{(() => { const c = comissaoEfetiva(p.comissao, r.comissao_percentual); return <>{formatarPercentual(c.valor)}{c.origem !== "produto" && <div className="dica">{c.origem === "representada" ? "fixa da representada" : "sem comissão"}</div>}</>; })()}</td>
                     <td>{p.ativo ? "Sim" : "Não"}</td>
                     <td>
                       <details>
@@ -84,7 +84,7 @@ export default async function RepresentadaCatalogo({ params, searchParams }: { p
                           <Campo label="NCM" name="ncm" inputMode="numeric" maxLength={10} placeholder="8 dígitos" defaultValue={p.ncm ?? ""} />
                           <Campo label="Preço *" name="preco" type="number" step="0.01" min="0" required defaultValue={p.preco} />
                           <Campo label="Desc. máx. (%)" name="desconto_max" type="number" step="0.01" min="0" max="100" defaultValue={p.desconto_max} />
-                          <Campo label="Comissão (%)" name="comissao" type="number" step="0.01" min="0" max="100" defaultValue={p.comissao} />
+                          <Campo label="Comissão (%)" name="comissao" type="number" step="0.01" min="0" max="100" defaultValue={p.comissao ?? ""} placeholder={r.comissao_percentual != null ? `Vazio = fixa ${formatarPercentual(Number(r.comissao_percentual))}` : "Vazio = sem comissão"} />
                           <Campo label="Descrição" name="descricao" defaultValue={p.descricao ?? ""} />
                           <label className="check"><input type="checkbox" name="ativo" defaultChecked={p.ativo} /> Ativo</label>
                           <div className="acoes"><button className="btn" type="submit">Salvar</button></div>
@@ -117,7 +117,7 @@ export default async function RepresentadaCatalogo({ params, searchParams }: { p
           <Campo label="NCM" name="ncm" inputMode="numeric" maxLength={10} placeholder="8 dígitos (opcional)" />
           <Campo label="Preço padrão *" name="preco" type="number" step="0.01" min="0" required />
           <Campo label="Desc. máx. (%)" name="desconto_max" type="number" step="0.01" min="0" max="100" defaultValue="0" />
-          <Campo label="Comissão (%)" name="comissao" type="number" step="0.01" min="0" max="100" defaultValue="0" />
+          <Campo label="Comissão (%)" name="comissao" type="number" step="0.01" min="0" max="100" placeholder={r.comissao_percentual != null ? `Vazio = fixa ${formatarPercentual(Number(r.comissao_percentual))}` : "Vazio = sem comissão"} />
           <Campo label="Descrição" name="descricao" />
           <div className="acoes"><button className="btn" type="submit">Adicionar produto</button></div>
         </form>

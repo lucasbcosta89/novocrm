@@ -114,7 +114,7 @@ export async function excluirRepresentadaAction(id: string) {
   await executarAcao((ctx) => excluirRepresentada(ctx, id), {
     ok: BASE,
     erro: `${BASE}/${id}`,
-    mensagem: "Representada excluída",
+    mensagem: "Representada removida permanentemente; a vaga do plano foi liberada",
   });
 }
 

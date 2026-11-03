@@ -37,7 +37,7 @@ export const ROTULOS: Record<Campo, string> = {
   descricao: "Descrição",
 };
 
-export const CAMPOS_OBRIGATORIOS: readonly Campo[] = ["sku", "nome", "unidade", "ncm"];
+export const CAMPOS_OBRIGATORIOS: readonly Campo[] = ["sku", "nome", "unidade"];
 
 /** Texto → sem acentos, minúsculo, só letras/números separados por um espaço, sem espaços nas pontas. */
 export function normalizarCabecalho(valor: unknown): string {

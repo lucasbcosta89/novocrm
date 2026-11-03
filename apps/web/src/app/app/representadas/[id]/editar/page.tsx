@@ -26,10 +26,14 @@ export default async function EditarRepresentadaPage({ params }: { params: Promi
         />
       </section>
       <section className="card">
-        <h2 className="titulo-icone"><Icone nome="lixeira" tamanho={20} /> Excluir representada</h2>
-        <p className="dica">A exclusão é lógica: a representada sai da lista e libera a vaga do plano; pedidos, comissões e clientes vinculados continuam no histórico. Para só tirar dos novos pedidos, use o status Inativa.</p>
+        <h2 className="titulo-icone"><Icone nome="lixeira" tamanho={20} /> Remover permanentemente</h2>
+        <p className="dica">
+          Enquanto não for removida, a representada ocupa uma vaga do plano (inclusive se estiver Inativa). Ao remover
+          permanentemente, ela sai da conta e a vaga é liberada para cadastrar outra empresa; não há como desfazer.
+          Pedidos, comissões e relatórios já lançados continuam no histórico.
+        </p>
         <form action={excluirRepresentadaAction.bind(null, r.id)}>
-          <BotaoConfirmar className="btn-perigo" texto="Excluir representada" pergunta={`Excluir "${r.razao_social}"? Ela sai da lista; o histórico continua.`} />
+          <BotaoConfirmar className="btn-perigo" texto="Remover permanentemente" pergunta={`Remover "${r.razao_social}" permanentemente? Ela sai da conta e libera a vaga do plano. Esta ação não pode ser desfeita.`} />
         </form>
       </section>
     </>
