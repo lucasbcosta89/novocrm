@@ -1,7 +1,8 @@
 import "server-only";
 import { z } from "zod";
 import type { RelatorioImportacao, ResultadoValidacaoLinha } from "@/lib/cadastros/tipos";
-import { chaveImportacao, MAX_LINHAS, resumirValidacao, validarPlanilha } from "@/lib/importacao/motor";
+import { COLUNAS_REPRESENTADA } from "@/lib/cadastros/importacao-representadas";
+import { chaveImportacao, MAX_LINHAS, resumirValidacao, separarParaGravacao, validarPlanilha } from "@/lib/importacao/motor";
 import { ehEntidadeImportacao, IMPORTACOES, type EntidadeImportacao } from "@/lib/importacao/registro";
 import { slugify } from "@/lib/validacao";
 import type { Contexto } from "./contexto";
@@ -26,15 +27,16 @@ const ADAPTADORES: Record<EntidadeImportacao, Adaptador> = {
     async existentes({ supabase }) {
       const { data, error } = await supabase
         .from("representadas")
-        .select("cnpj, codigo_representada, inscricao_estadual, excluido_em")
-        .returns<{ cnpj: string | null; codigo_representada: string; inscricao_estadual: string | null; excluido_em: string | null }[]>();
+        .select(`excluido_em, ${COLUNAS_REPRESENTADA.join(", ")}`)
+        .returns<({ excluido_em: string | null; cnpj: string | null; codigo_representada: string; inscricao_estadual: string | null } & Record<string, unknown>)[]>();
       if (error) throw erroBanco(error);
       const m = new Map<string, unknown>();
       for (const r of data) {
         // código nunca é reutilizado (inclui excluídas); CNPJ/IE só valem entre as não excluídas
         m.set(chaveImportacao("codigo_representada", r.codigo_representada), { cnpj: r.excluido_em ? null : r.cnpj });
         if (r.excluido_em) continue;
-        if (r.cnpj) m.set(chaveImportacao("cnpj", r.cnpj), { codigo: r.codigo_representada });
+        // valores atuais: linha igual ao cadastro é ignorada no reenvio (nada a gravar, sem duplicar)
+        if (r.cnpj) m.set(chaveImportacao("cnpj", r.cnpj), { codigo: r.codigo_representada, valores: r });
         if (r.inscricao_estadual && r.inscricao_estadual !== "ISENTO") m.set(chaveImportacao("inscricao_estadual", r.inscricao_estadual), { cnpj: r.cnpj });
       }
       return m;
@@ -115,19 +117,20 @@ export async function importarPlanilha(ctx: Contexto, entidade: string, entrada:
 
   const existentes = await adaptador.existentes(ctx);
   const linhas = await validarPlanilha(config, env.cabecalho, env.linhas, existentes);
-  const gravaveis = linhas.filter((l) => l.classificacao !== "invalida");
-  const gravado = gravaveis.length ? await adaptador.gravar(ctx, gravaveis, existentes) : { inseridas: 0, atualizadas: 0 };
+  const { gravar, ignorar } = separarParaGravacao(config, linhas, existentes);
+  const gravado = gravar.length ? await adaptador.gravar(ctx, gravar, existentes) : { inseridas: 0, atualizadas: 0 };
   const resumo = resumirValidacao(linhas);
 
+  // importadas = inseridas + atualizadas; ignoradas = já iguais no cadastro; com erro = inválidas
   const relatorio: RelatorioImportacao = {
-    entidade: e, ...resumo, ...gravado, ignoradas: resumo.invalidas,
+    entidade: e, ...resumo, ...gravado, ignoradas: ignorar.length,
     linhas, arquivo_nome: env.arquivo_nome, iniciado_em, concluido_em: new Date().toISOString(),
   };
 
   // histórico (best effort: a gravação já foi confirmada)
   const erros = linhas.flatMap((l) => l.erros.map((p) => ({ linha: l.numero_linha, campo: p.campo, mensagem: p.mensagem }))).slice(0, 200);
   const { error } = await ctx.supabase.from("importacoes").insert({
-    user_id: ctx.userId, tipo: e, arquivo: env.arquivo_nome, total: resumo.total_linhas, validas: gravaveis.length,
+    user_id: ctx.userId, tipo: e, arquivo: env.arquivo_nome, total: resumo.total_linhas, validas: gravar.length + ignorar.length,
     inseridos: gravado.inseridas, atualizados: gravado.atualizadas, com_erro: resumo.invalidas, erros,
   });
   if (error) console.error("Histórico de importação", error.message);

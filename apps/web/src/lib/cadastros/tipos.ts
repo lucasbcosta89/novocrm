@@ -87,4 +87,9 @@ export interface ConfiguracaoImportacao<T> {
   linhaExemplo: Record<string, string>;
   /** outras colunas que não podem repetir dentro do arquivo (além da chave de dedupe) */
   chavesUnicas?: string[];
+  /**
+   * Registro já existente (pela chave de dedupe) e com os campos preenchidos IGUAIS aos da linha: a linha é
+   * ignorada (nada a gravar). É o que faz o reenvio do arquivo corrigido gravar só o que antes falhou.
+   */
+  semAlteracao?: (dados: ResultadoValidacaoLinha["dados"], existente: unknown) => boolean;
 }

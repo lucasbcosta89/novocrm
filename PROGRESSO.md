@@ -108,6 +108,12 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Cadastro: checkbox "Gerar Código do Pedido" (preview bloqueado do próximo código) ou código do ERP (obrigatório, foco automático); duplicado avisado sem perder o formulário
   - [x] Edição: código externo editável; gerado bloqueado com aviso
   - [x] Tabelas (cliente/representada), devoluções, comissões, relatórios, PDF, WhatsApp e sync mobile exibem codigo_pedido; busca por código; nº interno no detalhe
+- [x] Módulo Cadastro de Representadas (tags fase-representadas-1 a 5)
+  - [x] Fase 1 — Modelo: colunas da especificação, código REP-0001 por usuário (sem reutilizar), CNPJ/IE únicos por usuário, exclusão lógica, contratos em lib/cadastros/tipos.ts
+  - [x] Fase 2 — Listagem: busca normalizada (CNPJ com/sem máscara), filtros status/UF, ordenação em todas as colunas, paginação, CSV, ações por linha, estado vazio
+  - [x] Fase 3 — Formulário por seções: validação ao sair do campo, máscara/DV de CNPJ, salvar desabilitado com erro, "Salvar e adicionar outra"
+  - [x] Fase 4 — Importação genérica (.xlsx/.csv, 5.000 linhas): pré-validação sem gravar, conferência, lote transacional, dedupe por CNPJ, vazio não apaga
+  - [x] Fase 5 — Relatório de erros (linha, campo, mensagem; CSV com acentos), linhas com erro no formato do modelo, reenvio sem duplicar (iguais = ignoradas)
 - [x] Fase 4 — Oportunidades e desafios por cliente + plano de ação
   - [x] Bloco "Oportunidades e Desafios" na página do cliente (+ Novo, tabela tipo/título/prioridade/status/data/ações)
   - [x] Plano de ação em /app/clientes/:id/oportunidades/:opId (adicionar, concluir, editar, excluir ações)

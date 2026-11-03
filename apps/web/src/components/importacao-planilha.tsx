@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import type { RelatorioImportacao, ResultadoValidacaoLinha } from "@/lib/cadastros/tipos";
-import { baixarArquivo, baixarModelo, EXTENSOES_IMPORTACAO, lerPlanilha, relatorioErrosCsv } from "@/lib/importacao/arquivos";
-import { resumirValidacao, validarPlanilha, type LinhaBruta } from "@/lib/importacao/motor";
+import { baixarArquivo, baixarModelo, EXTENSOES_IMPORTACAO, lerPlanilha, linhasComErroCsv, relatorioErrosCsv } from "@/lib/importacao/arquivos";
+import { resumirValidacao, separarParaGravacao, validarPlanilha, type LinhaBruta } from "@/lib/importacao/motor";
 import { IMPORTACOES, type EntidadeImportacao } from "@/lib/importacao/registro";
 import { Icone } from "./icones";
 
@@ -14,9 +14,9 @@ const MAX_PROBLEMAS_TELA = 300;
 type Fase =
   | { tipo: "upload"; erro?: string }
   | { tipo: "validando"; feitas: number; total: number; texto: string }
-  | { tipo: "conferencia"; arquivo: File; cabecalho: string[]; brutas: LinhaBruta[]; linhas: ResultadoValidacaoLinha[]; iniciado_em: string; erro?: string }
+  | { tipo: "conferencia"; arquivo: File; cabecalho: string[]; brutas: LinhaBruta[]; linhas: ResultadoValidacaoLinha[]; existentes: Map<string, unknown>; iniciado_em: string; erro?: string }
   | { tipo: "gravando"; total: number }
-  | { tipo: "resultado"; relatorio: RelatorioImportacao };
+  | { tipo: "resultado"; relatorio: RelatorioImportacao; brutas: LinhaBruta[] };
 
 const ETAPA_DA_FASE: Record<Fase["tipo"], number> = { upload: 0, validando: 1, conferencia: 2, gravando: 3, resultado: 4 };
 const ROTULO_CLASSE = { valida: "Válida", com_alerta: "Com alerta", invalida: "Inválida" } as const;
@@ -53,11 +53,12 @@ export function ImportacaoPlanilha({ entidade, voltar }: { entidade: EntidadeImp
       const r = await fetch(`/api/importacao/${entidade}/existentes`);
       const json = (await r.json().catch(() => null)) as [string, unknown][] | { erro?: string } | null;
       if (!r.ok || !Array.isArray(json)) throw new Error((json && !Array.isArray(json) && json.erro) || "Não foi possível consultar os cadastros existentes.");
-      const linhas = await validarPlanilha(config, cabecalho, brutas, new Map(json), (feitas, total) =>
+      const existentes = new Map(json);
+      const linhas = await validarPlanilha(config, cabecalho, brutas, existentes, (feitas, total) =>
         setFase({ tipo: "validando", feitas, total, texto: `Validando linha ${feitas.toLocaleString("pt-BR")} de ${total.toLocaleString("pt-BR")}…` }),
       );
       setFiltro("todos");
-      setFase({ tipo: "conferencia", arquivo, cabecalho, brutas, linhas, iniciado_em });
+      setFase({ tipo: "conferencia", arquivo, cabecalho, brutas, linhas, existentes, iniciado_em });
     } catch (e) {
       setFase({ tipo: "upload", erro: e instanceof Error ? e.message : "Não foi possível ler o arquivo." });
     }
@@ -66,7 +67,7 @@ export function ImportacaoPlanilha({ entidade, voltar }: { entidade: EntidadeImp
   async function confirmar() {
     if (fase.tipo !== "conferencia") return;
     const anterior = fase;
-    setFase({ tipo: "gravando", total: anterior.linhas.filter((l) => l.classificacao !== "invalida").length });
+    setFase({ tipo: "gravando", total: separarParaGravacao(config, anterior.linhas, anterior.existentes).gravar.length });
     try {
       const r = await fetch(`/api/importacao/${entidade}`, {
         method: "POST",
@@ -75,7 +76,7 @@ export function ImportacaoPlanilha({ entidade, voltar }: { entidade: EntidadeImp
       });
       const json = (await r.json().catch(() => null)) as (RelatorioImportacao & { erro?: string }) | null;
       if (!r.ok || !json || json.erro) throw new Error(json?.erro ?? "Não foi possível concluir a importação. Nada foi gravado.");
-      setFase({ tipo: "resultado", relatorio: json });
+      setFase({ tipo: "resultado", relatorio: json, brutas: anterior.brutas });
     } catch (e) {
       setFase({ ...anterior, erro: e instanceof Error ? e.message : "Não foi possível concluir a importação. Nada foi gravado." });
     }
@@ -89,6 +90,8 @@ export function ImportacaoPlanilha({ entidade, voltar }: { entidade: EntidadeImp
   const nomeBase = (fase.tipo === "conferencia" ? fase.arquivo.name : fase.tipo === "resultado" ? fase.relatorio.arquivo_nome : "planilha").replace(EXTENSOES_IMPORTACAO, "");
   const exportarRelatorio = (linhas: readonly ResultadoValidacaoLinha[]) =>
     baixarArquivo(relatorioErrosCsv({ linhas: [...linhas] }), `relatorio-erros-${nomeBase}.csv`, "text/csv;charset=utf-8");
+  const exportarParaCorrigir = (brutas: readonly LinhaBruta[], linhas: readonly ResultadoValidacaoLinha[]) =>
+    baixarArquivo(linhasComErroCsv(config, brutas, { linhas: [...linhas] }), `corrigir-${nomeBase}.csv`, "text/csv;charset=utf-8");
 
   return (
     <div className="grade-1 importar">
@@ -141,7 +144,8 @@ export function ImportacaoPlanilha({ entidade, voltar }: { entidade: EntidadeImp
 
       {fase.tipo === "conferencia" && (() => {
         const r = resumirValidacao(fase.linhas);
-        const gravaveis = r.validas + r.com_alerta;
+        const sep = separarParaGravacao(config, fase.linhas, fase.existentes);
+        const gravaveis = sep.gravar.length;
         const lista = problemas(fase.linhas, filtro);
         return (
           <section className="card grade-1">
@@ -168,6 +172,9 @@ export function ImportacaoPlanilha({ entidade, voltar }: { entidade: EntidadeImp
                     </select>
                   </label>
                   <button type="button" className="btn-suave btn-peq" onClick={() => exportarRelatorio(fase.linhas)}><Icone nome="download" tamanho={16} /> Exportar relatório (CSV)</button>
+                  {r.invalidas > 0 && (
+                    <button type="button" className="btn-suave btn-peq" onClick={() => exportarParaCorrigir(fase.brutas, fase.linhas)}><Icone nome="download" tamanho={16} /> Linhas com erro no formato do modelo (CSV)</button>
+                  )}
                 </div>
                 <TabelaProblemas lista={lista} />
               </>
@@ -180,6 +187,7 @@ export function ImportacaoPlanilha({ entidade, voltar }: { entidade: EntidadeImp
             </div>
             <p className="dica">
               Só as linhas válidas e com alerta serão gravadas, todas de uma vez: se algo falhar, nada é gravado.
+              {sep.ignorar.length > 0 && ` ${sep.ignorar.length} linha(s) já estão iguais no cadastro e serão ignoradas.`}
               {r.invalidas > 0 && ` ${r.invalidas} linha(s) inválida(s) ficarão de fora.`}
             </p>
           </section>
@@ -199,24 +207,31 @@ export function ImportacaoPlanilha({ entidade, voltar }: { entidade: EntidadeImp
         const lista = problemas(rel.linhas, "invalida");
         return (
           <section className="card grade-1">
-            <p className="aviso aviso-ok importar-aviso" role="status">
-              <span className="circulo-icone"><Icone nome="check" tamanho={16} /></span>
-              Importação concluída: {rel.inseridas + rel.atualizadas} {config.mensagens.plural} gravada(s).
+            <p className={rel.invalidas ? "aviso aviso-alerta importar-aviso" : "aviso aviso-ok importar-aviso"} role="status">
+              <span className="circulo-icone"><Icone nome={rel.invalidas ? "alerta" : "check"} tamanho={16} /></span>
+              <span>
+                Importação concluída: {rel.inseridas + rel.atualizadas} {config.mensagens.plural} gravada(s)
+                {rel.invalidas > 0 && <>, {rel.invalidas} linha(s) com erro — <a href="#relatorio-erros">ver relatório de erros</a></>}.
+              </span>
             </p>
             <dl className="kpis importar-resumo">
-              <div className="kpi"><div><dt>Importadas</dt><dd className="txt-ok">{rel.inseridas + rel.atualizadas}</dd></div></div>
-              <div className="kpi"><div><dt>Novas</dt><dd>{rel.inseridas}</dd></div></div>
-              <div className="kpi"><div><dt>Atualizadas</dt><dd>{rel.atualizadas}</dd></div></div>
-              <div className="kpi"><div><dt>Ignoradas (com erro)</dt><dd className="atrasada">{rel.ignoradas}</dd></div></div>
+              <div className="kpi"><div><dt>Importadas</dt><dd className="txt-ok">{rel.inseridas + rel.atualizadas}</dd><small className="dica">{rel.inseridas} novas · {rel.atualizadas} atualizadas</small></div></div>
+              <div className="kpi"><div><dt>Ignoradas</dt><dd>{rel.ignoradas}</dd><small className="dica">já iguais no cadastro</small></div></div>
+              <div className="kpi"><div><dt>Com erro</dt><dd className="atrasada">{rel.invalidas}</dd><small className="dica">não gravadas</small></div></div>
             </dl>
-            {rel.ignoradas > 0 && (
-              <>
-                <p className="dica">As linhas abaixo não foram gravadas. Corrija no arquivo e envie de novo: o que já entrou é atualizado pelo CNPJ, sem duplicar.</p>
+            {rel.invalidas > 0 && (
+              <div id="relatorio-erros" className="grade-1">
+                <h3 className="titulo-icone"><Icone nome="alerta" tamanho={18} /> Relatório de erros</h3>
+                <p className="dica">
+                  Para reenviar: baixe as linhas com erro no formato do modelo, corrija e importe esse arquivo. Reenviar o
+                  arquivo original corrigido também funciona: o que já entrou igual é ignorado, sem duplicar.
+                </p>
                 <div className="acoes-linha">
                   <button type="button" className="btn-suave btn-peq" onClick={() => exportarRelatorio(rel.linhas)}><Icone nome="download" tamanho={16} /> Relatório de erros (CSV)</button>
+                  <button type="button" className="btn-suave btn-peq" onClick={() => exportarParaCorrigir(fase.brutas, rel.linhas)}><Icone nome="download" tamanho={16} /> Linhas com erro no formato do modelo (CSV)</button>
                 </div>
                 <TabelaProblemas lista={lista} />
-              </>
+              </div>
             )}
             <div className="acoes-linha">
               <Link className="btn" href={voltar}>Ver {config.mensagens.plural}</Link>

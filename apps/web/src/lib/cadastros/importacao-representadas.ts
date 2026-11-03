@@ -16,8 +16,20 @@ export const COLUNAS_REPRESENTADA = [
   "comissao_percentual", "prazo_pagamento_dias", "tabela_preco", "status", "observacoes",
 ] as const satisfies readonly CampoRepresentada[];
 
-/** Valor existente na base (carregado pelo servidor, só leitura, RLS do usuário). */
-export type ExistenteRepresentada = { codigo: string } | { cnpj: string | null };
+/**
+ * Valores existentes na base (carregados pelo servidor, só leitura, RLS do usuário):
+ * "cnpj:X" → representada cadastrada (código + valores atuais); "codigo_representada:X" / "inscricao_estadual:X" → dono.
+ */
+export type ExistenteRepresentada = { codigo: string; valores: Record<string, unknown> };
+
+/** Linha com CNPJ já cadastrado e todos os campos preenchidos iguais ao cadastro: nada a gravar (ignorada). */
+export function semAlteracaoRepresentada(dados: Record<string, string | number | null>, existente: unknown): boolean {
+  const v = (existente as ExistenteRepresentada | undefined)?.valores;
+  if (!v) return false;
+  return Object.entries(dados).every(([campo, novo]) =>
+    typeof novo === "number" ? Number(v[campo]) === novo : String(v[campo] ?? "") === String(novo ?? ""),
+  );
+}
 
 /** Excel guarda CNPJ numérico sem os zeros à esquerda: completa até 14 dígitos. */
 const cnpjDaCelula = (v: string) => {
@@ -44,8 +56,10 @@ function validarLinhaRepresentada(bruto: Record<string, string>, ctx: { linhasAn
     if (ctx.linhasAnteriores.includes(chaveImportacao("cnpj", cnpj))) {
       erros.push({ campo: "cnpj", mensagem: "CNPJ repetido no arquivo (já aparece em uma linha anterior)", valor_recebido: bruto.cnpj ?? null });
     }
-    const existente = ctx.valoresExistentesNaBase.get(chaveImportacao("cnpj", cnpj)) as { codigo: string } | undefined;
-    if (existente) {
+    const existente = ctx.valoresExistentesNaBase.get(chaveImportacao("cnpj", cnpj)) as ExistenteRepresentada | undefined;
+    if (existente && semAlteracaoRepresentada(dados, existente)) {
+      alertas.push({ campo: "cnpj", mensagem: `Sem alterações: ${existente.codigo} já está igual no cadastro; a linha será ignorada`, valor_recebido: bruto.cnpj ?? null });
+    } else if (existente) {
       alertas.push({
         campo: "cnpj",
         mensagem: `CNPJ já cadastrado (${existente.codigo}): os campos preenchidos vão atualizar a representada; os vazios mantêm o que já existe`,
@@ -79,6 +93,7 @@ export const importacaoRepresentadas: ConfiguracaoImportacao<Representada> = {
   chavesUnicas: ["inscricao_estadual", "codigo_representada"],
   maxLinhas: 5000,
   validarLinha: validarLinhaRepresentada,
+  semAlteracao: semAlteracaoRepresentada,
   mensagens: {
     titulo: "Importar representadas",
     singular: "representada",

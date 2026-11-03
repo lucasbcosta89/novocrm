@@ -95,3 +95,25 @@ export function resumirValidacao(linhas: readonly ResultadoValidacaoLinha[]) {
 
 /** Chave usada em linhasAnteriores / valoresExistentesNaBase ("campo:valor"). */
 export const chaveImportacao = chave;
+
+/**
+ * O que a confirmação faz com cada linha: inválidas ficam de fora (com erro); linhas cujo registro já existe
+ * igual (config.semAlteracao) são ignoradas; o resto é gravado. Mesma regra no navegador e no servidor.
+ */
+export function separarParaGravacao<T>(
+  config: ConfiguracaoImportacao<T>,
+  linhas: readonly ResultadoValidacaoLinha[],
+  valoresExistentesNaBase: Map<string, unknown>,
+) {
+  const chaveDedupe = String(config.chaveDedupe);
+  const gravar: ResultadoValidacaoLinha[] = [];
+  const ignorar: ResultadoValidacaoLinha[] = [];
+  const comErro: ResultadoValidacaoLinha[] = [];
+  for (const l of linhas) {
+    if (l.classificacao === "invalida") { comErro.push(l); continue; }
+    const existente = valoresExistentesNaBase.get(chave(chaveDedupe, l.dados[chaveDedupe]));
+    if (existente !== undefined && config.semAlteracao?.(l.dados, existente)) ignorar.push(l);
+    else gravar.push(l);
+  }
+  return { gravar, ignorar, comErro };
+}

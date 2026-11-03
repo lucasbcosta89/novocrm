@@ -92,3 +92,15 @@ export function relatorioErrosCsv(rel: Pick<RelatorioImportacao, "linhas">, incl
   ]);
   return gerarCsv(["Linha", "Classificação", "Tipo", "Campo", "Mensagem", "Valor recebido"], linhas);
 }
+
+/**
+ * Linhas que NÃO entraram (inválidas), no formato exato do modelo (mesmo cabeçalho e ordem), com os valores
+ * como vieram no arquivo — para corrigir e reenviar. Reenviar o arquivo inteiro também é seguro: o que já
+ * entrou igual é ignorado (dedupe pela chave), sem duplicar.
+ */
+export function linhasComErroCsv<T>(config: ConfiguracaoImportacao<T>, brutas: readonly LinhaBruta[], rel: Pick<RelatorioImportacao, "linhas">): string {
+  const comErro = new Set(rel.linhas.filter((l) => l.classificacao === "invalida").map((l) => l.numero_linha));
+  const n = config.colunasEsperadas.length;
+  const linhas = brutas.filter((b) => comErro.has(b.numero_linha)).map((b) => Array.from({ length: n }, (_, i) => b.valores[i] ?? ""));
+  return gerarCsv(config.colunasEsperadas, linhas);
+}
