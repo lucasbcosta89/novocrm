@@ -1,5 +1,7 @@
 "use server";
 
+import { redirect, unstable_rethrow } from "next/navigation";
+import { validarRepresentada, type CampoRepresentada } from "@/lib/cadastros/representada";
 import { comParam } from "@/lib/url";
 import { executarAcao } from "@/server/acao";
 import { obterContexto } from "@/server/contexto";
@@ -13,22 +15,44 @@ const BASE = "/app/representadas";
 /** Campos de texto do formulário (arquivos ficam de fora). */
 const dados = (fd: FormData) => Object.fromEntries([...fd.entries()].filter(([, v]) => typeof v === "string"));
 
-export async function criarRepresentadaAction(fd: FormData) {
-  let mensagem = "Representada criada";
-  await executarAcao(
-    async (ctx) => {
-      const r = await criarRepresentada(ctx, dados(fd));
-      // documentos enviados junto com o cadastro (uploads tipo documento_representada)
-      try {
-        const n = await salvarDocumentosRepresentada(ctx, r.id, fd.getAll("documentos"));
-        if (n) mensagem = `Representada criada com ${n} documento(s)`;
-      } catch (e) {
-        mensagem = `Representada criada, mas os documentos não foram salvos: ${e instanceof Error ? e.message : "erro"}`;
-      }
-      return r;
-    },
-    { ok: () => comParam(BASE, "ok", mensagem), erro: BASE },
-  );
+/** Estado do formulário de representada (useActionState). */
+export type EstadoFormRepresentada = {
+  erros?: Partial<Record<CampoRepresentada, string>>;
+  erro?: string;
+  ok?: string;
+  /** muda a cada "Salvar e adicionar outra" bem-sucedido: o formulário limpa os campos */
+  limpar?: number;
+};
+
+/**
+ * Cria (id null) ou edita a representada. Validação completa por campo antes do banco; erros do banco ligados a
+ * um campo (CNPJ duplicado etc.) voltam para baixo do campo, sem perder o que foi digitado.
+ * depois=outra (só ao criar): grava e devolve o formulário limpo na mesma tela.
+ */
+export async function salvarRepresentadaAction(id: string | null, _prev: EstadoFormRepresentada, fd: FormData): Promise<EstadoFormRepresentada> {
+  const valores = dados(fd);
+  const erros = validarRepresentada(valores);
+  if (Object.keys(erros).length) return { erros, erro: "Corrija os campos destacados." };
+  const entrada = { ...valores, catalogo_publico: fd.get("catalogo_publico") === "on", criar_pedido_publico: fd.get("criar_pedido_publico") === "on" };
+  let destino: string;
+  try {
+    const ctx = await obterContexto();
+    if (id) {
+      await atualizarRepresentada(ctx, id, entrada);
+      destino = comParam(`${BASE}/${id}`, "ok", "Representada salva");
+    } else {
+      const r = await criarRepresentada(ctx, entrada);
+      if (fd.get("depois") === "outra") return { ok: `Representada ${r.codigo_representada} — ${r.razao_social} criada. Cadastre a próxima.`, limpar: Date.now() };
+      destino = comParam(`${BASE}/${r.id}`, "ok", `Representada ${r.codigo_representada} criada`);
+    }
+  } catch (e) {
+    unstable_rethrow(e);
+    const erro = normalizarErro(e);
+    if (erro.status === 401) redirect("/login");
+    if (erro.code?.startsWith("campo:")) return { erros: { [erro.code.slice(6)]: erro.message }, erro: "Corrija os campos destacados." };
+    return { erro: erro.message };
+  }
+  redirect(destino);
 }
 
 export async function enviarDocumentosAction(id: string, fd: FormData) {
@@ -73,16 +97,6 @@ export async function excluirPontoAction(representadaId: string, pontoId: string
     ok: `${BASE}/${representadaId}#pontos`,
     erro: `${BASE}/${representadaId}#pontos`,
     mensagem: "Ponto de faturamento excluído",
-  });
-}
-
-export async function atualizarRepresentadaAction(id: string, fd: FormData) {
-  // checkbox desmarcado não é enviado: ausência = false
-  const input = { ...dados(fd), catalogo_publico: fd.get("catalogo_publico") === "on", criar_pedido_publico: fd.get("criar_pedido_publico") === "on" };
-  await executarAcao((ctx) => atualizarRepresentada(ctx, id, input), {
-    ok: `${BASE}/${id}`,
-    erro: `${BASE}/${id}`,
-    mensagem: "Representada salva",
   });
 }
 

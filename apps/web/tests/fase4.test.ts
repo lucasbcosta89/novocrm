@@ -33,7 +33,8 @@ describe("acaoSchema", () => {
 describe("schemas de update não aplicam defaults", () => {
   it("PATCH parcial mantém só os campos enviados", async () => {
     const v = await import("@/lib/validacao");
-    expect(v.representadaUpdateSchema.parse({ nome: "Nova" })).toEqual({ nome: "Nova" });
+    const { representadaParcialSchema } = await import("@/lib/cadastros/representada");
+    expect(representadaParcialSchema.parse({ razao_social: "Nova Ltda" })).toEqual({ razao_social: "Nova Ltda" });
     expect(v.produtoUpdateSchema.parse({ nome: "Caneta" })).toEqual({ nome: "Caneta" });
     expect(v.visitaUpdateSchema.parse({ resultado: "ok" })).toEqual({ resultado: "ok" });
     expect(v.acaoUpdateSchema.parse({ responsavel: "Ana" })).toEqual({ responsavel: "Ana" });

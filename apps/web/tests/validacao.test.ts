@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { clienteSchema, produtoSchema, representadaSchema, slugify, vinculoSchema } from "@/lib/validacao";
+import { clienteSchema, produtoSchema, slugify, vinculoSchema } from "@/lib/validacao";
 
 describe("slugify", () => {
   it("remove acentos e símbolos", () => {
@@ -7,19 +7,6 @@ describe("slugify", () => {
   });
   it("nunca vazio", () => {
     expect(slugify("***")).toBe("representada");
-  });
-});
-
-describe("representadaSchema", () => {
-  it("normaliza CNPJ, CEP, UF e e-mail (sem comissão: Fase 3d-1)", () => {
-    const r = representadaSchema.parse({ nome: "Alfa", cnpj: "12.345.678/0001-90", cep: "74000-000", estado: "go", email: "A@B.COM", numero: "" });
-    expect(r).toMatchObject({ nome: "Alfa", cnpj: "12345678000190", cep: "74000000", estado: "GO", email: "a@b.com", numero: null });
-  });
-  it("campo vazio vira null; rejeita CNPJ curto, UF e CEP inválidos", () => {
-    expect(representadaSchema.parse({ nome: "Alfa", cnpj: "" }).cnpj).toBeNull();
-    expect(representadaSchema.safeParse({ nome: "Alfa", cnpj: "123" }).success).toBe(false);
-    expect(representadaSchema.safeParse({ nome: "Alfa", estado: "XX" }).success).toBe(false);
-    expect(representadaSchema.safeParse({ nome: "Alfa", cep: "123" }).success).toBe(false);
   });
 });
 

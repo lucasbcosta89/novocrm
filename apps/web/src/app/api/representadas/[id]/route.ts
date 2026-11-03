@@ -4,5 +4,5 @@ import { atualizarRepresentada, excluirRepresentada, obterRepresentada } from "@
 type P = { id: string };
 
 export const GET = rota<P>((ctx, { params }) => obterRepresentada(ctx, params.id));
-export const PATCH = rota<P>(async (ctx, { req, params }) => atualizarRepresentada(ctx, params.id, await lerJson(req)));
+export const PATCH = rota<P>(async (ctx, { req, params }) => atualizarRepresentada(ctx, params.id, await lerJson(req), { parcial: true }));
 export const DELETE = rota<P>((ctx, { params }) => excluirRepresentada(ctx, params.id));

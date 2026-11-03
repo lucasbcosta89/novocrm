@@ -10,8 +10,7 @@ import { UFS } from "@/lib/ufs";
 import { carregar } from "@/server/acao";
 import { obterUso } from "@/server/quota";
 import { listarRepresentadasListagem } from "@/server/representadas";
-import { alterarStatusRepresentadaAction, criarRepresentadaAction } from "./actions";
-import { CamposEmpresa } from "./campos-empresa";
+import { alterarStatusRepresentadaAction } from "./actions";
 
 type Busca = Promise<Record<string, string | string[] | undefined>>;
 
@@ -43,7 +42,9 @@ export default async function RepresentadasPage({ searchParams }: { searchParams
 
   const acoes = (
     <div className="acoes-linha">
-      <Link className="btn" href="/app/representadas?nova=1#nova"><Icone nome="mais" tamanho={16} /> Nova representada</Link>
+      {bloqueado
+        ? <button className="btn" type="button" disabled><Icone nome="mais" tamanho={16} /> Nova representada</button>
+        : <Link className="btn" href="/app/representadas/nova"><Icone nome="mais" tamanho={16} /> Nova representada</Link>}
       <span className="com-dica" data-dica="A importação por planilha chega na próxima etapa do módulo">
         <button className="btn-secundario" type="button" disabled><Icone nome="arquivo" tamanho={16} /> Importar planilha</button>
       </span>
@@ -57,23 +58,7 @@ export default async function RepresentadasPage({ searchParams }: { searchParams
         {acoes}
       </div>
       <Mensagens erro={erro} ok={ok} />
-
-      {/* Cadastro rápido (o formulário completo por seções chega na Fase 3) */}
-      <details id="nova" className="card novo-inline" open={sp.nova === "1" || undefined}>
-        <summary className="btn-link"><Icone nome="mais" tamanho={16} /> Cadastro rápido</summary>
-        <AvisoLimite uso={uso} recurso="representadas" />
-        <form action={criarRepresentadaAction} className="grade-1">
-          <CamposEmpresa />
-          <fieldset className="secao-form">
-            <legend>Documentos</legend>
-            <label className="campo">
-              <span>Contrato, cartão CNPJ, tabelas… (até 10 arquivos de 10 MB: PDF, imagens, Office, CSV)</span>
-              <input type="file" name="documentos" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx,.xls,.xlsx,.csv,.txt" />
-            </label>
-          </fieldset>
-          <div className="acoes-linha"><button className="btn" type="submit" disabled={bloqueado}>Cadastrar representada</button></div>
-        </form>
-      </details>
+      <AvisoLimite uso={uso} recurso="representadas" />
 
       <section className="card">
         {total === 0 && !filtrando ? (
@@ -147,7 +132,7 @@ export default async function RepresentadasPage({ searchParams }: { searchParams
                         <td className="col-acoes" data-rotulo="Ações">
                           <span className="acoes-icones">
                             <span className="com-dica" data-dica="Editar">
-                              <Link className="botao-icone botao-acao" href={`/app/representadas/${r.id}?editar=1`} aria-label={`Editar ${r.razao_social}`}>
+                              <Link className="botao-icone botao-acao" href={`/app/representadas/${r.id}/editar`} aria-label={`Editar ${r.razao_social}`}>
                                 <Icone nome="lapis" tamanho={17} />
                               </Link>
                             </span>

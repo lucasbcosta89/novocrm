@@ -2,7 +2,9 @@ import { z } from "zod";
 import { filtroRepresentadasSchema, ORDENACOES, POR_PAGINA, termoBusca, type FiltroRepresentadas } from "@/lib/cadastros/listagem-representadas";
 import type { RegistroRepresentada, Representada as RepresentadaContrato } from "@/lib/cadastros/tipos";
 import { padraoBusca } from "./consultas";
-import { colunasRepresentada, idSchema, representadaSchema, representadaUpdateSchema, slugify } from "@/lib/validacao";
+import { campoDoErroRepresentada, representadaFormSchema, representadaParcialSchema } from "@/lib/cadastros/representada";
+import { idSchema, slugify } from "@/lib/validacao";
+import type { PostgrestError } from "@supabase/supabase-js";
 import type { Contexto } from "./contexto";
 import { AppError, erroBanco } from "./erros";
 import { verificarLimite } from "./quota";
@@ -41,13 +43,20 @@ export async function obterRepresentada({ supabase }: Contexto, id: string): Pro
   return data;
 }
 
+/** Erro do banco ligado a um campo (CNPJ/IE/código duplicado, obrigatório) vira AppError com code "campo:<nome>". */
+function erroRepresentada(error: PostgrestError): AppError {
+  const campo = campoDoErroRepresentada(`${error.message} ${error.details ?? ""}`);
+  if (campo) return new AppError(error.code === "23505" ? 409 : 400, campo.mensagem, `campo:${campo.campo}`);
+  return erroBanco(error);
+}
+
+/** Cria pela regra do cadastro (lib/cadastros/representada); código vazio = gerado no banco (REP-0001…). */
 export async function criarRepresentada(ctx: Contexto, input: unknown): Promise<Representada> {
-  const entrada = representadaSchema.parse(input);
-  const dados = colunasRepresentada(entrada);
+  const dados = representadaFormSchema.parse(input);
   await verificarLimite(ctx, "representadas");
 
   // Slug é global (URL pública do catálogo); em colisão tenta com sufixo aleatório.
-  const base = slugify(entrada.nome);
+  const base = slugify(dados.nome_fantasia ?? dados.razao_social);
   for (let tentativa = 0; tentativa < 5; tentativa++) {
     const slug = tentativa === 0 ? base : `${base}-${crypto.randomUUID().slice(0, 4)}`;
     const { data, error } = await ctx.supabase
@@ -56,20 +65,22 @@ export async function criarRepresentada(ctx: Contexto, input: unknown): Promise<
       .select(CAMPOS)
       .single<Representada>();
     if (!error) return data;
-    if (error.code !== "23505" || !error.message.includes("slug")) throw erroBanco(error);
+    if (error.code !== "23505" || !error.message.includes("slug")) throw erroRepresentada(error);
   }
   throw new AppError(409, "Não foi possível gerar um slug único", "slug");
 }
 
-export async function atualizarRepresentada({ supabase }: Contexto, id: string, input: unknown): Promise<Representada> {
-  const dados = colunasRepresentada(representadaUpdateSchema.parse(input));
+/** Edição: o formulário envia o registro inteiro; a API (PATCH) pode enviar só alguns campos. */
+export async function atualizarRepresentada({ supabase }: Contexto, id: string, input: unknown, { parcial = false } = {}): Promise<Representada> {
+  const dados = parcial ? representadaParcialSchema.parse(input) : representadaFormSchema.parse(input);
   const { data, error } = await supabase
     .from("representadas")
     .update(dados)
     .eq("id", idSchema.parse(id))
+    .is("excluido_em", null)
     .select(CAMPOS)
     .single<Representada>();
-  if (error) throw erroBanco(error);
+  if (error) throw erroRepresentada(error);
   return data;
 }
 
