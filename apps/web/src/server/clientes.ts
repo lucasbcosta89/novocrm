@@ -63,8 +63,9 @@ export async function criarCliente(ctx: Contexto, input: unknown): Promise<Clien
   return mapear(data);
 }
 
-export async function atualizarCliente({ supabase }: Contexto, id: string, input: unknown): Promise<Cliente> {
-  const dados = clienteUpdateSchema.parse(input);
+/** completo = formulário de edição (todos os campos, CNPJ/CPF obrigatório); sem ele, PATCH parcial da API. */
+export async function atualizarCliente({ supabase }: Contexto, id: string, input: unknown, { completo = false } = {}): Promise<Cliente> {
+  const dados = completo ? clienteSchema.parse(input) : clienteUpdateSchema.parse(input);
   const { data, error } = await supabase
     .from("clientes")
     .update(dados)

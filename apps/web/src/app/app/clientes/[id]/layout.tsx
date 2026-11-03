@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Abas } from "@/components/abas";
 import { Avatar } from "@/components/avatar";
+import { Icone } from "@/components/icones";
 import { carregar } from "@/server/acao";
 import { obterCliente } from "@/server/clientes";
 
@@ -23,6 +24,18 @@ export default async function ClienteLayout({ children, params }: { children: Re
           { href: "representadas", rotulo: "Representadas", icone: "predio" },
         ]}
       />
+      {!c.documento && (
+        <p className="aviso aviso-erro" role="alert">
+          <span className="circulo-icone"><Icone nome="alerta" tamanho={16} /></span>
+          Cadastro incompleto: o CNPJ/CPF é obrigatório. <Link href={`/app/clientes/${c.id}#editar`}>Preencha em “Editar dados”</Link>.
+        </p>
+      )}
+      {c.representadas.length === 0 && (
+        <p className="aviso aviso-alerta">
+          <span className="circulo-icone"><Icone nome="predio" tamanho={16} /></span>
+          Cliente sem representada vinculada. <Link href={`/app/clientes/${c.id}/representadas`}>Vincule na aba Representadas</Link>.
+        </p>
+      )}
       {children}
     </>
   );

@@ -65,7 +65,7 @@ export function Carrinho({
       body: JSON.stringify({
         slug,
         cliente: {
-          nome: fd.get("nome"), whatsapp: fd.get("whatsapp"), documento: fd.get("documento") || undefined,
+          nome: fd.get("nome"), whatsapp: fd.get("whatsapp"), documento: fd.get("documento"),
           email: fd.get("email") || undefined, cidade: fd.get("cidade") || undefined, uf: fd.get("uf") || undefined,
         },
         itens: linhas.map(([produto_id, quantidade]) => ({ produto_id, quantidade })),
@@ -152,7 +152,7 @@ export function Carrinho({
           <form onSubmit={enviar} className="grade-1">
             <label className="campo"><span>Nome / razão social *</span><input name="nome" required minLength={2} autoComplete="name" /></label>
             <label className="campo"><span>WhatsApp com DDD *</span><input name="whatsapp" type="tel" required autoComplete="tel" placeholder="(11) 99999-8888" /></label>
-            <label className="campo"><span>CPF/CNPJ</span><input name="documento" inputMode="numeric" /></label>
+            <label className="campo"><span>CNPJ/CPF *</span><input name="documento" inputMode="numeric" required minLength={11} placeholder="CNPJ ou CPF" /></label>
             <label className="campo"><span>E-mail</span><input name="email" type="email" autoComplete="email" /></label>
             <div className="linha-2">
               <label className="campo"><span>Cidade</span><input name="cidade" autoComplete="address-level2" /></label>

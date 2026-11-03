@@ -76,7 +76,9 @@ export function NovoCliente({ voltar, alterou }: Nav) {
   const campo = (k: keyof Cliente) => ({ value: (d[k] as string) ?? "", onChangeText: (v: string) => setD({ ...d, [k]: v }) });
   function salvar() {
     if (!d.nome || d.nome.trim().length < 2) return Alert.alert("Informe o nome do cliente");
-    salvarCliente({ ...d, nome: d.nome.trim() });
+    const doc = (d.documento ?? "").replace(/D/g, "");
+    if (doc.length !== 11 && doc.length !== 14) return Alert.alert("Informe o CNPJ (14 dígitos) ou CPF (11 dígitos) do cliente");
+    salvarCliente({ ...d, nome: d.nome.trim(), documento: doc });
     alterou();
     voltar();
   }
@@ -84,7 +86,7 @@ export function NovoCliente({ voltar, alterou }: Nav) {
     <ScrollView contentContainerStyle={s.tela} keyboardShouldPersistTaps="handled">
       <Titulo>Novo cliente</Titulo>
       <Campo rotulo="Nome *" {...campo("nome")} />
-      <Campo rotulo="CPF/CNPJ" {...campo("documento")} keyboardType="number-pad" />
+      <Campo rotulo="CNPJ/CPF *" {...campo("documento")} keyboardType="number-pad" />
       <Campo rotulo="WhatsApp" {...campo("whatsapp")} keyboardType="phone-pad" />
       <Campo rotulo="E-mail" {...campo("email")} keyboardType="email-address" autoCapitalize="none" />
       <Campo rotulo="Cidade" {...campo("cidade")} />

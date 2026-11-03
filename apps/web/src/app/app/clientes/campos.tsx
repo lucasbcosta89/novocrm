@@ -6,7 +6,7 @@ export function CamposCliente({ c }: { c?: Cliente }) {
   return (
     <>
       <Campo label="Nome *" name="nome" required minLength={2} defaultValue={c?.nome} />
-      <Campo label="CPF/CNPJ" name="documento" inputMode="numeric" defaultValue={c?.documento ?? ""} />
+      <Campo label="CNPJ/CPF *" name="documento" inputMode="numeric" required placeholder="CNPJ (14 dígitos) ou CPF (11 dígitos)" defaultValue={c?.documento ?? ""} />
       <Campo label="E-mail" name="email" type="email" defaultValue={c?.email ?? ""} />
       <Campo label="Celular" name="celular" type="tel" defaultValue={c?.celular ?? ""} />
       <Campo label="WhatsApp" name="whatsapp" type="tel" defaultValue={c?.whatsapp ?? ""} />

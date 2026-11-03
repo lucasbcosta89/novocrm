@@ -21,14 +21,14 @@ export default async function ClienteInicio({ params, searchParams }: { params: 
       <section className="card">
         <h2 className="titulo-icone"><Icone nome="identidade" tamanho={20} /> Informações</h2>
         <dl className="resumo">
-          <div><dt className="com-icone"><Icone nome="identidade" tamanho={16} /> CPF/CNPJ</dt><dd>{formatarDocumento(c.documento)}</dd></div>
+          <div><dt className="com-icone"><Icone nome="identidade" tamanho={16} /> CNPJ/CPF</dt><dd>{c.documento ? formatarDocumento(c.documento) : <span className="erro-campo">Pendente</span>}</dd></div>
           <div><dt className="com-icone"><Icone nome="mapa" tamanho={16} /> Cidade/UF</dt><dd>{[c.cidade, c.uf].filter(Boolean).join("/") || "—"}</dd></div>
           <div><dt className="com-icone"><Icone nome="whatsapp" tamanho={16} /> WhatsApp</dt><dd>{c.whatsapp ?? c.celular ?? "—"}</dd></div>
           <div><dt className="com-icone"><Icone nome="email" tamanho={16} /> E-mail</dt><dd>{c.email ?? "—"}</dd></div>
           <div><dt className="com-icone"><Icone nome="etiqueta" tamanho={16} /> Segmento</dt><dd>{c.segmento ?? "—"}</dd></div>
           <div><dt className="com-icone"><Icone nome="predio" tamanho={16} /> Representadas</dt><dd>{c.representadas.map((r) => r.nome).join(", ") || "—"}</dd></div>
         </dl>
-        <details>
+        <details id="editar" open={!c.documento || undefined}>
           <summary><Icone nome="lapis" tamanho={16} /> Editar dados</summary>
           <form action={atualizarClienteAction.bind(null, c.id)} className="grade">
             <CamposCliente c={c} />

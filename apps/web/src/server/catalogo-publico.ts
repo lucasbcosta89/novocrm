@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { documentoClienteSchema } from "@/lib/validacao";
 import { normalizarTelefone } from "@/lib/whatsapp";
 import { AppError } from "./erros";
 
@@ -75,7 +76,7 @@ export const pedidoPublicoSchema = z.object({
   cliente: z.object({
     nome: z.string().trim().min(2, "Informe seu nome").max(160),
     whatsapp: z.string().refine((v) => normalizarTelefone(v) != null, "Informe um WhatsApp válido com DDD"),
-    documento: z.string().trim().max(20).optional(),
+    documento: documentoClienteSchema, // Fase 16: CNPJ/CPF obrigatório e válido
     email: z.union([z.email("E-mail inválido"), z.literal("")]).optional(),
     cidade: z.string().trim().max(80).optional(),
     uf: z.string().trim().max(2).optional(),

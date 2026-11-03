@@ -38,7 +38,7 @@ describe("WhatsApp utilitários", () => {
 });
 
 describe("pedido público", () => {
-  const base = { slug: "alfa", cliente: { nome: "Loja X", whatsapp: "(11) 99999-8888" }, itens: [{ produto_id: ID, quantidade: 2 }] };
+  const base = { slug: "alfa", cliente: { nome: "Loja X", whatsapp: "(11) 99999-8888", documento: "11.222.333/0001-81" }, itens: [{ produto_id: ID, quantidade: 2 }] };
   it("aceita pedido válido", () => {
     expect(pedidoPublicoSchema.safeParse(base).success).toBe(true);
   });
@@ -46,6 +46,9 @@ describe("pedido público", () => {
     expect(pedidoPublicoSchema.safeParse({ ...base, cliente: { ...base.cliente, whatsapp: "99" } }).success).toBe(false);
     expect(pedidoPublicoSchema.safeParse({ ...base, itens: [] }).success).toBe(false);
     expect(pedidoPublicoSchema.safeParse({ ...base, site: "spam" }).success).toBe(false);
+    // Fase 16: CNPJ/CPF obrigatório e válido no pedido público
+    expect(pedidoPublicoSchema.safeParse({ ...base, cliente: { ...base.cliente, documento: "" } }).success).toBe(false);
+    expect(pedidoPublicoSchema.safeParse({ ...base, cliente: { ...base.cliente, documento: "11.222.333/0001-82" } }).success).toBe(false);
   });
 });
 

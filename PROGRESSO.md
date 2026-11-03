@@ -114,6 +114,10 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Fase 3 — Formulário por seções: validação ao sair do campo, máscara/DV de CNPJ, salvar desabilitado com erro, "Salvar e adicionar outra"
   - [x] Fase 4 — Importação genérica (.xlsx/.csv, 5.000 linhas): pré-validação sem gravar, conferência, lote transacional, dedupe por CNPJ, vazio não apaga
   - [x] Fase 5 — Relatório de erros (linha, campo, mensagem; CSV com acentos), linhas com erro no formato do modelo, reenvio sem duplicar (iguais = ignoradas)
+- [x] Fase 16 — Cadastrar Clientes com Excel (mesma importação genérica das representadas)
+  - [x] Decisões do usuário: campos do cadastro atual; sem código; sem representada na planilha (vínculo feito na plataforma, com alerta na página Clientes); CNPJ/CPF obrigatório
+  - [x] CNPJ/CPF obrigatório e com dígito verificador (mensagens distintas CPF/CNPJ) no formulário, app mobile, catálogo público e planilha; cliente antigo sem documento sinalizado para correção
+  - [x] Importação: modelo .xlsx/.csv, cabeçalho exato, dedupe por CNPJ/CPF, lote transacional (importar_clientes), vazio não apaga, reenvio sem duplicar, quota de clientes
 - [x] Fase 4 — Oportunidades e desafios por cliente + plano de ação
   - [x] Bloco "Oportunidades e Desafios" na página do cliente (+ Novo, tabela tipo/título/prioridade/status/data/ações)
   - [x] Plano de ação em /app/clientes/:id/oportunidades/:opId (adicionar, concluir, editar, excluir ações)

@@ -24,7 +24,7 @@ export async function criarClienteAction(fd: FormData) {
 }
 
 export async function atualizarClienteAction(id: string, fd: FormData) {
-  await executarAcao((ctx) => atualizarCliente(ctx, id, dados(fd)), {
+  await executarAcao((ctx) => atualizarCliente(ctx, id, dados(fd), { completo: true }), {
     ok: `${BASE}/${id}`,
     erro: `${BASE}/${id}`,
     mensagem: "Cliente salvo",

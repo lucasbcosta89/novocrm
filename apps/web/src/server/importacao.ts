@@ -1,7 +1,9 @@
 import "server-only";
 import { z } from "zod";
 import type { RelatorioImportacao, ResultadoValidacaoLinha } from "@/lib/cadastros/tipos";
+import { COLUNAS_CLIENTE } from "@/lib/cadastros/importacao-clientes";
 import { COLUNAS_REPRESENTADA } from "@/lib/cadastros/importacao-representadas";
+import type { Recurso } from "@/lib/planos";
 import { chaveImportacao, MAX_LINHAS, resumirValidacao, separarParaGravacao, validarPlanilha } from "@/lib/importacao/motor";
 import { ehEntidadeImportacao, IMPORTACOES, type EntidadeImportacao } from "@/lib/importacao/registro";
 import { slugify } from "@/lib/validacao";
@@ -53,10 +55,34 @@ const ADAPTADORES: Record<EntidadeImportacao, Adaptador> = {
       return data as { inseridas: number; atualizadas: number };
     },
   },
+  clientes: {
+    async existentes({ supabase }) {
+      const campos = [...new Set(Object.values(COLUNAS_CLIENTE))];
+      const { data, error } = await supabase
+        .from("clientes")
+        .select(campos.join(", "))
+        .returns<({ documento: string | null; nome: string } & Record<string, unknown>)[]>();
+      if (error) throw erroBanco(error);
+      const m = new Map<string, unknown>();
+      // valores atuais: linha igual ao cadastro é ignorada no reenvio (nada a gravar, sem duplicar)
+      for (const c of data) if (c.documento) m.set(chaveImportacao("documento", c.documento), { nome: c.nome, valores: c });
+      return m;
+    },
+    async gravar(ctx, linhas, existentes) {
+      const novas = linhas.filter((l) => !existentes.has(chaveImportacao("documento", l.dados.documento))).length;
+      await garantirQuota(ctx, "clientes", novas);
+      const { data, error } = await ctx.supabase.rpc("importar_clientes", { p_linhas: linhas.map((l) => l.dados) });
+      if (error) {
+        if (error.hint === "LIMITE_ATINGIDO") throw erroBanco(error);
+        throw new AppError(409, `Nada foi gravado: o lote foi desfeito por inteiro (${error.message}). Corrija e envie de novo.`, "lote_desfeito");
+      }
+      return data as { inseridas: number; atualizadas: number };
+    },
+  },
 };
 
 /** Quota (middleware verificarLimite) para N inclusões de uma vez: recusa ANTES de gravar, com mensagem clara. */
-async function garantirQuota(ctx: Contexto, recurso: "representadas", novas: number) {
+async function garantirQuota(ctx: Contexto, recurso: Recurso, novas: number) {
   if (novas === 0) return;
   const uso = await obterUso(ctx);
   const r = uso.recursos[recurso];

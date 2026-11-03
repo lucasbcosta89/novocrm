@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { cnpjValido, cpfValido } from "./documentos-br";
 import { SIGLAS_UF } from "./ufs";
 
 export const soDigitos = (v: string) => v.replace(/\D/g, "");
@@ -62,16 +63,30 @@ export const pontoFaturamentoSchema = z.object({
 });
 export const pontoFaturamentoUpdateSchema = parcial(pontoFaturamentoSchema);
 
+/**
+ * CNPJ/CPF do cliente (Fase 16): OBRIGATÓRIO, gravado só com dígitos — 14 (CNPJ) ou 11 (CPF) — com os dígitos
+ * verificadores conferidos (mensagens distintas para CPF e CNPJ). Mesma regra no formulário, no sync do app,
+ * no catálogo público e na importação por planilha.
+ */
+export const documentoClienteSchema = z.preprocess(
+  (v) => (typeof v === "string" ? soDigitos(v) || undefined : (v ?? undefined)),
+  z
+    .string("Informe o CNPJ ou CPF")
+    .refine((d) => d.length === 11 || d.length === 14, "CNPJ/CPF deve ter 14 dígitos (CNPJ) ou 11 dígitos (CPF)")
+    .refine((d) => d.length !== 11 || cpfValido(d), "CPF inválido: dígitos verificadores não conferem")
+    .refine((d) => d.length !== 14 || cnpjValido(d), "CNPJ inválido: dígitos verificadores não conferem"),
+);
+
 export const clienteSchema = z.object({
   nome: z.string().trim().min(2, "Informe o nome").max(160),
-  documento: digitosOpcional([11, 14], "CPF/CNPJ deve ter 11 ou 14 dígitos"),
+  documento: documentoClienteSchema,
   email: z.preprocess(vazioParaNull, z.email("E-mail inválido").trim().toLowerCase().nullable().optional()),
   celular: textoOpcional(30),
   whatsapp: textoOpcional(30),
   cidade: textoOpcional(80),
   uf: z.preprocess(
     (v) => (typeof v === "string" ? vazioParaNull(v.trim().toUpperCase()) : v),
-    z.string().regex(/^[A-Z]{2}$/, "UF deve ter 2 letras").nullable().optional(),
+    z.string().refine((uf) => SIGLAS_UF.includes(uf), "UF inválida").nullable().optional(),
   ),
   cep: digitosOpcional([8], "CEP deve ter 8 dígitos"),
   segmento: textoOpcional(80),
