@@ -7,7 +7,7 @@ import { normalizarErro } from "@/server/erros";
 import { atualizarPrecos, atualizarProduto, criarProduto, excluirProduto, salvarImagemProduto } from "@/server/produtos";
 import { excluirDocumentoRepresentada, salvarDocumentosRepresentada } from "@/server/documentos-representada";
 import { atualizarPonto, criarPonto, excluirPonto } from "@/server/pontos-faturamento";
-import { atualizarRepresentada, criarRepresentada, excluirRepresentada } from "@/server/representadas";
+import { alterarStatusRepresentada, atualizarRepresentada, criarRepresentada, excluirRepresentada } from "@/server/representadas";
 
 const BASE = "/app/representadas";
 /** Campos de texto do formulário (arquivos ficam de fora). */
@@ -83,6 +83,16 @@ export async function atualizarRepresentadaAction(id: string, fd: FormData) {
     ok: `${BASE}/${id}`,
     erro: `${BASE}/${id}`,
     mensagem: "Representada salva",
+  });
+}
+
+/** Inativar/reativar pela listagem; volta para a mesma visão (filtros, ordem e página). */
+export async function alterarStatusRepresentadaAction(id: string, status: "ativa" | "inativa", voltar: string) {
+  const destino = voltar.startsWith(BASE) ? voltar : BASE;
+  await executarAcao((ctx) => alterarStatusRepresentada(ctx, id, status), {
+    ok: destino,
+    erro: destino,
+    mensagem: status === "inativa" ? "Representada inativada" : "Representada reativada",
   });
 }
 

@@ -18,6 +18,7 @@ export default async function RepresentadaLayout({ children, params }: { childre
           { href: "", rotulo: "Início", icone: "painel" },
           { href: "catalogo", rotulo: "Catálogo", icone: "pacote" },
           { href: "precos", rotulo: "Tabela de preços", icone: "etiqueta" },
+          { href: "clientes", rotulo: "Clientes", icone: "pessoas" },
           { href: "pedidos", rotulo: "Pedidos", icone: "carrinho" },
           { href: "oportunidades", rotulo: "Oportunidades", icone: "funil" },
         ]}

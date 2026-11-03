@@ -99,7 +99,7 @@ export default async function RepresentadaInicio({
             <div className="acoes-linha"><button className="btn" type="submit">Salvar</button></div>
           </form>
           <form action={excluirRepresentadaAction.bind(null, r.id)}>
-            <BotaoConfirmar className="btn-perigo" texto="Excluir representada" pergunta={`Excluir “${r.nome}”? Esta ação não pode ser desfeita.`} />
+            <BotaoConfirmar className="btn-perigo" texto="Excluir representada" pergunta={`Excluir “${r.nome}”? Ela sai da lista e libera a vaga do plano; pedidos, comissões e clientes vinculados continuam no histórico.`} />
           </form>
         </details>
       </section>

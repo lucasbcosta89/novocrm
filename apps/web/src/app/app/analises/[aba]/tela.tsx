@@ -9,6 +9,7 @@ import { CardKpi } from "@/components/card-kpi";
 import { Icone, type NomeIcone } from "@/components/icones";
 import { MultiSelect } from "@/components/multi-select";
 import { StatusPedido } from "@/components/status";
+import { gerarCsv } from "@/lib/csv";
 import { bloqueioGrafico, CHAVE_OUTROS, DIAS_RISCO, DIMENSOES, DIMS_DE_ITEM, hashSpec, LIMITES, METRICAS, proximaDimensao, ROTULO_CANAL, SIGLA_UNIDADE, TIPOS_GRAFICO } from "@/lib/analises/catalogo";
 import { agrupar, histograma, pareto, somarPor } from "@/lib/analises/grafico";
 import { aplicarPersonalizacao, ORDEM_PRESETS, PERIODOS_PRESET, personalizacaoDaSpec, PRESETS, specDoPreset, type PeriodoPreset, type Personalizacao, type PresetAba } from "@/lib/analises/presets";
@@ -171,8 +172,7 @@ export function TelaAnalise({ aba, opcoes }: { aba: PresetId; opcoes: OpcoesFilt
       XLSX.writeFile(wb, `${nome}.xlsx`);
       return;
     }
-    const cel = (v: unknown) => { const s = v == null ? "" : typeof v === "number" ? String(v).replace(".", ",") : String(v); return /[;"\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-    const csv = "﻿" + [cab, ...linhas].map((l) => l.map(cel).join(";")).join("\r\n");
+    const csv = gerarCsv(cab, linhas);
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
     a.download = `${nome}.csv`;

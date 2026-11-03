@@ -1,4 +1,7 @@
-import type { RegistroRepresentada } from "@/lib/cadastros/tipos";
+import { z } from "zod";
+import { filtroRepresentadasSchema, ORDENACOES, POR_PAGINA, termoBusca, type FiltroRepresentadas } from "@/lib/cadastros/listagem-representadas";
+import type { RegistroRepresentada, Representada as RepresentadaContrato } from "@/lib/cadastros/tipos";
+import { padraoBusca } from "./consultas";
 import { colunasRepresentada, idSchema, representadaSchema, representadaUpdateSchema, slugify } from "@/lib/validacao";
 import type { Contexto } from "./contexto";
 import { AppError, erroBanco } from "./erros";
@@ -30,18 +33,6 @@ export async function listarRepresentadas({ supabase }: Contexto): Promise<Repre
   const { data, error } = await supabase.from("representadas").select(CAMPOS).is("excluido_em", null).order("razao_social").returns<Representada[]>();
   if (error) throw erroBanco(error);
   return data;
-}
-
-/** Lista com nº de SKUs ativos por representada (página inicial de Representadas). */
-export async function listarRepresentadasComSkus(ctx: Contexto): Promise<(Representada & { skus: number })[]> {
-  const [reps, produtos] = await Promise.all([
-    listarRepresentadas(ctx),
-    ctx.supabase.from("produtos").select("representada_id").eq("ativo", true).returns<{ representada_id: string }[]>(),
-  ]);
-  if (produtos.error) throw erroBanco(produtos.error);
-  const porRep = new Map<string, number>();
-  for (const p of produtos.data) porRep.set(p.representada_id, (porRep.get(p.representada_id) ?? 0) + 1);
-  return reps.map((r) => ({ ...r, skus: porRep.get(r.id) ?? 0 }));
 }
 
 export async function obterRepresentada({ supabase }: Contexto, id: string): Promise<Representada> {
@@ -94,4 +85,50 @@ export async function excluirRepresentada({ supabase }: Contexto, id: string): P
     .is("excluido_em", null);
   if (error) throw erroBanco(error);
   if (!count) throw new AppError(404, "Não encontrado", "nao_encontrado");
+}
+
+/* ---------- Listagem (cadastro de representadas, Fase 2) ---------- */
+
+export type LinhaListagemRepresentada = Pick<
+  RepresentadaContrato,
+  "id" | "codigo_representada" | "razao_social" | "nome_fantasia" | "cidade" | "uf" | "comissao_percentual" | "status" | "clientes_vinculados" | "valor_vendido_90d"
+> & { cnpj: string | null; cidade: string | null; uf: string | null };
+
+const CAMPOS_LISTAGEM =
+  "id, codigo_representada, razao_social, nome_fantasia, cnpj, cidade, uf, comissao_percentual, status, clientes_vinculados, valor_vendido_90d";
+
+/**
+ * Listagem filtrada/ordenada/paginada pela view representadas_listagem (security_invoker: RLS do usuário).
+ * Busca na coluna `busca` (razão social + fantasia + CNPJ sem máscara) com o termo normalizado do mesmo jeito.
+ * paginar = false: visão filtrada completa (exportação CSV), limitada a 5.000 linhas.
+ */
+export async function listarRepresentadasListagem(
+  { supabase }: Contexto,
+  entrada: unknown,
+  { paginar = true }: { paginar?: boolean } = {},
+): Promise<{ linhas: LinhaListagemRepresentada[]; total: number; filtro: FiltroRepresentadas }> {
+  const f = filtroRepresentadasSchema.parse(entrada);
+  let q = supabase.from("representadas_listagem").select(CAMPOS_LISTAGEM, { count: "exact" });
+  const padrao = padraoBusca(termoBusca(f.q));
+  if (padrao) q = q.ilike("busca", padrao);
+  if (f.status) q = q.eq("status", f.status);
+  if (f.uf) q = q.eq("uf", f.uf);
+  for (const col of ORDENACOES[f.ordem]) q = q.order(col, { ascending: f.dir === "asc", nullsFirst: false });
+  q = q.order("id");
+  q = paginar ? q.range((f.pagina - 1) * POR_PAGINA, f.pagina * POR_PAGINA - 1) : q.limit(5000);
+  const { data, error, count } = await q.returns<LinhaListagemRepresentada[]>();
+  if (error) throw erroBanco(error);
+  return { linhas: data.map((l) => ({ ...l, comissao_percentual: Number(l.comissao_percentual), valor_vendido_90d: Number(l.valor_vendido_90d) })), total: count ?? 0, filtro: f };
+}
+
+/** Inativar/reativar (ação da linha). Inativa some do seletor de novo pedido; histórico e vínculos ficam. */
+export async function alterarStatusRepresentada({ supabase }: Contexto, id: string, status: unknown): Promise<void> {
+  const novo = z.enum(["ativa", "inativa"], "Status inválido").parse(status);
+  const { error, count } = await supabase
+    .from("representadas")
+    .update({ status: novo }, { count: "exact" })
+    .eq("id", idSchema.parse(id))
+    .is("excluido_em", null);
+  if (error) throw erroBanco(error);
+  if (!count) throw new AppError(404, "Representada não encontrada", "nao_encontrado");
 }

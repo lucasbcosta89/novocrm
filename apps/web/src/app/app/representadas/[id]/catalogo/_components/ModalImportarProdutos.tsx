@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Icone } from "@/components/icones";
+import { gerarCsv } from "@/lib/csv";
 import { CAMPOS_MODELO, ROTULOS, validarCabecalho, type Campo } from "@/lib/import/validarCabecalho";
 import { Modal } from "@/app/app/oportunidades/comum";
 import { importarProdutos, type ErroLinha, type ResultadoCommit } from "../_actions/importarProdutos";
@@ -27,9 +28,8 @@ const nomeCampo = (c: string) => (c in ROTULOS ? ROTULOS[c as Campo] : c);
 
 /** Relatório de erros em CSV (separador ";" e BOM para abrir certo no Excel em português). */
 function baixarCsv(erros: ErroLinha[], arquivo: string) {
-  const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
-  const linhas = [["Linha", "Campo", "Mensagem"], ...erros.map((e) => [e.linha, nomeCampo(e.campo), e.mensagem])].map((l) => l.map(esc).join(";"));
-  const url = URL.createObjectURL(new Blob(["﻿" + linhas.join("\r\n")], { type: "text/csv;charset=utf-8" }));
+  const csv = gerarCsv(["Linha", "Campo", "Mensagem"], erros.map((e) => [e.linha, nomeCampo(e.campo), e.mensagem]));
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
   const a = Object.assign(document.createElement("a"), { href: url, download: `erros-${arquivo.replace(EXTENSOES, "")}.csv` });
   document.body.appendChild(a);
   a.click();

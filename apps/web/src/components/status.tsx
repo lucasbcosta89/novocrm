@@ -22,3 +22,10 @@ const ICONE_DEVOLUCAO: Record<string, NomeIcone> = { pendente: "relogio", aprova
 export function StatusDevolucao({ status }: { status: string }) {
   return <Status classe={`dev-${status}`} icone={ICONE_DEVOLUCAO[status] ?? "circulo"} rotulo={ROTULO_STATUS_DEVOLUCAO[status] ?? status} />;
 }
+
+/** Representada: Ativa (verde) | Inativa (cinza). */
+export function StatusRepresentada({ status }: { status: string }) {
+  return status === "ativa"
+    ? <Status classe="confirmado" icone="concluido" rotulo="Ativa" />
+    : <Status classe="cancelado" icone="cancelado" rotulo="Inativa" />;
+}
