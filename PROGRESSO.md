@@ -181,6 +181,9 @@ Toda fase termina com commit + tag no GitHub.
 - [x] Mercado Pago: checkout, webhook (x-signature) e conciliação validados em teste (2026-10-09)
 - [ ] Mercado Pago produção: trocar MP_ACCESS_TOKEN pelo token da conta real, remover MP_TEST_PAYER_EMAIL,
       cadastrar webhook na aplicação real e atualizar MP_WEBHOOK_SECRET (.env + secrets do GitHub)
+- [ ] Upgrade de plano para liberar novas representadas: criar o link de pagamento para o cliente fazer upgrade
+      quando atingir o limite de representadas do plano (hoje o botão "Nova representada" fica desativado e o aviso
+      de limite mostra "Fazer upgrade") — adiado pelo usuário em 2026-11-03
 
 Como rodar (toda sessão):
 1. Terminal na pasta do projeto → digite: claude

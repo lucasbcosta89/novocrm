@@ -11,7 +11,7 @@ describe("representadas fase 1 — modelo e tipos", () => {
     const contexto: ContextoValidacao = { linhasAnteriores: [], valoresExistentesNaBase: new Map() };
     const config: ConfiguracaoImportacao<Representada> = {
       entidade: "representadas", colunasEsperadas: ["cnpj"], colunasObrigatorias: ["cnpj"], chaveDedupe: "cnpj", maxLinhas: 5000,
-      validarLinha: () => linha, mensagens: {}, mensagemModelo: "",
+      validarLinha: () => linha, mensagens: {}, mensagemModelo: "", linhaExemplo: {},
     };
     const relatorio: RelatorioImportacao = {
       entidade: config.entidade, total_linhas: 1, validas: 0, com_alerta: 0, invalidas: 1, inseridas: 0, atualizadas: 0, ignoradas: 1,

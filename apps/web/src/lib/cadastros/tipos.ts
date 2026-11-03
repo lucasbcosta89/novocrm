@@ -83,4 +83,8 @@ export interface ConfiguracaoImportacao<T> {
   validarLinha: (bruto: Record<string, string>, contexto: ContextoValidacao) => ResultadoValidacaoLinha;
   mensagens: Record<string, string>;
   mensagemModelo: string;            // texto do arquivo modelo para download
+  /** linha de exemplo do arquivo modelo (sem dados reais), na ordem de colunasEsperadas */
+  linhaExemplo: Record<string, string>;
+  /** outras colunas que não podem repetir dentro do arquivo (além da chave de dedupe) */
+  chavesUnicas?: string[];
 }

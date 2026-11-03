@@ -8,6 +8,7 @@ import { POR_PAGINA, urlListagem, type FiltroRepresentadas, type Ordenacao } fro
 import { formatarDocumento, formatarMoeda, formatarPercentual } from "@/lib/formato";
 import { UFS } from "@/lib/ufs";
 import { carregar } from "@/server/acao";
+import { podeImportar } from "@/server/importacao";
 import { obterUso } from "@/server/quota";
 import { listarRepresentadasListagem } from "@/server/representadas";
 import { alterarStatusRepresentadaAction } from "./actions";
@@ -31,7 +32,9 @@ function Th({ f, col, children, num }: { f: FiltroRepresentadas; col: Ordenacao;
 /** Representadas: busca normalizada, filtros, ordenação em todas as colunas, paginação, CSV e ações por linha. */
 export default async function RepresentadasPage({ searchParams }: { searchParams: Busca }) {
   const sp = await searchParams;
-  const [{ linhas, total, filtro: f }, uso] = await carregar((ctx) => Promise.all([listarRepresentadasListagem(ctx, sp), obterUso(ctx)]));
+  const [{ linhas, total, filtro: f }, uso, importar] = await carregar((ctx) =>
+    Promise.all([listarRepresentadasListagem(ctx, sp), obterUso(ctx), podeImportar(ctx)]),
+  );
   const erro = typeof sp.erro === "string" ? sp.erro : undefined;
   const ok = typeof sp.ok === "string" ? sp.ok : undefined;
   const bloqueado = uso.recursos.representadas.atingido;
@@ -45,9 +48,7 @@ export default async function RepresentadasPage({ searchParams }: { searchParams
       {bloqueado
         ? <button className="btn" type="button" disabled><Icone nome="mais" tamanho={16} /> Nova representada</button>
         : <Link className="btn" href="/app/representadas/nova"><Icone nome="mais" tamanho={16} /> Nova representada</Link>}
-      <span className="com-dica" data-dica="A importação por planilha chega na próxima etapa do módulo">
-        <button className="btn-secundario" type="button" disabled><Icone nome="arquivo" tamanho={16} /> Importar planilha</button>
-      </span>
+      {importar && <Link className="btn-secundario" href="/app/representadas/importar"><Icone nome="arquivo" tamanho={16} /> Importar planilha</Link>}
     </div>
   );
 

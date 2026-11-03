@@ -898,6 +898,14 @@ h1.titulo-icone .icone, h2.titulo-icone .icone, h3.titulo-icone .icone { color: 
 .etapa-erro .etapa-marca { background: var(--danger-suave); color: var(--danger-texto); }
 .etapa-marca .girando { width: 14px; height: 14px; }
 .importar-erros { max-height: 280px; overflow-y: auto; }
+.etapas-horizontais { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 720px) { .etapas-horizontais { grid-template-columns: 1fr; } }
+.importar-erros.tabela-wrap { max-height: 420px; }
+.progresso-importacao { height: 8px; max-width: 520px; }
+.progresso-importacao span { transition: width .2s ease; }
+.progresso-indeterminado span { width: 35%; animation: progresso-vai-vem 1.2s ease-in-out infinite alternate; }
+@keyframes progresso-vai-vem { from { margin-left: 0; } to { margin-left: 65%; } }
+@media (prefers-reduced-motion: reduce) { .progresso-indeterminado span { animation: none; width: 100%; } }
 .importar-resumo .kpi { padding: 12px; }
 
 /* ---------- Análises ---------- */
