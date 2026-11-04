@@ -29,8 +29,11 @@ export function TabelaPedidos({ pedidos, coluna, acoes, vazio = "Nenhum pedido."
           {pedidos.map((p) => {
             const rel = p[coluna];
             return (
-              <tr key={p.id}>
-                <td data-rotulo="Código"><Link href={`/app/pedidos/${p.id}`}>{p.codigo_pedido}</Link></td>
+              <tr key={p.id} className={p.tem_pendencias ? "linha-pendente" : undefined}>
+                <td data-rotulo="Código">
+                  <Link className={p.tem_pendencias ? "numero-pendente" : undefined} href={`/app/pedidos/${p.id}`}>{p.codigo_pedido}</Link>
+                  {p.tem_pendencias && <span className="selo-pendencias">Com pendências</span>}
+                </td>
                 <td data-rotulo="Data">{formatarData(p.data)}</td>
                 <td data-rotulo={coluna === "cliente" ? "Cliente" : "Representada"}>{rel ? <Link href={`/app/${coluna === "cliente" ? "clientes" : "representadas"}/${rel.id}`}>{rel.nome}</Link> : "—"}</td>
                 <td data-rotulo="Status"><StatusPedido status={p.status} /></td>

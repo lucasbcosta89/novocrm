@@ -16,6 +16,9 @@ export type PedidoItem = {
   comissao_percentual: number;
   comissao_valor: number;
   produto: { sku: string } | null;
+  /** Fase 17: SKU como veio da planilha e pendência do item (produto não cadastrado / preço divergente) */
+  sku_planilha: string | null;
+  pendencia: "produto_nao_cadastrado" | "preco_divergente" | null;
 };
 
 export type Pedido = {
@@ -23,6 +26,7 @@ export type Pedido = {
   numero: string;
   codigo_pedido: string;
   codigo_gerado: boolean;
+  tem_pendencias: boolean;
   data: string;
   status: string;
   valor_total: number;
@@ -38,9 +42,9 @@ export type Pedido = {
   comissao: { id: string; status: string; valor: number; percentual: number; data_prevista: string | null }[];
 };
 
-const CAMPOS = `id, numero, codigo_pedido, codigo_gerado, data, status, valor_total, comissao_total, forma_pagamento, prazo_tipo, prazo_dias, origem, observacoes,
+const CAMPOS = `id, numero, codigo_pedido, codigo_gerado, tem_pendencias, data, status, valor_total, comissao_total, forma_pagamento, prazo_tipo, prazo_dias, origem, observacoes,
   cliente:clientes(id, nome), representada:representadas(id, nome:razao_social),
-  itens:pedido_itens(id, produto_id, descricao, quantidade, preco_unitario, desconto_percentual, desconto_acima_max, subtotal, comissao_percentual, comissao_valor, produto:produtos(sku)),
+  itens:pedido_itens(id, produto_id, descricao, quantidade, preco_unitario, desconto_percentual, desconto_acima_max, subtotal, comissao_percentual, comissao_valor, sku_planilha, pendencia, produto:produtos(sku)),
   comissao:comissoes(id, status, valor, percentual, data_prevista)`;
 
 export async function obterPedido({ supabase }: Contexto, id: string): Promise<Pedido> {
@@ -145,4 +149,55 @@ export async function excluirPedido({ supabase }: Contexto, id: string): Promise
   const { error, count } = await supabase.from("pedidos").delete({ count: "exact" }).eq("id", pedidoId);
   if (error) throw erroBanco(error);
   if (!count) throw new AppError(404, "Pedido não encontrado", "nao_encontrado");
+}
+
+/* ---------- Pendências de pedidos importados (Fase 17) ---------- */
+
+/** Liga ao produto os itens pendentes com o mesmo SKU nos pedidos da mesma representada (preço do item não muda). */
+export async function vincularPendentesAoProduto({ supabase }: Contexto, produtoId: string): Promise<number> {
+  const { data, error } = await supabase.rpc("vincular_produto_pendente", { p_produto_id: idSchema.parse(produtoId) });
+  if (error) throw erroBanco(error);
+  return Number(data ?? 0);
+}
+
+/** "Vincular produto" do alerta do Catálogo: acha o produto (representada + SKU) e vincula os itens pendentes. */
+export async function vincularProdutoPendentes(ctx: Contexto, representadaId: string, sku: unknown): Promise<number> {
+  const s = z.string().trim().min(1).max(60).parse(sku);
+  const { data, error } = await ctx.supabase
+    .from("produtos").select("id").eq("representada_id", idSchema.parse(representadaId)).eq("sku", s).maybeSingle<{ id: string }>();
+  if (error) throw erroBanco(error);
+  if (!data) throw new AppError(404, `O SKU ${s} não está no Catálogo desta representada`, "nao_encontrado");
+  return vincularPendentesAoProduto(ctx, data.id);
+}
+
+export type PendenciaCatalogo = { sku: string; descricao: string | null; preco: number; itens: number; pedidos: number; produto: { id: string; nome: string } | null };
+
+/**
+ * Itens de pedidos desta representada sem produto vinculado (pendência "produto não cadastrado"), agrupados por SKU.
+ * produto preenchido = o SKU já existe no Catálogo, só falta vincular (caso 2); null = SKU a cadastrar (caso 1).
+ */
+export async function pendenciasDoCatalogo({ supabase }: Contexto, representadaId: string): Promise<PendenciaCatalogo[]> {
+  const rep = idSchema.parse(representadaId);
+  const { data, error } = await supabase
+    .from("pedido_itens")
+    .select("sku_planilha, descricao, preco_unitario, pedido_id, pedido:pedidos!inner(representada_id)")
+    .eq("pendencia", "produto_nao_cadastrado").is("produto_id", null).eq("pedido.representada_id", rep)
+    .returns<{ sku_planilha: string | null; descricao: string | null; preco_unitario: number; pedido_id: string }[]>();
+  if (error) throw erroBanco(error);
+  const porSku = new Map<string, { descricao: string | null; preco: number; itens: number; pedidos: Set<string> }>();
+  for (const i of data) {
+    if (!i.sku_planilha) continue;
+    const g = porSku.get(i.sku_planilha) ?? { descricao: i.descricao, preco: Number(i.preco_unitario), itens: 0, pedidos: new Set<string>() };
+    g.itens += 1;
+    g.pedidos.add(i.pedido_id);
+    porSku.set(i.sku_planilha, g);
+  }
+  if (!porSku.size) return [];
+  const { data: prods, error: e2 } = await supabase
+    .from("produtos").select("id, sku, nome").eq("representada_id", rep).in("sku", [...porSku.keys()])
+    .returns<{ id: string; sku: string; nome: string }[]>();
+  if (e2) throw erroBanco(e2);
+  const existentes = new Map(prods.map((p) => [p.sku, { id: p.id, nome: p.nome }]));
+  return [...porSku].map(([sku, g]) => ({ sku, descricao: g.descricao, preco: g.preco, itens: g.itens, pedidos: g.pedidos.size, produto: existentes.get(sku) ?? null }))
+    .sort((a, b) => a.sku.localeCompare(b.sku));
 }

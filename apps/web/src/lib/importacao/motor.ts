@@ -79,6 +79,11 @@ export async function validarPlanilha<T>(
       await new Promise((ok) => setTimeout(ok, 0));
     }
   }
+  // registros de várias linhas (ex.: pedidos): erros/alertas do grupo e reclassificação
+  if (config.agrupar && !doCabecalho.length) {
+    config.agrupar(saida, valoresExistentesNaBase);
+    for (const l of saida) l.classificacao = classificar(l.erros, l.alertas);
+  }
   aoProgresso?.(linhas.length, linhas.length);
   return saida;
 }

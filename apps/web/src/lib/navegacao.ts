@@ -6,6 +6,7 @@ export const COOKIE_SIDEBAR = "sidebar";
 export const SECOES = [
   { slug: "representadas", titulo: "Representadas", icone: "predio" },
   { slug: "clientes", titulo: "Clientes", icone: "pessoas" },
+  { slug: "pedidos", titulo: "Pedidos", icone: "carrinho" },
   { slug: "oportunidades", titulo: "Oportunidades", icone: "funil" },
   { slug: "calendario", titulo: "Calendário", icone: "calendario" },
   { slug: "comissoes", titulo: "Comissões", icone: "cifrao" },

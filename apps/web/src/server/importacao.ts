@@ -2,6 +2,7 @@ import "server-only";
 import { z } from "zod";
 import type { RelatorioImportacao, ResultadoValidacaoLinha } from "@/lib/cadastros/tipos";
 import { COLUNAS_CLIENTE } from "@/lib/cadastros/importacao-clientes";
+import { agruparPedidos, type ProdutoExistente } from "@/lib/cadastros/importacao-pedidos";
 import { COLUNAS_REPRESENTADA } from "@/lib/cadastros/importacao-representadas";
 import type { Recurso } from "@/lib/planos";
 import { chaveImportacao, MAX_LINHAS, resumirValidacao, separarParaGravacao, validarPlanilha } from "@/lib/importacao/motor";
@@ -76,6 +77,42 @@ const ADAPTADORES: Record<EntidadeImportacao, Adaptador> = {
         if (error.hint === "LIMITE_ATINGIDO") throw erroBanco(error);
         throw new AppError(409, `Nada foi gravado: o lote foi desfeito por inteiro (${error.message}). Corrija e envie de novo.`, "lote_desfeito");
       }
+      return data as { inseridas: number; atualizadas: number };
+    },
+  },
+  pedidos: {
+    async existentes({ supabase }) {
+      const [clientes, produtos, pedidos] = await Promise.all([
+        supabase.from("clientes").select("id, nome, documento").not("documento", "is", null).returns<{ id: string; nome: string; documento: string }[]>(),
+        supabase
+          .from("produtos")
+          .select("id, sku, nome, preco, representada_id, representada:representadas!inner(razao_social, excluido_em), tabelas_preco(preco, cliente_id)")
+          .is("representada.excluido_em", null)
+          .limit(50_000)
+          .returns<{ id: string; sku: string; nome: string; preco: number | null; representada_id: string; representada: { razao_social: string }; tabelas_preco: { preco: number; cliente_id: string | null }[] }[]>(),
+        supabase.from("pedidos").select("codigo_pedido").limit(100_000).returns<{ codigo_pedido: string }[]>(),
+      ]);
+      for (const r of [clientes, produtos, pedidos]) if (r.error) throw erroBanco(r.error);
+      const m = new Map<string, unknown>();
+      for (const c of clientes.data!) m.set(chaveImportacao("cliente", c.documento), { id: c.id, nome: c.nome });
+      for (const p of produtos.data!) {
+        // preço do Catálogo = preço padrão da tabela (sem cliente) ou o do produto — só para a pendência informativa
+        const padrao = p.tabelas_preco.find((t) => t.cliente_id == null)?.preco ?? p.preco;
+        const chave = chaveImportacao("sku", p.sku);
+        const lista = (m.get(chave) as ProdutoExistente[] | undefined) ?? [];
+        lista.push({ produto_id: p.id, representada_id: p.representada_id, representada: p.representada.razao_social, nome: p.nome, preco: padrao == null ? null : Number(padrao) });
+        m.set(chave, lista);
+      }
+      for (const p of pedidos.data!) m.set(chaveImportacao("codigo_pedido", p.codigo_pedido), true);
+      return m;
+    },
+    async gravar(ctx, linhas, existentes) {
+      const grupos = agruparPedidos(linhas.map((l) => ({ ...l, erros: [], alertas: [] })), existentes);
+      const lote = grupos.map(({ codigo, data, cliente_id, representada_id, forma_pagamento, prazo_dias, observacoes, itens }) => ({
+        codigo, data, cliente_id, representada_id, forma_pagamento, prazo_dias, observacoes, itens,
+      }));
+      const { data, error } = await ctx.supabase.rpc("importar_pedidos", { p_pedidos: lote });
+      if (error) throw new AppError(409, `Nada foi gravado: o lote foi desfeito por inteiro (${error.message}). Corrija e envie de novo.`, "lote_desfeito");
       return data as { inseridas: number; atualizadas: number };
     },
   },

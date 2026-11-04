@@ -1,32 +1,106 @@
 import { BotaoCatalogoPdf, BotaoCatalogoWeb } from "@/components/catalogo-acoes";
 import { EnviarCatalogo } from "@/components/enviar-catalogo";
-import { Campo, Mensagens, type Busca } from "@/components/form";
+import Link from "next/link";
+import { BotaoConfirmar } from "@/components/botao-confirmar";
+import { Campo, Mensagens } from "@/components/form";
 import { AvisoLimite } from "@/components/limite";
 import { formatarMoeda, comissaoEfetiva, formatarPercentual } from "@/lib/formato";
 import { carregar } from "@/server/acao";
 import { listarClientesDaRepresentada } from "@/server/consultas";
+import { pendenciasDoCatalogo } from "@/server/pedidos";
 import { listarProdutos } from "@/server/produtos";
 import { obterUso } from "@/server/quota";
 import { obterRepresentada } from "@/server/representadas";
-import { atualizarProdutoAction, criarProdutoAction, excluirProdutoAction, imagemProdutoAction } from "../../actions";
+import { atualizarProdutoAction, criarProdutoAction, excluirProdutoAction, imagemProdutoAction, vincularProdutoPendentesAction } from "../../actions";
 import { Icone } from "@/components/icones";
 import { ModalImportarProdutos } from "./_components/ModalImportarProdutos";
 
 /** Catálogo: produtos + Gerar Catálogo (PDF) e Enviar por WhatsApp (Fase 7c). */
+type Busca = Promise<{ erro?: string; ok?: string; sku?: string; nome?: string; preco?: string; voltar_pedido?: string }>;
+
 export default async function RepresentadaCatalogo({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Busca }) {
-  const [{ id }, { erro, ok }] = await Promise.all([params, searchParams]);
-  const [r, produtos, vinculados, uso] = await carregar((ctx) =>
+  const [{ id }, sp] = await Promise.all([params, searchParams]);
+  const { erro, ok } = sp;
+  const [r, produtos, vinculados, uso, pendencias] = await carregar((ctx) =>
     Promise.all([
       obterRepresentada(ctx, id),
       listarProdutos(ctx, id),
       listarClientesDaRepresentada(ctx, id),
       obterUso(ctx),
+      pendenciasDoCatalogo(ctx, id),
     ]),
   );
+  // "Cadastrar produto" (pedido importado ou alerta abaixo): formulário pré-preenchido pela query string
+  const pre = { sku: sp.sku?.slice(0, 60) ?? "", nome: sp.nome?.slice(0, 160) ?? "", preco: sp.preco && Number(sp.preco) >= 0 ? sp.preco : "" };
+  const voltarPedido = sp.voltar_pedido && /^[0-9a-f-]{36}$/i.test(sp.voltar_pedido) ? sp.voltar_pedido : null;
+  const aCadastrar = pendencias.filter((x) => !x.produto);
+  const aVincular = pendencias.filter((x) => x.produto);
+  const linkCadastrar = (x: { sku: string; descricao: string | null; preco: number }) =>
+    `?${new URLSearchParams({ sku: x.sku, nome: x.descricao ?? "", preco: String(x.preco) })}#novo-produto`;
 
   return (
     <>
       <Mensagens erro={erro} ok={ok} />
+      {/* Pendências de pedidos importados: aparece só enquanto houver alguma e some ao resolver a última */}
+      {pendencias.length > 0 && (
+        <section className="card">
+          {aCadastrar.length > 0 && (
+            <>
+              <p className="aviso aviso-alerta importar-aviso">
+                <span className="circulo-icone"><Icone nome="alerta" tamanho={16} /></span>
+                <span>{aCadastrar.reduce((t, x) => t + x.itens, 0)} item(ns) de pedidos importados têm produtos que não estão no Catálogo. Cadastre-os para vincular aos pedidos.</span>
+              </p>
+              <div className="tabela-wrap">
+                <table className="tabela">
+                  <thead><tr><th>SKU</th><th>Descrição da planilha</th><th className="num">Itens afetados</th><th>Ação</th></tr></thead>
+                  <tbody>
+                    {aCadastrar.map((x) => (
+                      <tr key={x.sku}>
+                        <td data-rotulo="SKU"><code>{x.sku}</code></td>
+                        <td data-rotulo="Descrição da planilha">{x.descricao ?? "—"}</td>
+                        <td className="num" data-rotulo="Itens afetados">{x.itens} em {x.pedidos} pedido(s)</td>
+                        <td data-rotulo="Ação"><Link className="btn-suave btn-peq" href={linkCadastrar(x)}><Icone nome="mais" tamanho={14} /> Cadastrar produto</Link></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+          {aVincular.length > 0 && (
+            <>
+              <p className="aviso aviso-alerta importar-aviso">
+                <span className="circulo-icone"><Icone nome="link" tamanho={16} /></span>
+                <span>{aVincular.reduce((t, x) => t + x.itens, 0)} item(ns) de pedidos aguardam vínculo: o SKU já está no Catálogo, mas foi cadastrado sem ligar os itens pendentes.</span>
+              </p>
+              <p className="dica">Este caso é separado do anterior porque o produto já existe: basta ligar os itens pendentes a ele, sem cadastrar nada de novo.</p>
+              <div className="tabela-wrap">
+                <table className="tabela">
+                  <thead><tr><th>SKU</th><th>Produto encontrado</th><th className="num">Itens afetados</th><th>Ação</th></tr></thead>
+                  <tbody>
+                    {aVincular.map((x) => (
+                      <tr key={x.sku}>
+                        <td data-rotulo="SKU"><code>{x.sku}</code></td>
+                        <td data-rotulo="Produto encontrado">{x.produto!.nome}</td>
+                        <td className="num" data-rotulo="Itens afetados">{x.itens} em {x.pedidos} pedido(s)</td>
+                        <td data-rotulo="Ação">
+                          <form action={vincularProdutoPendentesAction.bind(null, r.id, x.sku)}>
+                            <BotaoConfirmar
+                              className="btn-suave btn-peq"
+                              texto="Vincular produto"
+                              pergunta={`Vincular ${x.itens} item(ns) pendente(s) do SKU ${x.sku} ao produto "${x.produto!.nome}" do Catálogo? O preço dos itens nos pedidos não muda.`}
+                            />
+                          </form>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
+        </section>
+      )}
       <section className="card">
         <AvisoLimite uso={uso} recurso="pdf_mes" />
         <div className="barra-acoes">
@@ -108,14 +182,18 @@ export default async function RepresentadaCatalogo({ params, searchParams }: { p
           </div>
         )}
 
-        <h3 className="titulo-icone"><Icone nome="mais" tamanho={18} /> Novo produto</h3>
+        <h3 className="titulo-icone" id="novo-produto"><Icone nome="mais" tamanho={18} /> Novo produto</h3>
+        {(pre.sku || voltarPedido) && (
+          <p className="dica">Pré-preenchido a partir do pedido importado; ao salvar, os itens pendentes com este SKU são vinculados ao produto{voltarPedido && " e você volta para o pedido"}.</p>
+        )}
         <form action={criarProdutoAction.bind(null, r.id)} className="grade">
-          <Campo label="SKU *" name="sku" required />
-          <Campo label="Nome *" name="nome" required minLength={2} />
+          {voltarPedido && <input type="hidden" name="voltar_pedido" value={voltarPedido} />}
+          <Campo label="SKU *" name="sku" required defaultValue={pre.sku} />
+          <Campo label="Nome *" name="nome" required minLength={2} defaultValue={pre.nome} />
           <Campo label="Unidade" name="unidade" placeholder="un, cx, kg" />
           <Campo label="Categoria" name="categoria" placeholder="Ex.: Linha escolar" />
           <Campo label="NCM" name="ncm" inputMode="numeric" maxLength={10} placeholder="8 dígitos (opcional)" />
-          <Campo label="Preço padrão *" name="preco" type="number" step="0.01" min="0" required />
+          <Campo label="Preço padrão *" name="preco" type="number" step="0.01" min="0" required defaultValue={pre.preco} />
           <Campo label="Desc. máx. (%)" name="desconto_max" type="number" step="0.01" min="0" max="100" defaultValue="0" />
           <Campo label="Comissão (%)" name="comissao" type="number" step="0.01" min="0" max="100" placeholder={r.comissao_percentual != null ? `Vazio = fixa ${formatarPercentual(Number(r.comissao_percentual))}` : "Vazio = sem comissão"} />
           <Campo label="Descrição" name="descricao" />

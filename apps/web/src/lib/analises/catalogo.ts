@@ -81,7 +81,7 @@ export const PROXIMA_DIMENSAO: Partial<Record<DimensaoId, DimensaoId[]>> = {
 };
 export const LIMITES = [15, 50, 100, 500] as const;
 
-export const ROTULO_CANAL: Record<string, string> = { app: "App", catalogo_web: "Catálogo web", whatsapp: "WhatsApp" };
+export const ROTULO_CANAL: Record<string, string> = { app: "App", catalogo_web: "Catálogo web", whatsapp: "WhatsApp", importacao: "Importação" };
 
 /* ---------- Validação da spec (servidor) ---------- */
 

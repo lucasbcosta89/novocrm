@@ -92,4 +92,13 @@ export interface ConfiguracaoImportacao<T> {
    * ignorada (nada a gravar). É o que faz o reenvio do arquivo corrigido gravar só o que antes falhou.
    */
   semAlteracao?: (dados: ResultadoValidacaoLinha["dados"], existente: unknown) => boolean;
+  /**
+   * Entidades em que várias linhas formam um registro (ex.: pedido = várias linhas de itens): roda depois da
+   * validação linha a linha, pode acrescentar erros/alertas às linhas (o motor reclassifica em seguida).
+   */
+  agrupar?: (linhas: ResultadoValidacaoLinha[], valoresExistentesNaBase: Map<string, unknown>) => void;
+  /** Prévia do que será gravado, mostrada na conferência (ex.: pedidos agrupados com seus itens). */
+  previa?: (linhas: ResultadoValidacaoLinha[], valoresExistentesNaBase: Map<string, unknown>) => { colunas: string[]; linhas: (string | number)[][] };
+  /** Modelo .xlsx pronto (formatado) em public/; sem ele, o modelo é gerado a partir de colunasEsperadas. */
+  modeloUrl?: string;
 }

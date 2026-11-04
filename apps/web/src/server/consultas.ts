@@ -9,6 +9,8 @@ export type PedidoResumo = {
   numero: string;
   /** Código exibido (Fase 14): gerado = numero, ou o código do ERP externo. */
   codigo_pedido: string;
+  /** Fase 17: pedido importado com item pendente (destacado em vermelho nas listas) */
+  tem_pendencias: boolean;
   data: string;
   status: string;
   valor_total: number;
@@ -18,7 +20,7 @@ export type PedidoResumo = {
 };
 
 const CAMPOS_PEDIDO =
-  "id, numero, codigo_pedido, data, status, valor_total, comissao_total, cliente:clientes(id, nome), representada:representadas(id, nome:razao_social)";
+  "id, numero, codigo_pedido, tem_pendencias, data, status, valor_total, comissao_total, cliente:clientes(id, nome), representada:representadas(id, nome:razao_social)";
 
 /** Termo de busca vira padrão ilike literal (%, _ e \ escapados); vazio = sem filtro. */
 export function padraoBusca(termo: string | null | undefined): string | null {

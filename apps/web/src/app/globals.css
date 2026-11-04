@@ -956,3 +956,11 @@ h1.titulo-icone .icone, h2.titulo-icone .icone, h3.titulo-icone .icone { color: 
 .menu-visoes { min-width: 260px; gap: 8px; }
 .linha-visao { display: flex; align-items: center; gap: 6px; }
 .linha-visao .btn-link { flex: 1; text-align: left; }
+
+/* Fase 17: pedido importado com pendência — o ÚNICO uso de vermelho na lista de pedidos */
+.linha-pendente > td { background: var(--danger-suave); }
+.numero-pendente { color: var(--danger-texto); font-weight: 600; }
+.selo-pendencias { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px; font-size: .72rem; font-weight: 600;
+  color: var(--danger-texto); border: 1px solid currentColor; background: var(--surface); white-space: nowrap; }
+.motivo-pendencia { color: var(--danger-texto); font-weight: 500; }
+.motivo-informativo { color: var(--atencao-texto); background: var(--atencao-suave); padding: 1px 6px; border-radius: 6px; }

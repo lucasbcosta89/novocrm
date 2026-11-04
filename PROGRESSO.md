@@ -118,6 +118,12 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Decisões do usuário: campos do cadastro atual; sem código; sem representada na planilha (vínculo feito na plataforma, com alerta na página Clientes); CNPJ/CPF obrigatório
   - [x] CNPJ/CPF obrigatório e com dígito verificador (mensagens distintas CPF/CNPJ) no formulário, app mobile, catálogo público e planilha; cliente antigo sem documento sinalizado para correção
   - [x] Importação: modelo .xlsx/.csv, cabeçalho exato, dedupe por CNPJ/CPF, lote transacional (importar_clientes), vazio não apaga, reenvio sem duplicar, quota de clientes
+- [x] Fase 17 — Cadastrar Pedidos com Excel (mesma importação genérica; cada linha é um item)
+  - [x] Decisões do usuário: cliente pelo CNPJ/CPF (não cadastrado = linha inválida); representada deduzida pelo SKU; migration mínima para pendências de produto; importados entram confirmados (com pendência = rascunho)
+  - [x] Modelo formatado (scripts/gerar-modelo-pedidos.ts, 3 abas, 5 exemplos dos agrupamentos); agrupamento por número ou consecutivo (cliente+data)
+  - [x] Numeração única (proximo_numero_pedido: maior P<dígitos> + advisory lock), também no app e no catálogo público
+  - [x] Pendências: item sem produto (vermelho na lista, tabela no detalhe, alerta no Catálogo com cadastrar/vincular) e preço divergente >10% (informativo)
+  - [x] Nova página /app/pedidos (menu) com "Cadastrar Pedidos com Excel"
 - [x] Fase 4 — Oportunidades e desafios por cliente + plano de ação
   - [x] Bloco "Oportunidades e Desafios" na página do cliente (+ Novo, tabela tipo/título/prioridade/status/data/ações)
   - [x] Plano de ação em /app/clientes/:id/oportunidades/:opId (adicionar, concluir, editar, excluir ações)

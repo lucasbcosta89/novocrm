@@ -18,6 +18,7 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
   const comissao = p.comissao[0];
   const editavel = p.status !== "cancelado" && comissao?.status !== "recebida";
   const descontoAcima = p.itens.some((i) => i.desconto_acima_max);
+  const pendentes = p.itens.filter((i) => i.pendencia);
 
   return (
     <>
@@ -97,6 +98,46 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
         </div>
       </section>
 
+      {pendentes.length > 0 && (
+        <section className="card" id="pendencias">
+          <h2 className="titulo-icone"><Icone nome="alerta" tamanho={20} /> Pendências deste pedido</h2>
+          <p className="dica">
+            Fica separada da lista de itens porque mostra o que veio da planilha e ainda precisa de ação sua; os itens abaixo
+            já estão gravados no pedido com o preço da planilha.
+          </p>
+          <div className="tabela-wrap">
+            <table className="tabela">
+              <thead><tr><th>SKU</th><th>Descrição da planilha</th><th className="num">Quantidade</th><th className="num">Preço Unitário</th><th>Motivo</th><th>Ação</th></tr></thead>
+              <tbody>
+                {pendentes.map((i) => (
+                  <tr key={i.id}>
+                    <td data-rotulo="SKU"><code>{i.sku_planilha ?? i.produto?.sku ?? "—"}</code></td>
+                    <td data-rotulo="Descrição da planilha">{i.descricao ?? "—"}</td>
+                    <td className="num" data-rotulo="Quantidade">{String(i.quantidade).replace(".", ",")}</td>
+                    <td className="num" data-rotulo="Preço Unitário">{formatarMoeda(i.preco_unitario)}</td>
+                    <td data-rotulo="Motivo">
+                      {i.pendencia === "produto_nao_cadastrado"
+                        ? <span className="motivo-pendencia">Produto não cadastrado no Catálogo</span>
+                        : <span className="motivo-informativo">Preço da planilha difere do Catálogo</span>}
+                    </td>
+                    <td data-rotulo="Ação">
+                      {i.pendencia === "produto_nao_cadastrado" && p.representada ? (
+                        <Link className="btn-suave btn-peq" href={`/app/representadas/${p.representada.id}/catalogo?${new URLSearchParams({
+                          novo: "1", sku: i.sku_planilha ?? "", nome: i.descricao ?? "", preco: String(i.preco_unitario), voltar_pedido: p.id,
+                        })}#novo-produto`}>
+                          <Icone nome="mais" tamanho={14} /> Cadastrar produto
+                        </Link>
+                      ) : <span className="dica">—</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {p.tem_pendencias && p.status === "rascunho" && <p className="dica">Depois de resolver as pendências de produto, use “Confirmar pedido” para lançar a comissão.</p>}
+        </section>
+      )}
+
       <section className="card">
         <h2 className="titulo-icone"><Icone nome="pacote" tamanho={20} /> Itens</h2>
         <div className="tabela-wrap">
@@ -107,7 +148,7 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
             <tbody>
               {p.itens.map((i) => (
                 <tr key={i.id}>
-                  <td><code>{i.produto?.sku ?? "—"}</code></td>
+                  <td><code>{i.produto?.sku ?? i.sku_planilha ?? "—"}</code></td>
                   <td>{i.descricao}</td>
                   <td>{String(i.quantidade).replace(".", ",")}</td>
                   <td>{formatarMoeda(i.preco_unitario)}</td>

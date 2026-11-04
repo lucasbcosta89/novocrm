@@ -1,5 +1,6 @@
 import type { ConfiguracaoImportacao } from "@/lib/cadastros/tipos";
 import { importacaoClientes } from "@/lib/cadastros/importacao-clientes";
+import { importacaoPedidos } from "@/lib/cadastros/importacao-pedidos";
 import { importacaoRepresentadas } from "@/lib/cadastros/importacao-representadas";
 
 /**
@@ -10,6 +11,7 @@ import { importacaoRepresentadas } from "@/lib/cadastros/importacao-representada
 const REGISTRO = {
   representadas: importacaoRepresentadas,
   clientes: importacaoClientes,
+  pedidos: importacaoPedidos,
 };
 
 export type EntidadeImportacao = keyof typeof REGISTRO;

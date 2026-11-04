@@ -6,6 +6,7 @@ import type { RelatorioImportacao, ResultadoValidacaoLinha } from "@/lib/cadastr
 import { baixarArquivo, baixarModelo, EXTENSOES_IMPORTACAO, lerPlanilha, linhasComErroCsv, relatorioErrosCsv } from "@/lib/importacao/arquivos";
 import { resumirValidacao, separarParaGravacao, validarPlanilha, type LinhaBruta } from "@/lib/importacao/motor";
 import { IMPORTACOES, type EntidadeImportacao } from "@/lib/importacao/registro";
+import { Modal } from "@/app/app/oportunidades/comum";
 import { Icone } from "./icones";
 
 const ETAPAS = ["Upload", "Pré-validação", "Conferência", "Confirmação", "Resultado"] as const;
@@ -41,6 +42,7 @@ export function ImportacaoPlanilha({ entidade, voltar }: { entidade: EntidadeImp
   const [arquivo, setArquivo] = useState<File | null>(null);
   const [fase, setFase] = useState<Fase>({ tipo: "upload" });
   const [filtro, setFiltro] = useState<"todos" | "invalida" | "com_alerta">("todos");
+  const [avisoFechado, setAvisoFechado] = useState(false);
   const atual = ETAPA_DA_FASE[fase.tipo];
 
   async function prevalidar() {
@@ -120,7 +122,9 @@ export function ImportacaoPlanilha({ entidade, voltar }: { entidade: EntidadeImp
                 </p>
               )}
               <div className="acoes-linha">
-                <button type="button" className="btn-suave btn-peq" onClick={() => baixarModelo(config, "xlsx")}><Icone nome="download" tamanho={16} /> Modelo .xlsx</button>
+                {config.modeloUrl
+                  ? <a className="btn-suave btn-peq" href={config.modeloUrl} download><Icone nome="download" tamanho={16} /> Modelo .xlsx</a>
+                  : <button type="button" className="btn-suave btn-peq" onClick={() => baixarModelo(config, "xlsx")}><Icone nome="download" tamanho={16} /> Modelo .xlsx</button>}
                 <button type="button" className="btn-suave btn-peq" onClick={() => baixarModelo(config, "csv")}><Icone nome="download" tamanho={16} /> Modelo .csv</button>
               </div>
             </div>
@@ -166,6 +170,20 @@ export function ImportacaoPlanilha({ entidade, voltar }: { entidade: EntidadeImp
               <div className="kpi"><div><dt>Inválidas</dt><dd className="atrasada">{r.invalidas}</dd></div></div>
             </dl>
             {fase.erro && <p className="aviso aviso-erro" role="alert"><span className="circulo-icone"><Icone nome="alerta" tamanho={16} /></span>{fase.erro}</p>}
+            {config.previa && (() => {
+              const p = config.previa(fase.linhas, fase.existentes);
+              return p.linhas.length > 0 && (
+                <div className="grade-1">
+                  <h3 className="titulo-icone"><Icone nome="documento" tamanho={18} /> Prévia do que será gravado ({p.linhas.length})</h3>
+                  <div className="tabela-wrap importar-erros">
+                    <table className="tabela">
+                      <thead><tr>{p.colunas.map((c) => <th key={c}>{c}</th>)}</tr></thead>
+                      <tbody>{p.linhas.slice(0, MAX_PROBLEMAS_TELA).map((l, i) => <tr key={i}>{l.map((c, j) => <td key={j} data-rotulo={p.colunas[j]}>{c}</td>)}</tr>)}</tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })()}
             {r.com_alerta + r.invalidas > 0 && (
               <>
                 <div className="acoes-linha">
@@ -213,6 +231,19 @@ export function ImportacaoPlanilha({ entidade, voltar }: { entidade: EntidadeImp
         const lista = problemas(rel.linhas, "invalida");
         return (
           <section className="card grade-1">
+            {config.mensagens.avisoComAlertas && rel.com_alerta > 0 && !avisoFechado && (
+              <Modal titulo="Importação concluída com pendências" onFechar={() => setAvisoFechado(true)} largo={false}>
+                <p className="aviso aviso-alerta importar-aviso" role="alert">
+                  <span className="circulo-icone"><Icone nome="alerta" tamanho={16} /></span>
+                  <span>{config.mensagens.avisoComAlertas}</span>
+                </p>
+                <p className="dica">Os {config.mensagens.plural} foram gravados; só os itens marcados precisam de ajuste.</p>
+                <div className="acoes-linha">
+                  <Link className="btn" href={voltar}>{config.mensagens.botaoAviso ?? `Ver ${config.mensagens.plural}`}</Link>
+                  <button type="button" className="btn-link" onClick={() => setAvisoFechado(true)}>Fechar</button>
+                </div>
+              </Modal>
+            )}
             <p className={rel.invalidas ? "aviso aviso-alerta importar-aviso" : "aviso aviso-ok importar-aviso"} role="status">
               <span className="circulo-icone"><Icone nome={rel.invalidas ? "alerta" : "check"} tamanho={16} /></span>
               <span>

@@ -3,6 +3,8 @@
 import { redirect, unstable_rethrow } from "next/navigation";
 import { validarRepresentada, type CampoRepresentada } from "@/lib/cadastros/representada";
 import { comParam } from "@/lib/url";
+import { idSchema } from "@/lib/validacao";
+import { vincularPendentesAoProduto, vincularProdutoPendentes } from "@/server/pedidos";
 import { executarAcao } from "@/server/acao";
 import { obterContexto } from "@/server/contexto";
 import { normalizarErro } from "@/server/erros";
@@ -118,12 +120,34 @@ export async function excluirRepresentadaAction(id: string) {
   });
 }
 
+/**
+ * Novo produto. Sempre vincula os itens de pedidos importados que estavam pendentes com o mesmo SKU (o preço dos
+ * itens não muda). voltar_pedido (vindo de "Cadastrar produto" na página do pedido): volta para aquele pedido.
+ */
 export async function criarProdutoAction(representadaId: string, fd: FormData) {
-  await executarAcao((ctx) => criarProduto(ctx, representadaId, dados(fd)), {
-    ok: `${BASE}/${representadaId}/catalogo`,
-    erro: `${BASE}/${representadaId}/catalogo`,
-    mensagem: "Produto adicionado",
-  });
+  const voltarPedido = idSchema.safeParse(fd.get("voltar_pedido")).data;
+  let mensagem = "Produto adicionado";
+  await executarAcao(
+    async (ctx) => {
+      const p = await criarProduto(ctx, representadaId, dados(fd));
+      const vinculados = await vincularPendentesAoProduto(ctx, p.id);
+      if (vinculados) mensagem = `Produto adicionado e vinculado a ${vinculados} item(ns) de pedido pendente(s)`;
+      return p;
+    },
+    {
+      ok: () => comParam(voltarPedido ? `/app/pedidos/${voltarPedido}` : `${BASE}/${representadaId}/catalogo`, "ok", mensagem),
+      erro: voltarPedido ? `${BASE}/${representadaId}/catalogo?voltar_pedido=${voltarPedido}#novo-produto` : `${BASE}/${representadaId}/catalogo`,
+    },
+  );
+}
+
+/** "Vincular produto" (alerta do Catálogo, caso 2): SKU já cadastrado, liga os itens pendentes a ele. */
+export async function vincularProdutoPendentesAction(representadaId: string, sku: string) {
+  let mensagem = "";
+  await executarAcao(
+    async (ctx) => { const n = await vincularProdutoPendentes(ctx, representadaId, sku); mensagem = `${n} item(ns) de pedido vinculado(s) ao SKU ${sku}`; },
+    { ok: () => comParam(`${BASE}/${representadaId}/catalogo`, "ok", mensagem), erro: `${BASE}/${representadaId}/catalogo` },
+  );
 }
 
 export async function atualizarProdutoAction(representadaId: string, produtoId: string, fd: FormData) {
