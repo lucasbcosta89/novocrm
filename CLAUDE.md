@@ -23,6 +23,14 @@ Mercado Pago (assinaturas), Cloudflare (deploy/R2/domínio), GitHub (versionamen
 - Fim de cada fase: commit + tag fase-N. Só avança quando o critério de pronto da fase está verde.
 - Não pergunte ao usuário; execute com defaults sensatos. Responda apenas: arquivos alterados, erros, critério de pronto.
 
+## Design (marca Plurima)
+- Fonte única: docs/design/DESIGN.md. Leia antes de criar/alterar qualquer página pública
+  (site, blog, landing, preços, cadastro) ou tela do produto.
+- Resumo: promessa única "a Plurima consolida o que está disperso"; peso empresarial com
+  execução leve (tipografia firme, muito branco, zero ornamento); telas reais > ilustrações;
+  azul = ação, verde = dinheiro positivo, nenhuma outra cor com significado.
+- Novas diretrizes de design do usuário vão para DESIGN.md, não para arquivos soltos.
+
 ## Comandos
 - dev web: npm run dev | migração: supabase db push | status: supabase status
 - deploy: push na main (GitHub Actions → Cloudflare Pages) | webhook local: wrangler tunnel (ou cloudflared)
