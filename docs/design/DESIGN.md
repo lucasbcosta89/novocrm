@@ -593,9 +593,10 @@ saem consolidados.
 ### Pendências da marca
 1. **Vetor mestre (SVG).** Os arquivos são WebP 1024px gerados como imagem (há ruído no fundo
    navy). Para o site é preciso o logo em SVG — nítido em qualquer tamanho e leve.
-2. **Duas versões do símbolo em circulação.** Nos arquivos, o nó central e as linhas da direita
-   são verdes e as linhas têm a cor dos nós; no SVG do template, o nó central é azul e as linhas
-   são cinza (`#94A3B8`). Definir uma só antes de vetorizar (o WebP é tratado como oficial).
+2. ~~Duas versões do símbolo~~ — **decidido pelo usuário (05/11/2026): os arquivos de imagem são
+   oficiais.** Símbolo oficial: 3 nós + linhas à esquerda em azul; nó central e 6 linhas + nós à
+   direita em verde; cada linha tem a cor dos nós do seu lado. O SVG do template (nó central
+   azul, linhas cinza `#94A3B8`) está **desatualizado** e não deve ser usado.
 3. **Cores do símbolo ≠ tokens.** O azul/verde dos arquivos são próximos, mas não iguais, a
    `--blue #2962FF` e `--green #00C853`. No vetor, usar os tokens exatos.
 
@@ -631,6 +632,7 @@ O DESIGN.md prevalece; ao portar o template para Next.js, corrigir:
 | Header "Testar grátis" × CTA "Testar grátis por 7 dias" | Um CTA, um texto | Mesmo rótulo nos dois (ex.: "Testar grátis por 7 dias"; no header cabe só "Testar grátis" se faltar espaço no celular) |
 | Painel de KPIs desenhado em HTML | Princípio 3 prefere tela real | Aceito como recorte fiel do produto, com dados realistas; trocar por screenshot quando houver |
 | `html { scroll-behavior: smooth }` | — | OK, já anulado por reduced-motion |
+| SVG inline do logo (nó central azul, linhas cinza, 5 nós à direita) | Versão não oficial do símbolo | Usar o logo oficial de `assets/brand/` (SVG vetorizado dele, quando existir) |
 
 ## Acessibilidade e performance
 
