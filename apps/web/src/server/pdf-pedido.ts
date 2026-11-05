@@ -12,7 +12,7 @@ import { imagemDataUrl } from "./relatorios";
 
 export type ItemPdf = {
   produto_id: string | null; descricao: string | null; quantidade: number; preco_unitario: number;
-  desconto_percentual: number; subtotal: number;
+  desconto_percentual: number; acrescimo_percentual?: number; subtotal: number;
   produto: { sku: string; nome: string; ncm: string | null; imagem_url: string | null } | null;
 };
 export type DadosPedidoPdf = {
@@ -29,7 +29,7 @@ export async function dadosPedidoPdf({ supabase }: Contexto, pedidoId: string): 
     .select(
       `id, numero, codigo_pedido, data, status, valor_total, forma_pagamento, prazo_tipo, prazo_dias,
        cliente:clientes(id, nome, whatsapp, celular), representada:representadas(nome:razao_social),
-       itens:pedido_itens(produto_id, descricao, quantidade, preco_unitario, desconto_percentual, subtotal, produto:produtos(sku, nome, ncm, imagem_url))`,
+       itens:pedido_itens(produto_id, descricao, quantidade, preco_unitario, desconto_percentual, acrescimo_percentual, subtotal, produto:produtos(sku, nome, ncm, imagem_url))`,
     )
     .eq("id", idSchema.parse(pedidoId))
     .maybeSingle<DadosPedidoPdf>();
@@ -60,10 +60,11 @@ async function fotosDosItens(itens: ItemPdf[]): Promise<Map<string, string | nul
 /** Corpo da tabela: cabeçalho, uma linha por item e "TOTAL DO PEDIDO" (puro: testável). */
 export function tabelaItensPedido(d: Pick<DadosPedidoPdf, "itens" | "valor_total">, fotos: Map<string, string | null>) {
   const comDesconto = d.itens.some((i) => Number(i.desconto_percentual) > 0);
+  const comAcrescimo = d.itens.some((i) => Number(i.acrescimo_percentual ?? 0) > 0);
   const th = (text: string, alignment: "left" | "right" | "center" = "left"): TableCell => ({ text, style: "th", alignment });
   const cabecalhoTabela: TableCell[] = [
     th("Foto", "center"), th("Código/SKU"), th("Produto"), th("NCM"), th("Qtd.", "right"), th("Valor unit.", "right"),
-    ...(comDesconto ? [th("Desc. %", "right")] : []), th("Valor total", "right"),
+    ...(comAcrescimo ? [th("Acrésc. %", "right")] : []), ...(comDesconto ? [th("Desc. %", "right")] : []), th("Valor total", "right"),
   ];
   const linhas: TableCell[][] = d.itens.map((i) => {
     const foto = i.produto?.imagem_url ? fotos.get(i.produto.imagem_url) : null;
@@ -74,6 +75,7 @@ export function tabelaItensPedido(d: Pick<DadosPedidoPdf, "itens" | "valor_total
       { text: i.produto?.ncm ?? "—" },
       { text: qtd(i.quantidade), alignment: "right" },
       { text: formatarMoeda(Number(i.preco_unitario)), alignment: "right" },
+      ...(comAcrescimo ? [{ text: Number(i.acrescimo_percentual ?? 0) > 0 ? pctBR(Number(i.acrescimo_percentual)) : "—", alignment: "right" } as TableCell] : []),
       ...(comDesconto ? [{ text: Number(i.desconto_percentual) > 0 ? pctBR(i.desconto_percentual) : "—", alignment: "right" } as TableCell] : []),
       { text: formatarMoeda(Number(i.subtotal)), alignment: "right" },
     ];
@@ -84,11 +86,11 @@ export function tabelaItensPedido(d: Pick<DadosPedidoPdf, "itens" | "valor_total
     ...Array.from({ length: colunas - 2 }, () => ({ text: "" })),
     { text: formatarMoeda(Number(d.valor_total)), bold: true, fontSize: 12, color: COR.primaria, alignment: "right" },
   ];
-  return { comDesconto, body: [cabecalhoTabela, ...linhas, total] };
+  return { comDesconto, comAcrescimo, body: [cabecalhoTabela, ...linhas, total] };
 }
 
 export async function pdfPedido(d: DadosPedidoPdf, representante?: Representante): Promise<Uint8Array> {
-  const { comDesconto, body } = tabelaItensPedido(d, await fotosDosItens(d.itens));
+  const { comDesconto, comAcrescimo, body } = tabelaItensPedido(d, await fotosDosItens(d.itens));
 
   const pagamento: string[] = [];
   if (d.forma_pagamento) pagamento.push(`Forma de pagamento: ${ROTULO_FORMA_PAGAMENTO[d.forma_pagamento] ?? d.forma_pagamento}`);
@@ -101,7 +103,7 @@ export async function pdfPedido(d: DadosPedidoPdf, representante?: Representante
       table: {
         headerRows: 1,
         dontBreakRows: true,
-        widths: [44, "auto", "*", "auto", "auto", "auto", ...(comDesconto ? ["auto" as const] : []), "auto"],
+        widths: [44, "auto", "*", "auto", "auto", "auto", ...(comAcrescimo ? ["auto" as const] : []), ...(comDesconto ? ["auto" as const] : []), "auto"],
         body,
       },
       layout: {

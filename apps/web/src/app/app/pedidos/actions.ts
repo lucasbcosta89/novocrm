@@ -5,14 +5,19 @@ import { cancelarPedido, confirmarPedido, criarPedido, editarPedido, excluirPedi
 
 const BASE = "/app/pedidos";
 
-/** Itens vêm como qtd_<produtoId> / desc_<produtoId> (desconto em %); só entram os com quantidade > 0. */
+/** Itens vêm como qtd_<produtoId> / desc_<produtoId> / acr_<produtoId> (desconto e acréscimo em %); só entram os com quantidade > 0. */
 function itensDoForm(fd: FormData) {
-  const itens: { produto_id: string; quantidade: string; desconto_percentual: string }[] = [];
+  const itens: { produto_id: string; quantidade: string; desconto_percentual: string; acrescimo_percentual: string }[] = [];
   for (const [chave, valor] of fd.entries()) {
     if (!chave.startsWith("qtd_") || typeof valor !== "string" || !(Number(valor.replace(",", ".")) > 0)) continue;
     const produto_id = chave.slice(4);
     const desconto = fd.get(`desc_${produto_id}`);
-    itens.push({ produto_id, quantidade: valor, desconto_percentual: typeof desconto === "string" && desconto ? desconto : "0" });
+    const acrescimo = fd.get(`acr_${produto_id}`);
+    itens.push({
+      produto_id, quantidade: valor,
+      desconto_percentual: typeof desconto === "string" && desconto ? desconto : "0",
+      acrescimo_percentual: typeof acrescimo === "string" && acrescimo ? acrescimo : "0",
+    });
   }
   return itens;
 }

@@ -13,12 +13,14 @@ export type LinhaEdicao = {
   quantidade: number;
   preco: number;
   desconto: number;
+  /** % acima do preço de tabela (só pedidos) */
+  acrescimo?: number;
   desconto_max: number;
   /** quantidade máxima permitida (ex.: devolução vinculada a um pedido: vendida − já devolvida) */
   max?: number;
 };
 
-type Valores = Record<string, { quantidade: string; preco: string; desconto: string }>;
+type Valores = Record<string, { quantidade: string; preco: string; desconto: string; acrescimo: string }>;
 const num = (v: string) => Number(v.replace(",", ".")) || 0;
 const normalizar = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
@@ -27,16 +29,19 @@ const normalizar = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toL
  * Quantidade 0 = item fora do documento. Subtotais e total recalculam na hora (mesma regra do banco).
  * Busca por SKU ou nome filtra as linhas (os itens já incluídos continuam visíveis).
  */
-export function ItensEditaveis({ linhas, documento = "pedido" }: { linhas: LinhaEdicao[]; documento?: string }) {
+export function ItensEditaveis({ linhas, documento = "pedido", comAcrescimo = false }: { linhas: LinhaEdicao[]; documento?: string; comAcrescimo?: boolean }) {
   const [valores, setValores] = useState<Valores>(() =>
-    Object.fromEntries(linhas.map((l) => [l.produto_id, { quantidade: String(l.quantidade), preco: String(l.preco), desconto: String(l.desconto) }])),
+    Object.fromEntries(linhas.map((l) => [l.produto_id, {
+      quantidade: String(l.quantidade), preco: String(l.preco), desconto: String(l.desconto), acrescimo: String(l.acrescimo ?? 0),
+    }])),
   );
+  const sub = (v: Valores[string]) => subtotalItem(num(v.quantidade), num(v.preco), num(v.desconto), comAcrescimo ? num(v.acrescimo) : 0);
   const [busca, setBusca] = useState("");
   const mudar = (id: string, campo: keyof Valores[string], v: string) => setValores((x) => ({ ...x, [id]: { ...x[id]!, [campo]: v } }));
 
   const total = linhas.reduce((t, l) => {
     const v = valores[l.produto_id]!;
-    return t + (num(v.quantidade) > 0 ? subtotalItem(num(v.quantidade), num(v.preco), num(v.desconto)) : 0);
+    return t + (num(v.quantidade) > 0 ? sub(v) : 0);
   }, 0);
   const incluidos = linhas.filter((l) => num(valores[l.produto_id]!.quantidade) > 0).length;
   const termo = normalizar(busca.trim());
@@ -56,7 +61,7 @@ export function ItensEditaveis({ linhas, documento = "pedido" }: { linhas: Linha
           <thead>
             <tr>
               <th>SKU</th><th>Produto</th><th className="num">Qtd.</th><th className="num">Preço un. (R$)</th>
-              <th className="num">Desconto (%)</th><th className="num">Desc. máx.</th><th className="num">Subtotal</th>
+              <th className="num">Desconto (%)</th>{comAcrescimo && <th className="num">Acréscimo (%)</th>}<th className="num">Desc. máx.</th><th className="num">Subtotal</th>
             </tr>
           </thead>
           <tbody>
@@ -87,22 +92,28 @@ export function ItensEditaveis({ linhas, documento = "pedido" }: { linhas: Linha
                       </span>
                     )}
                   </td>
+                  {comAcrescimo && (
+                    <td className="num">
+                      <input className="input-num" name={`acr_${l.produto_id}`} type="number" min="0" max="100" step="0.01" value={v.acrescimo}
+                        aria-label={`Acréscimo em % de ${l.nome}`} onChange={(e) => mudar(l.produto_id, "acrescimo", e.target.value)} />
+                    </td>
+                  )}
                   <td className="num">{formatarPercentual(l.desconto_max)}</td>
-                  <td className="num">{ativo ? formatarMoeda(subtotalItem(num(v.quantidade), num(v.preco), num(v.desconto))) : "—"}</td>
+                  <td className="num">{ativo ? formatarMoeda(sub(v)) : "—"}</td>
                 </tr>
               );
             })}
           </tbody>
           <tfoot>
             <tr>
-              <th colSpan={6}>Total · {incluidos} {incluidos === 1 ? "item" : "itens"}</th>
+              <th colSpan={comAcrescimo ? 7 : 6}>Total · {incluidos} {incluidos === 1 ? "item" : "itens"}</th>
               <th className="num">{formatarMoeda(Math.round(total * 100) / 100)}</th>
             </tr>
           </tfoot>
         </table>
       </div>
       <p className="dica">
-        Quantidade 0 retira o produto {documento === "pedido" ? "do pedido" : `da ${documento}`}. Subtotal = qtd × preço × (1 − desconto%).
+        Quantidade 0 retira o produto {documento === "pedido" ? "do pedido" : `da ${documento}`}. Subtotal = qtd × preço × {comAcrescimo && "(1 + acréscimo%) × "}(1 − desconto%).
         {comLimite && " A quantidade não pode passar da vendida no pedido de origem (descontado o que já foi devolvido)."}
       </p>
     </>

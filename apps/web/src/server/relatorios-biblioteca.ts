@@ -15,7 +15,7 @@ const pct = (v: number | null) => (v == null ? "—" : `${v.toFixed(1).replace("
 const mesSP = (iso: string) => new Date(iso).toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }).slice(0, 7);
 const rotuloMes = (m: string) => `${m.slice(5, 7)}/${m.slice(0, 4)}`;
 
-type Item = { quantidade: number; preco_unitario: number; desconto_percentual: number; subtotal: number; descricao: string | null; produto: { sku: string; nome: string } | null };
+type Item = { quantidade: number; preco_unitario: number; desconto_percentual: number; acrescimo_percentual: number; subtotal: number; descricao: string | null; produto: { sku: string; nome: string } | null };
 export type PedidoVenda = {
   id: string; codigo_pedido: string; data: string; valor_total: number;
   cliente: { id: string; nome: string } | null;
@@ -29,7 +29,7 @@ async function pedidosVenda(ctx: Contexto, periodo: string, filtro: { cliente_id
     .from("pedidos")
     .select(
       `id, codigo_pedido, data, valor_total, cliente:clientes(id, nome), representada:representadas(id, nome:razao_social)${
-        comItens ? ", itens:pedido_itens(quantidade, preco_unitario, desconto_percentual, subtotal, descricao, produto:produtos(sku, nome))" : ""
+        comItens ? ", itens:pedido_itens(quantidade, preco_unitario, desconto_percentual, acrescimo_percentual, subtotal, descricao, produto:produtos(sku, nome))" : ""
       }`,
     )
     .in("status", VENDA)
@@ -134,11 +134,12 @@ export function pdfVendasCliente(d: DadosVendasCliente, rep?: Representante): Pr
           { titulo: "Produto", valor: (i) => i.produto?.nome ?? i.descricao ?? "—" },
           { titulo: "Qtd.", valor: (i) => String(Number(i.quantidade)).replace(".", ","), alinhar: "right", largura: "auto" },
           { titulo: "Preço un.", valor: (i) => formatarMoeda(i.preco_unitario), alinhar: "right", largura: "auto" },
+          { titulo: "Acrésc.", valor: (i) => formatarPercentual(Number(i.acrescimo_percentual)), alinhar: "right", largura: "auto" },
           { titulo: "Desc.", valor: (i) => formatarPercentual(i.desconto_percentual), alinhar: "right", largura: "auto" },
           { titulo: "Subtotal", valor: (i) => formatarMoeda(i.subtotal), alinhar: "right", largura: "auto" },
         ],
         p.itens ?? [],
-        { vazio: "Pedido sem itens.", totais: ["Total", "", "", "", "", formatarMoeda(p.valor_total)] },
+        { vazio: "Pedido sem itens.", totais: ["Total", "", "", "", "", "", formatarMoeda(p.valor_total)] },
       ),
     );
   }

@@ -143,7 +143,7 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
         <div className="tabela-wrap">
           <table className="tabela">
             <thead>
-              <tr><th>SKU</th><th>Produto</th><th>Qtd.</th><th>Preço un.</th><th>Desconto (%)</th><th>Subtotal</th><th>Comissão %</th><th>Comissão R$</th></tr>
+              <tr><th>SKU</th><th>Produto</th><th>Qtd.</th><th>Preço un.</th><th>Desconto (%)</th><th>Acréscimo (%)</th><th>Subtotal</th><th>Comissão %</th><th>Comissão R$</th></tr>
             </thead>
             <tbody>
               {p.itens.map((i) => (
@@ -156,6 +156,7 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
                     {formatarPercentual(i.desconto_percentual)}
                     {i.desconto_acima_max && <span className="txt-alerta com-dica" data-dica="Desconto Acima do Máximo Permitido" role="img" aria-label="Desconto Acima do Máximo Permitido"> <Icone nome="alerta" tamanho={14} /></span>}
                   </td>
+                  <td>{Number(i.acrescimo_percentual) > 0 ? formatarPercentual(i.acrescimo_percentual) : "—"}</td>
                   <td>{formatarMoeda(i.subtotal)}</td>
                   <td>{formatarPercentual(i.comissao_percentual)}</td>
                   <td>{p.status === "rascunho" ? <span className="dica">ao confirmar</span> : formatarMoeda(i.comissao_valor)}</td>
@@ -164,7 +165,7 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
             </tbody>
             <tfoot>
               <tr>
-                <th colSpan={5}>Total</th>
+                <th colSpan={6}>Total</th>
                 <th>{formatarMoeda(p.valor_total)}</th>
                 <th>{p.valor_total > 0 && p.status !== "rascunho" ? formatarPercentual(Math.round((p.comissao_total / p.valor_total) * 10000) / 100) : ""}</th>
                 <th>{p.status === "rascunho" ? "—" : formatarMoeda(p.comissao_total)}</th>

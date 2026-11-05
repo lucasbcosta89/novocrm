@@ -122,3 +122,30 @@ describe("fase 17 — importação de pedidos", () => {
     expect(lido.cabecalho).toEqual([...ROTULOS_PEDIDO]);
   });
 });
+
+describe("acréscimo por item (venda acima do preço de tabela)", () => {
+  it("subtotal = qtd × preço × (1 + acréscimo%) × (1 − desconto%), igual ao banco", async () => {
+    const { subtotalItem, pedidoSchema } = await import("@/lib/validacao");
+    expect(subtotalItem(2, 120, 0, 10)).toBe(264);
+    expect(subtotalItem(1, 100, 10, 20)).toBe(108);
+    expect(subtotalItem(3, 25.9, 0)).toBe(77.7);
+    const ID = "11111111-1111-4111-8111-111111111111";
+    const p = pedidoSchema.parse({ representada_id: ID, cliente_id: ID, itens: [{ produto_id: ID, quantidade: "1", acrescimo_percentual: "7,5" }] });
+    expect(p.itens[0]!.acrescimo_percentual).toBe(7.5);
+    expect(pedidoSchema.safeParse({ representada_id: ID, cliente_id: ID, itens: [{ produto_id: ID, quantidade: 1, acrescimo_percentual: 150 }] }).success).toBe(false);
+  });
+
+  it("planilha de pedidos: coluna 'Acréscimo (%)' opcional, validada e levada ao item", async () => {
+    expect(ROTULOS_PEDIDO).toContain("Acréscimo (%)");
+    expect(config.colunasObrigatorias).not.toContain("Acréscimo (%)");
+    const linhas = await validarPlanilha(config, config.colunasEsperadas, [
+      linha(2, { ...item("", "20/10/2026", CNPJ_A, "S1", "2", "10"), "Acréscimo (%)": "10" }),
+      linha(3, { ...item("", "21/10/2026", CNPJ_A, "S1", "1", "10"), "Acréscimo (%)": "150" }),
+    ], base());
+    expect(linhas[0]!.classificacao).toBe("valida");
+    expect(linhas[1]!.erros[0]!.mensagem).toBe("Acréscimo deve estar entre 0 e 100");
+    const [g] = agruparPedidos([linhas[0]!], base());
+    expect(g!.itens[0]!.acrescimo_percentual).toBe(10);
+    expect(config.previa!([linhas[0]!], base()).linhas[0]![5]).toBe(formatarMoeda(22));
+  });
+});

@@ -1,7 +1,7 @@
 import type { ConfiguracaoImportacao, ProblemaImportacao, ResultadoValidacaoLinha } from "./tipos";
 import { parseData, parseNumero, parsePercentual } from "@/lib/import/valores";
 import { chaveImportacao } from "@/lib/importacao/motor";
-import { documentoClienteSchema } from "@/lib/validacao";
+import { documentoClienteSchema, subtotalItem } from "@/lib/validacao";
 import { formatarMoeda } from "@/lib/formato";
 
 /**
@@ -23,6 +23,7 @@ export const COLUNAS_PEDIDO = {
   "Quantidade": "quantidade",
   "Preço Unitário": "preco_unitario",
   "Desconto (%)": "desconto_percentual",
+  "Acréscimo (%)": "acrescimo_percentual",
   "Forma de Pagamento": "forma_pagamento",
   "Prazo (dias)": "prazo_dias",
   "Observações": "observacoes",
@@ -91,6 +92,11 @@ function validarLinhaPedido(bruto: Record<string, string>, ctx: { valoresExisten
     if (d == null || d < 0 || d > 100) erro("Desconto (%)", "Desconto deve estar entre 0 e 100");
     else dados.desconto_percentual = Math.round(d * 100) / 100;
   }
+  if (v("Acréscimo (%)")) {
+    const a = parsePercentual(v("Acréscimo (%)"));
+    if (a == null || a < 0 || a > 100) erro("Acréscimo (%)", "Acréscimo deve estar entre 0 e 100");
+    else dados.acrescimo_percentual = Math.round(a * 100) / 100;
+  }
   if (v("Forma de Pagamento")) {
     const f = FORMA_POR_NOME.get(semAcento(v("Forma de Pagamento")));
     if (!f) erro("Forma de Pagamento", `Forma de Pagamento inválida: use ${Object.keys(FORMAS_PAGAMENTO_PLANILHA).join(", ")}`);
@@ -122,7 +128,7 @@ export type GrupoPedido = {
   linhas: number[];
   itens: {
     produto_id: string | null; sku: string; descricao: string | null; quantidade: number; preco_unitario: number;
-    desconto_percentual: number; pendencia: "produto_nao_cadastrado" | "preco_divergente" | null;
+    desconto_percentual: number; acrescimo_percentual: number; pendencia: "produto_nao_cadastrado" | "preco_divergente" | null;
   }[];
 };
 
@@ -205,7 +211,8 @@ export function agruparPedidos(linhas: ResultadoValidacaoLinha[], existentes: Ma
       }
       return {
         produto_id: produto?.produto_id ?? null, sku: String(l.dados.sku), descricao: (l.dados.descricao as string | undefined) ?? produto?.nome ?? null,
-        quantidade: Number(l.dados.quantidade), preco_unitario: preco, desconto_percentual: Number(l.dados.desconto_percentual ?? 0), pendencia,
+        quantidade: Number(l.dados.quantidade), preco_unitario: preco, desconto_percentual: Number(l.dados.desconto_percentual ?? 0),
+        acrescimo_percentual: Number(l.dados.acrescimo_percentual ?? 0), pendencia,
       };
     });
     prontos.push({
@@ -218,7 +225,7 @@ export function agruparPedidos(linhas: ResultadoValidacaoLinha[], existentes: Ma
   return prontos;
 }
 
-const totalGrupo = (g: GrupoPedido) => g.itens.reduce((t, i) => t + Math.round(i.quantidade * i.preco_unitario * (1 - i.desconto_percentual / 100) * 100) / 100, 0);
+const totalGrupo = (g: GrupoPedido) => g.itens.reduce((t, i) => t + subtotalItem(i.quantidade, i.preco_unitario, i.desconto_percentual, i.acrescimo_percentual), 0);
 const dataBR = (iso: string) => iso.split("-").reverse().join("/");
 
 export const importacaoPedidos: ConfiguracaoImportacao<{ numero_pedido: string }> = {
@@ -259,7 +266,7 @@ export const importacaoPedidos: ConfiguracaoImportacao<{ numero_pedido: string }
     "Quantidade e Preço Unitário. O Número do Pedido pode ficar vazio (é gerado automaticamente). O preço gravado é sempre o da planilha.",
   linhaExemplo: {
     "Número do Pedido": "1001", "Data do Pedido": "20/10/2026", "CNPJ/CPF do Cliente": "11.222.333/0001-81", "SKU do Produto": "SKU-001",
-    "Descrição do Produto": "Produto de exemplo", "Quantidade": "10", "Preço Unitário": "25,90", "Desconto (%)": "0",
+    "Descrição do Produto": "Produto de exemplo", "Quantidade": "10", "Preço Unitário": "25,90", "Desconto (%)": "0", "Acréscimo (%)": "0",
     "Forma de Pagamento": "Pix", "Prazo (dias)": "30", "Observações": "Linha de exemplo: apague antes de importar",
   },
 };

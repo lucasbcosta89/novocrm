@@ -11,6 +11,8 @@ export type PedidoItem = {
   quantidade: number;
   preco_unitario: number;
   desconto_percentual: number;
+  /** % acima do preço de tabela */
+  acrescimo_percentual: number;
   desconto_acima_max: boolean;
   subtotal: number;
   comissao_percentual: number;
@@ -44,7 +46,7 @@ export type Pedido = {
 
 const CAMPOS = `id, numero, codigo_pedido, codigo_gerado, tem_pendencias, data, status, valor_total, comissao_total, forma_pagamento, prazo_tipo, prazo_dias, origem, observacoes,
   cliente:clientes(id, nome), representada:representadas(id, nome:razao_social),
-  itens:pedido_itens(id, produto_id, descricao, quantidade, preco_unitario, desconto_percentual, desconto_acima_max, subtotal, comissao_percentual, comissao_valor, sku_planilha, pendencia, produto:produtos(sku)),
+  itens:pedido_itens(id, produto_id, descricao, quantidade, preco_unitario, desconto_percentual, acrescimo_percentual, desconto_acima_max, subtotal, comissao_percentual, comissao_valor, sku_planilha, pendencia, produto:produtos(sku)),
   comissao:comissoes(id, status, valor, percentual, data_prevista)`;
 
 export async function obterPedido({ supabase }: Contexto, id: string): Promise<Pedido> {

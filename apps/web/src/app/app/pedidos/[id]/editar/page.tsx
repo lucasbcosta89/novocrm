@@ -41,6 +41,7 @@ export default async function EditarPedidoPage({ params, searchParams }: { param
         quantidade: item ? Number(item.quantidade) : 0,
         preco: item ? Number(item.preco_unitario) : Number(tabela?.preco ?? pr.preco),
         desconto: item ? Number(item.desconto_percentual) : 0,
+        acrescimo: item ? Number(item.acrescimo_percentual) : 0,
         desconto_max: Number(tabela?.desconto_max ?? pr.desconto_max ?? 0),
       };
     })
@@ -71,7 +72,7 @@ export default async function EditarPedidoPage({ params, searchParams }: { param
               Pedido já confirmado: ao salvar, o valor e a comissão serão recalculados.
             </p>
           )}
-          <ItensEditaveis linhas={linhas} />
+          <ItensEditaveis linhas={linhas} comAcrescimo />
           <h2 className="titulo-icone"><Icone nome="cartao" tamanho={20} /> Pagamento</h2>
           <div className="grade">
             <PagamentoPedido forma={p.forma_pagamento} prazoTipo={p.prazo_tipo} prazoDias={p.prazo_dias} />

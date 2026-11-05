@@ -9,7 +9,7 @@ const P = "33333333-3333-4333-8333-333333333333";
 describe("pedidoSchema", () => {
   it("converte quantidades/desconto e exige itens", () => {
     const p = pedidoSchema.parse({ representada_id: R1, cliente_id: R2, itens: [{ produto_id: P, quantidade: "2", desconto_percentual: "1,5" }] });
-    expect(p.itens[0]).toEqual({ produto_id: P, quantidade: 2, desconto_percentual: 1.5 });
+    expect(p.itens[0]).toEqual({ produto_id: P, quantidade: 2, desconto_percentual: 1.5, acrescimo_percentual: 0 });
     expect(p.confirmar).toBe(false);
     expect(pedidoSchema.safeParse({ representada_id: R1, cliente_id: R2, itens: [] }).success).toBe(false);
     expect(pedidoSchema.safeParse({ representada_id: R1, cliente_id: R2, itens: [{ produto_id: P, quantidade: 0 }] }).success).toBe(false);
@@ -87,7 +87,7 @@ describe("edição de pedido", () => {
   it("aceita preço informado, desconto em % e prazo; rejeita lista vazia e preço negativo", async () => {
     const { edicaoPedidoSchema } = await import("@/lib/validacao");
     const e = edicaoPedidoSchema.parse({ prazo_tipo: "a_prazo", prazo_dias: "30", itens: [{ produto_id: P, quantidade: "2", preco_unitario: "80,00", desconto_percentual: "10" }] });
-    expect(e.itens[0]).toEqual({ produto_id: P, quantidade: 2, preco_unitario: 80, desconto_percentual: 10 });
+    expect(e.itens[0]).toEqual({ produto_id: P, quantidade: 2, preco_unitario: 80, desconto_percentual: 10, acrescimo_percentual: 0 });
     expect(e.prazo_dias).toBe(30);
     expect(edicaoPedidoSchema.parse({ prazo_tipo: "a_vista", prazo_dias: "30", itens: [{ produto_id: P, quantidade: 1, preco_unitario: 5 }] }).prazo_dias).toBeNull();
     expect(edicaoPedidoSchema.safeParse({ itens: [] }).success).toBe(false);

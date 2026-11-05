@@ -19,6 +19,7 @@ const COLUNAS: Coluna[] = [
   { titulo: "Quantidade", largura: 12, obrigatoria: true, formato: "Número inteiro ≥ 1", exemplo: "10", obs: "", numFmt: "0" },
   { titulo: "Preço Unitário", largura: 15, obrigatoria: true, formato: "R$ #.##0,00", exemplo: "25,90", obs: "Vale SEMPRE o preço da planilha, mesmo diferente do Catálogo (diferença acima de 10% fica só sinalizada).", numFmt: '"R$" #,##0.00' },
   { titulo: "Desconto (%)", largura: 13, obrigatoria: false, formato: "0 a 100, 2 casas", exemplo: "5,00", obs: "Desconto do item. Vazio = 0.", numFmt: "0.00" },
+  { titulo: "Acréscimo (%)", largura: 13, obrigatoria: false, formato: "0 a 100, 2 casas", exemplo: "10,00", obs: "Venda acima do preço de tabela: % somado ao preço do item. Vazio = 0. Subtotal = qtd × preço × (1 + acréscimo%) × (1 − desconto%).", numFmt: "0.00" },
   { titulo: "Forma de Pagamento", largura: 20, obrigatoria: false, formato: "Lista", exemplo: "Pix", obs: "Dinheiro, Crédito, Débito, Bonificação, Pix ou Outros. Vale a da primeira linha de cada pedido." },
   { titulo: "Prazo (dias)", largura: 12, obrigatoria: false, formato: "Inteiro de 1 a 365", exemplo: "30", obs: "Vazio = à vista. Vale o da primeira linha de cada pedido.", numFmt: "0" },
   { titulo: "Observações", largura: 36, obrigatoria: false, formato: "Texto (até 500)", exemplo: "Entregar pela manhã", obs: "Observações do pedido (vale a da primeira linha de cada pedido)." },
@@ -49,11 +50,11 @@ COLUNAS.forEach((c, i) => {
 // 5 exemplos: 2 linhas com o mesmo número (1 pedido); 2 sem número, mesmo cliente e data (1 pedido automático);
 // 1 sem número com outra data (outro pedido automático). Número vazio = célula realmente vazia.
 const exemplos: (string | number | Date | null)[][] = [
-  ["1001", data(20, 10, 2026), "11.222.333/0001-81", "SKU-001", "Camiseta básica", 10, 25.9, 0, "Pix", 30, "Pedido do ERP"],
-  ["1001", data(20, 10, 2026), "11.222.333/0001-81", "SKU-002", "Calça jeans", 5, 89.9, 5, null, null, null],
-  [null, data(21, 10, 2026), "45.723.174/0001-10", "SKU-001", "Camiseta básica", 3, 25.9, 0, "Crédito", null, null],
-  [null, data(21, 10, 2026), "45.723.174/0001-10", "SKU-003", "Jaqueta", 2, 149.9, 10, null, null, null],
-  [null, data(22, 10, 2026), "45.723.174/0001-10", "SKU-002", "Calça jeans", 1, 89.9, 0, "Pix", null, null],
+  ["1001", data(20, 10, 2026), "11.222.333/0001-81", "SKU-001", "Camiseta básica", 10, 25.9, 0, 0, "Pix", 30, "Pedido do ERP"],
+  ["1001", data(20, 10, 2026), "11.222.333/0001-81", "SKU-002", "Calça jeans", 5, 89.9, 5, 0, null, null, null],
+  [null, data(21, 10, 2026), "45.723.174/0001-10", "SKU-001", "Camiseta básica", 3, 25.9, 0, 10, "Crédito", null, null],
+  [null, data(21, 10, 2026), "45.723.174/0001-10", "SKU-003", "Jaqueta", 2, 149.9, 10, 0, null, null, null],
+  [null, data(22, 10, 2026), "45.723.174/0001-10", "SKU-002", "Calça jeans", 1, 89.9, 0, 0, "Pix", null, null],
 ];
 exemplos.forEach((valores) => {
   const linha = ws.addRow(valores.map((v) => (v === null ? undefined : v)));
@@ -74,7 +75,7 @@ for (let r = 2; r <= ULTIMA; r++) {
     if (["Número do Pedido", "CNPJ/CPF do Cliente", "SKU do Produto"].includes(c.titulo)) cel.numFmt = "@";
     cel.border = bordas;
   });
-  linha.getCell(9).dataValidation = {
+  linha.getCell(COLUNAS.findIndex((c) => c.titulo === "Forma de Pagamento") + 1).dataValidation = {
     type: "list", allowBlank: true, formulae: [`"${FORMAS.join(",")}"`],
     showErrorMessage: true, errorTitle: "Forma de Pagamento", error: `Use: ${FORMAS.join(", ")}`,
   };

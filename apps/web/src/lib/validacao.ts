@@ -222,6 +222,8 @@ export const pedidoSchema = z
           quantidade: numero(0.001, 1_000_000, "Quantidade inválida"),
           /** % sobre o item (limitado ao desconto máximo da tabela de preços, checado no banco). */
           desconto_percentual: numero(0, 100, "Desconto deve estar entre 0% e 100%").default(0),
+          /** % acima do preço de tabela (venda acima da tabela) */
+          acrescimo_percentual: numero(0, 100, "Acréscimo deve estar entre 0% e 100%").default(0),
         }),
       )
       .min(1, "Adicione ao menos um item")
@@ -246,6 +248,8 @@ const itensComPrecoSchema = z
       quantidade: numero(0.001, 1_000_000, "Quantidade inválida"),
       preco_unitario: numero(0, 99_999_999, "Preço inválido"),
       desconto_percentual: numero(0, 100, "Desconto deve estar entre 0% e 100%").default(0),
+      /** só pedidos (devolução ignora) */
+      acrescimo_percentual: numero(0, 100, "Acréscimo deve estar entre 0% e 100%").default(0),
     }),
   )
   .min(1, "Adicione ao menos um item")
@@ -267,9 +271,9 @@ export const edicaoPedidoSchema = z
   .refine((p) => p.prazo_tipo === "a_vista" || p.prazo_dias != null, { message: "Informe o prazo em dias", path: ["prazo_dias"] })
   .transform((p) => (p.prazo_tipo === "a_vista" ? { ...p, prazo_dias: null } : p));
 
-/** Subtotal do item = quantidade × preço × (1 − desconto%/100), arredondado em centavos (igual ao banco). */
-export const subtotalItem = (quantidade: number, preco: number, descontoPercentual: number) =>
-  Math.round(quantidade * preco * (1 - descontoPercentual / 100) * 100) / 100;
+/** Subtotal do item = quantidade × preço × (1 + acréscimo%) × (1 − desconto%), arredondado em centavos (igual ao banco). */
+export const subtotalItem = (quantidade: number, preco: number, descontoPercentual: number, acrescimoPercentual = 0) =>
+  Math.round(quantidade * preco * (1 + acrescimoPercentual / 100) * (1 - descontoPercentual / 100) * 100) / 100;
 
 export const precosSchema = z
   .array(

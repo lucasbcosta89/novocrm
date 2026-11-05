@@ -74,7 +74,7 @@ export default async function NovoPedidoPage({
               <div className="tabela-wrap">
                 <table className="tabela">
                   <thead>
-                    <tr><th>SKU</th><th>Produto</th><th>Preço</th><th>Comissão</th><th>Desc. máx.</th><th>Qtd.</th><th>Desconto (%)</th></tr>
+                    <tr><th>SKU</th><th>Produto</th><th>Preço</th><th>Comissão</th><th>Desc. máx.</th><th>Qtd.</th><th>Desconto (%)</th><th>Acréscimo (%)</th></tr>
                   </thead>
                   <tbody>
                     {ativos.map((p) => {
@@ -91,6 +91,7 @@ export default async function NovoPedidoPage({
                           <td>{formatarPercentual(especifico?.desconto_max ?? p.desconto_max)}</td>
                           <td><input className="input-num" name={`qtd_${p.id}`} type="number" min="0" step="any" defaultValue="0" /></td>
                           <td><input className="input-num" name={`desc_${p.id}`} type="number" min="0" max="100" step="0.01" defaultValue="0" aria-label={`Desconto em % de ${p.nome}`} /></td>
+                          <td><input className="input-num" name={`acr_${p.id}`} type="number" min="0" max="100" step="0.01" defaultValue="0" aria-label={`Acréscimo em % de ${p.nome}`} /></td>
                         </tr>
                       );
                     })}
@@ -105,7 +106,7 @@ export default async function NovoPedidoPage({
                   <button className="btn-link" type="submit" name="confirmar" value="0">Salvar rascunho</button>
                 </div>
               </div>
-              <p className="dica">Desconto em % sobre o item (até o desconto máximo da tabela). Subtotal = qtd × preço × (1 − desconto%); o total do pedido é a soma dos subtotais.</p>
+              <p className="dica">Desconto em % sobre o item (até o desconto máximo da tabela). Acréscimo em % para vender acima do preço de tabela. Subtotal = qtd × preço × (1 + acréscimo%) × (1 − desconto%); o total do pedido é a soma dos subtotais.</p>
             </form>
           )}
         </section>

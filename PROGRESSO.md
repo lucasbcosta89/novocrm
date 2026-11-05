@@ -124,6 +124,7 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Numeração única (proximo_numero_pedido: maior P<dígitos> + advisory lock), também no app e no catálogo público
   - [x] Pendências: item sem produto (vermelho na lista, tabela no detalhe, alerta no Catálogo com cadastrar/vincular) e preço divergente >10% (informativo)
   - [x] Nova página /app/pedidos (menu) com "Cadastrar Pedidos com Excel"
+- [x] Acréscimo (%) por item de pedido (venda acima do preço de tabela): novo pedido, edição, detalhe, PDF, Biblioteca, Análises (bruto inclui o acréscimo) e planilha de importação; subtotal = qtd × preço × (1 + acréscimo%) × (1 − desconto%)
 - [x] Fase 4 — Oportunidades e desafios por cliente + plano de ação
   - [x] Bloco "Oportunidades e Desafios" na página do cliente (+ Novo, tabela tipo/título/prioridade/status/data/ações)
   - [x] Plano de ação em /app/clientes/:id/oportunidades/:opId (adicionar, concluir, editar, excluir ações)
