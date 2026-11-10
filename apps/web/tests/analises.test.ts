@@ -176,7 +176,7 @@ describe("análises — fase 4 (drawer, drill-down, Outros, visões)", () => {
     expect(bloqueioGrafico({ dimensoes: ["representada", "uf", "cliente"], grafico: { dimensaoLinha: "representada" } })).toMatch(/no máximo 2/);
     expect(bloqueioGrafico({ dimensoes: ["representada", "uf", "cliente"], grafico: { dimensaoLinha: "cliente" } })).toBeNull();
     // histograma/dispersão usam as linhas da tabela: a aba Por Pedido (5 dimensões) mostra o gráfico
-    const pedido = specDoPreset("pedido", { de: "2026-08-01", ate: "2026-10-31" }, {}, "pedidos");
+    const pedido = specDoPreset("pedido", resolverPeriodo(null, null, null, AGORA).periodo, vazio, "pedidos");
     expect(pedido.dimensoes.length).toBeGreaterThan(2);
     expect(bloqueioGrafico(pedido)).toBeNull();
     expect(bloqueioGrafico({ ...pedido, grafico: { ...pedido.grafico, tipo: "barra_horizontal" } })).toMatch(/no máximo 2/);
