@@ -120,18 +120,20 @@ export const analiseSpecSchema = z
   .refine((s) => new Set(s.dimensoes).size === s.dimensoes.length && new Set(s.metricas).size === s.metricas.length, "Item repetido na spec");
 
 /**
- * Gráfico: no máximo 2 dimensões (1 linha + 1 série). A tabela aceita mais.
- * Exceção: quando a dimensão do gráfico é escolhida (preset/drill-down), o gráfico consolida por ela.
+ * Métrica do gráfico. O gráfico não tem limite de dimensões: ele consolida as linhas da tabela pela dimensão do
+ * eixo (linha) e, quando houver, pela série. Se a tabela tem dimensões além dessas, várias linhas caem no mesmo
+ * ponto e são SOMADAS — então só métricas aditivas servem (ticket médio, % etc. ficariam errados). Nesse caso usa
+ * a primeira métrica aditiva visível; sem consolidação, a primeira métrica numérica visível.
  */
-export function bloqueioGrafico(spec: Pick<AnaliseSpec, "dimensoes"> & { grafico?: Pick<AnaliseSpec["grafico"], "dimensaoLinha"> & Partial<Pick<AnaliseSpec["grafico"], "tipo">> }): string | null {
-  // histograma e dispersão desenham cada linha da tabela (ex.: um pedido por faixa de ticket): não agrupam por dimensão
-  if (spec.grafico?.tipo && GRAFICOS_POR_LINHA.has(spec.grafico.tipo)) return null;
-  const consolidado = spec.grafico && spec.grafico.dimensaoLinha !== spec.dimensoes[0];
-  return spec.dimensoes.length > 2 && !consolidado ? "O gráfico mostra no máximo 2 dimensões (linha + série). Use a tabela para ver mais." : null;
+export function metricaDoGrafico(
+  spec: Pick<AnaliseSpec, "dimensoes"> & { grafico: Pick<AnaliseSpec["grafico"], "dimensaoLinha" | "dimensaoSerie"> },
+  colunas: readonly string[],
+): MetricaId {
+  const numericas = colunas.filter((c): c is MetricaId => c in METRICAS && !["texto", "data"].includes(METRICAS[c as MetricaId].unidade));
+  const doGrafico = new Set<DimensaoId>([spec.grafico.dimensaoLinha, ...(spec.grafico.dimensaoSerie ? [spec.grafico.dimensaoSerie] : [])]);
+  const consolida = spec.dimensoes.some((d) => !doGrafico.has(d));
+  return (consolida ? numericas.filter((m) => METRICAS[m].aditiva) : numericas)[0] ?? "valor_liquido";
 }
-
-/** Gráficos que usam as linhas da tabela, não o agrupamento por dimensão (sem limite de 2 dimensões). */
-const GRAFICOS_POR_LINHA = new Set<TipoGrafico>(["histograma", "dispersao"]);
 
 /** Hash estável da spec (cache no cliente). */
 export function hashSpec(spec: AnaliseSpec): string {

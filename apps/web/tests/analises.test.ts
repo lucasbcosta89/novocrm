@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analiseSpecSchema, bloqueioGrafico, CHAVE_OUTROS, hashSpec, METRICAS, proximaDimensao, visaoSchema } from "@/lib/analises/catalogo";
+import { analiseSpecSchema, CHAVE_OUTROS, hashSpec, METRICAS, metricaDoGrafico, proximaDimensao, visaoSchema } from "@/lib/analises/catalogo";
 import { agrupar, histograma, pareto, somarPor } from "@/lib/analises/grafico";
 import { aplicarPersonalizacao, personalizacaoDaSpec, PRESETS, resolverPeriodo, specDoPreset } from "@/lib/analises/presets";
 import { escreverEstado, formatarMetrica, lerEstado, variacao } from "@/lib/analises/url";
@@ -31,9 +31,9 @@ describe("análises — catálogo e spec", () => {
     expect(METRICAS.valor_liquido.aditiva).toBe(true);
   });
 
-  it("gráfico aceita no máximo 2 dimensões", () => {
-    expect(bloqueioGrafico({ dimensoes: ["representada", "tempo"] })).toBeNull();
-    expect(bloqueioGrafico({ dimensoes: ["representada", "tempo", "uf"] })).toMatch(/no máximo 2/);
+  it("gráfico sem limite de dimensões: sem consolidação usa a 1ª métrica numérica visível", () => {
+    const g = { dimensaoLinha: "representada" as const, dimensaoSerie: "tempo" as const };
+    expect(metricaDoGrafico({ dimensoes: ["representada", "tempo"], grafico: g }, ["representada", "ticket_medio", "valor_liquido"])).toBe("ticket_medio");
   });
 
   it("hash da spec é estável à ordem das chaves e muda com o período", () => {
@@ -172,14 +172,21 @@ describe("análises — fase 4 (drawer, drill-down, Outros, visões)", () => {
     expect(proximaDimensao("tempo", ["tempo"], "itens")).toBeNull();
   });
 
-  it("gráfico bloqueia acima de 2 dimensões, exceto quando consolida por uma dimensão escolhida", () => {
-    expect(bloqueioGrafico({ dimensoes: ["representada", "uf", "cliente"], grafico: { dimensaoLinha: "representada" } })).toMatch(/no máximo 2/);
-    expect(bloqueioGrafico({ dimensoes: ["representada", "uf", "cliente"], grafico: { dimensaoLinha: "cliente" } })).toBeNull();
-    // histograma/dispersão usam as linhas da tabela: a aba Por Pedido (5 dimensões) mostra o gráfico
+  it("com mais dimensões que o gráfico usa, ele consolida (soma) as linhas: só métrica aditiva", () => {
+    const g = { dimensaoLinha: "representada" as const, dimensaoSerie: null };
+    const spec = { dimensoes: ["representada", "uf", "cliente"] as ("representada" | "uf" | "cliente")[], grafico: g };
+    expect(metricaDoGrafico(spec, ["representada", "uf", "cliente", "ticket_medio", "share", "valor_liquido"])).toBe("valor_liquido");
+    expect(metricaDoGrafico(spec, ["representada", "ticket_medio"])).toBe("valor_liquido");
+    // aba Por Pedido (5 dimensões): todos os tipos de gráfico usam o valor (itens por pedido não se soma)
     const pedido = specDoPreset("pedido", resolverPeriodo(null, null, null, AGORA).periodo, vazio, "pedidos");
     expect(pedido.dimensoes.length).toBeGreaterThan(2);
-    expect(bloqueioGrafico(pedido)).toBeNull();
-    expect(bloqueioGrafico({ ...pedido, grafico: { ...pedido.grafico, tipo: "barra_horizontal" } })).toMatch(/no máximo 2/);
+    expect(metricaDoGrafico(pedido, pedido.tabela.colunas)).toBe("valor_liquido");
+    const linhas = [
+      { representada: "Alfa", representada__id: "a", uf: "GO", valor_liquido: 100 },
+      { representada: "Alfa", representada__id: "a", uf: "SP", valor_liquido: 50 },
+      { representada: "Beta", representada__id: "b", uf: "GO", valor_liquido: 30 },
+    ];
+    expect(somarPor(linhas, "representada", "valor_liquido")).toEqual([{ id: "a", nome: "Alfa", valor: 150 }, { id: "b", nome: "Beta", valor: 30 }]);
   });
 
   it("visão salva: spec validada no catálogo e restaurada como personalização", () => {

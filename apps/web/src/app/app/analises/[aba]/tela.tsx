@@ -10,7 +10,7 @@ import { Icone, type NomeIcone } from "@/components/icones";
 import { MultiSelect } from "@/components/multi-select";
 import { StatusPedido } from "@/components/status";
 import { gerarCsv } from "@/lib/csv";
-import { bloqueioGrafico, CHAVE_OUTROS, DIAS_RISCO, DIMENSOES, DIMS_DE_ITEM, hashSpec, LIMITES, METRICAS, proximaDimensao, ROTULO_CANAL, SIGLA_UNIDADE, TIPOS_GRAFICO } from "@/lib/analises/catalogo";
+import { CHAVE_OUTROS, DIAS_RISCO, DIMENSOES, DIMS_DE_ITEM, hashSpec, LIMITES, METRICAS, metricaDoGrafico, proximaDimensao, ROTULO_CANAL, SIGLA_UNIDADE, TIPOS_GRAFICO } from "@/lib/analises/catalogo";
 import { agrupar, histograma, pareto, somarPor } from "@/lib/analises/grafico";
 import { aplicarPersonalizacao, ORDEM_PRESETS, PERIODOS_PRESET, personalizacaoDaSpec, PRESETS, specDoPreset, type PeriodoPreset, type Personalizacao, type PresetAba } from "@/lib/analises/presets";
 import type { AnaliseSpec, CelulaMatriz, DimensaoId, FiltrosSpec, KpiPreset, MetricaId, PresetId, ResultadoAgregado, TipoGrafico, VisaoSalva } from "@/lib/analises/tipos";
@@ -87,7 +87,6 @@ export function TelaAnalise({ aba, opcoes }: { aba: PresetId; opcoes: OpcoesFilt
   const chave = hashSpec({ ...spec, grafico: { ...spec.grafico, tipo: preset.graficoTipo } });
   const colunas = spec.tabela.colunas;
   const graficosPermitidos = pers ? GRAFICOS_GERAIS : [...new Set([...preset.graficos, ...GRAFICOS_GERAIS])];
-  const bloqueio = bloqueioGrafico({ ...spec, grafico: { ...spec.grafico, tipo: tipoGrafico } });
 
   /** Muda a personalização a partir da spec atual (aplicação imediata, sem botão "aplicar"). */
   function personalizar(mudar: (p: Personalizacao) => Partial<Personalizacao>) {
@@ -143,9 +142,8 @@ export function TelaAnalise({ aba, opcoes }: { aba: PresetId; opcoes: OpcoesFilt
 
   const dados = estado.tipo === "ok" ? estado.dados : null;
   const dimensao = spec.dimensoes[0]!;
-  // 1ª métrica numérica escolhida (texto/data não viram eixo)
-  const metricaGrafico: MetricaId = aba === "pedido" && !pers ? "valor_liquido"
-    : colunas.filter(ehMetrica).find((m) => !["texto", "data"].includes(METRICAS[m].unidade)) ?? "valor_liquido";
+  // métrica do gráfico: 1ª numérica visível (aditiva quando o gráfico consolida linhas)
+  const metricaGrafico: MetricaId = metricaDoGrafico(spec, colunas);
 
   // busca e "só em risco" (Por Cliente) filtram as linhas já carregadas; totais seguem os da consulta
   const linhasVisiveis = useMemo(() => {
@@ -303,7 +301,7 @@ export function TelaAnalise({ aba, opcoes }: { aba: PresetId; opcoes: OpcoesFilt
                     </select>
                   </label>
                 </div>
-                {bloqueio ? <p className="aviso">{bloqueio}</p> : dados ? (
+                {dados ? (
                   <GraficoAnalise tipo={tipoGrafico} spec={spec} metrica={metricaGrafico} linhas={dados.linhas} aoClicar={drill} />
                 ) : <div className="esqueleto esqueleto-grafico" />}
                 <p className="analise-total">
@@ -402,7 +400,7 @@ export function TelaAnalise({ aba, opcoes }: { aba: PresetId; opcoes: OpcoesFilt
       )}
 
       <Personalizar aberto={drawerAberto} aoFechar={() => setDrawerAberto(false)} spec={spec} tipo={tipoGrafico} graficos={graficosPermitidos}
-        personalizado={!!pers} aoMudar={personalizar} aoMudarTipo={setTipoGrafico} aoRestaurar={restaurarPreset} bloqueio={bloqueio} />
+        personalizado={!!pers} aoMudar={personalizar} aoMudarTipo={setTipoGrafico} aoRestaurar={restaurarPreset} />
     </>
   );
 }
@@ -721,9 +719,9 @@ function MatrizCalor({ celulas }: { celulas: CelulaMatriz[] }) {
 }
 
 /** Drawer "Personalizar": dimensões (chips), métricas (checkbox com unidade), tipo de gráfico e limite. Aplicação imediata. */
-function Personalizar({ aberto, aoFechar, spec, tipo, graficos, personalizado, aoMudar, aoMudarTipo, aoRestaurar, bloqueio }: {
+function Personalizar({ aberto, aoFechar, spec, tipo, graficos, personalizado, aoMudar, aoMudarTipo, aoRestaurar }: {
   aberto: boolean; aoFechar: () => void; spec: AnaliseSpec; tipo: TipoGrafico; graficos: TipoGrafico[]; personalizado: boolean;
-  aoMudar: (f: (p: Personalizacao) => Partial<Personalizacao>) => void; aoMudarTipo: (t: TipoGrafico) => void; aoRestaurar: () => void; bloqueio: string | null;
+  aoMudar: (f: (p: Personalizacao) => Partial<Personalizacao>) => void; aoMudarTipo: (t: TipoGrafico) => void; aoRestaurar: () => void;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   // não modal: a tela atrás continua visível e reage a cada mudança
@@ -764,7 +762,6 @@ function Personalizar({ aberto, aoFechar, spec, tipo, graficos, personalizado, a
             );
           })}
         </div>
-        {bloqueio && <p className="dica texto-perigo">{bloqueio}</p>}
       </section>
 
       <section>
