@@ -123,10 +123,15 @@ export const analiseSpecSchema = z
  * Gráfico: no máximo 2 dimensões (1 linha + 1 série). A tabela aceita mais.
  * Exceção: quando a dimensão do gráfico é escolhida (preset/drill-down), o gráfico consolida por ela.
  */
-export function bloqueioGrafico(spec: Pick<AnaliseSpec, "dimensoes"> & { grafico?: Pick<AnaliseSpec["grafico"], "dimensaoLinha"> }): string | null {
+export function bloqueioGrafico(spec: Pick<AnaliseSpec, "dimensoes"> & { grafico?: Pick<AnaliseSpec["grafico"], "dimensaoLinha"> & Partial<Pick<AnaliseSpec["grafico"], "tipo">> }): string | null {
+  // histograma e dispersão desenham cada linha da tabela (ex.: um pedido por faixa de ticket): não agrupam por dimensão
+  if (spec.grafico?.tipo && GRAFICOS_POR_LINHA.has(spec.grafico.tipo)) return null;
   const consolidado = spec.grafico && spec.grafico.dimensaoLinha !== spec.dimensoes[0];
   return spec.dimensoes.length > 2 && !consolidado ? "O gráfico mostra no máximo 2 dimensões (linha + série). Use a tabela para ver mais." : null;
 }
+
+/** Gráficos que usam as linhas da tabela, não o agrupamento por dimensão (sem limite de 2 dimensões). */
+const GRAFICOS_POR_LINHA = new Set<TipoGrafico>(["histograma", "dispersao"]);
 
 /** Hash estável da spec (cache no cliente). */
 export function hashSpec(spec: AnaliseSpec): string {

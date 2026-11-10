@@ -175,6 +175,11 @@ describe("análises — fase 4 (drawer, drill-down, Outros, visões)", () => {
   it("gráfico bloqueia acima de 2 dimensões, exceto quando consolida por uma dimensão escolhida", () => {
     expect(bloqueioGrafico({ dimensoes: ["representada", "uf", "cliente"], grafico: { dimensaoLinha: "representada" } })).toMatch(/no máximo 2/);
     expect(bloqueioGrafico({ dimensoes: ["representada", "uf", "cliente"], grafico: { dimensaoLinha: "cliente" } })).toBeNull();
+    // histograma/dispersão usam as linhas da tabela: a aba Por Pedido (5 dimensões) mostra o gráfico
+    const pedido = specDoPreset("pedido", { de: "2026-08-01", ate: "2026-10-31" }, {}, "pedidos");
+    expect(pedido.dimensoes.length).toBeGreaterThan(2);
+    expect(bloqueioGrafico(pedido)).toBeNull();
+    expect(bloqueioGrafico({ ...pedido, grafico: { ...pedido.grafico, tipo: "barra_horizontal" } })).toMatch(/no máximo 2/);
   });
 
   it("visão salva: spec validada no catálogo e restaurada como personalização", () => {

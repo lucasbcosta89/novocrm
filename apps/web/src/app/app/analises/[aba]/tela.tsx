@@ -87,7 +87,7 @@ export function TelaAnalise({ aba, opcoes }: { aba: PresetId; opcoes: OpcoesFilt
   const chave = hashSpec({ ...spec, grafico: { ...spec.grafico, tipo: preset.graficoTipo } });
   const colunas = spec.tabela.colunas;
   const graficosPermitidos = pers ? GRAFICOS_GERAIS : [...new Set([...preset.graficos, ...GRAFICOS_GERAIS])];
-  const bloqueio = bloqueioGrafico(spec);
+  const bloqueio = bloqueioGrafico({ ...spec, grafico: { ...spec.grafico, tipo: tipoGrafico } });
 
   /** Muda a personalização a partir da spec atual (aplicação imediata, sem botão "aplicar"). */
   function personalizar(mudar: (p: Personalizacao) => Partial<Personalizacao>) {
