@@ -41,7 +41,9 @@ export default async function RepresentadasPage({ searchParams }: { searchParams
   const filtrando = !!(f.q || f.status || f.uf);
   const paginas = Math.max(1, Math.ceil(total / POR_PAGINA));
   const aqui = urlListagem(f);
+  // exportação = mesma visão filtrada/ordenada da tela, em CSV ou XLSX
   const exportar = urlListagem({ ...f, pagina: 1 }, {}, "/api/representadas/exportar");
+  const exportarComo = (formato: "csv" | "xlsx") => `${exportar}${exportar.includes("?") ? "&" : "?"}formato=${formato}`;
 
   const acoes = (
     <div className="acoes-linha">
@@ -95,7 +97,8 @@ export default async function RepresentadasPage({ searchParams }: { searchParams
               <div className="acoes-linha">
                 <button className="btn-secundario btn-peq" type="submit"><Icone nome="filtro" tamanho={16} /> Filtrar</button>
                 {filtrando && <Link className="btn-link" href="/app/representadas">Limpar</Link>}
-                <a className="btn-suave btn-peq" href={exportar} download><Icone nome="download" tamanho={16} /> Exportar CSV</a>
+                <a className="btn-suave btn-peq" href={exportarComo("xlsx")} download><Icone nome="download" tamanho={16} /> Exportar XLSX</a>
+                <a className="btn-suave btn-peq" href={exportarComo("csv")} download><Icone nome="download" tamanho={16} /> Exportar CSV</a>
               </div>
             </form>
 
