@@ -578,6 +578,25 @@ mantém a marca reconhecível em qualquer página.
 | `plurima-logo-negativo.svg` | Tudo branco, fundo transparente — rodapé e faixas navy |
 | `plurima-simbolo-positivo.svg` | Só o símbolo colorido, transparente — favicon, avatar |
 | `plurima-simbolo-negativo.svg` | Símbolo branco sobre quadrado `--navy` — ícone de app, redes sociais |
+| `plurima-favicon.svg` + `favicon.ico` | **Favicon** (ver abaixo) |
+
+### Favicon (pedido do usuário, 11/11/2026)
+Só o símbolo (círculos e linhas), **preto `#000`, fundo transparente**, antes do título em
+todas as páginas.
+- `plurima-favicon.svg`: o símbolo oficial com traço e nós engrossados para ler em 16–48px.
+- `plurima-favicon-16.svg`: variante óptica só para 16×16 (4 nós à direita em vez de 6 — em
+  16px os 6 se fundem). Usada apenas na entrada 16px do `.ico`.
+- `favicon.ico`: 16 + 32 + 48px (PNG embutido).
+- **Instalação:** cópias em `apps/web/src/app/favicon.ico` e `apps/web/src/app/icon.svg`. Pela
+  convenção de arquivos do Next.js (App Router), o layout raiz injeta
+  `<link rel="icon">` em **todas as rotas, atuais e futuras**, sem código. Não adicionar
+  `<link rel="icon">` manual nem `metadata.icons` (duplicaria). Ao trocar o favicon, substituir
+  os arquivos em `assets/brand/` **e** em `apps/web/src/app/`.
+- Página fora do Next.js (HTML estático, landing externa): incluir no `<head>`
+  `<link rel="icon" href="/favicon.ico" sizes="48x48">` e
+  `<link rel="icon" href="/icon.svg" type="image/svg+xml">`.
+- Atenção: preto some na barra de abas em tema escuro (Chrome/Edge/Firefox escuros). Se isso
+  incomodar, o SVG pode ganhar `@media (prefers-color-scheme: dark)` trocando para branco.
 
 Como os SVG foram feitos (11/11/2026):
 - **Símbolo:** redesenhado com geometria limpa a partir de `plurima-simbolo-positivo.webp` —

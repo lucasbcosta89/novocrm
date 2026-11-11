@@ -30,6 +30,9 @@ Mercado Pago (assinaturas), Cloudflare (deploy/R2/domínio), GitHub (versionamen
   execução leve (tipografia firme, muito branco, zero ornamento); telas reais > ilustrações;
   azul = ação, verde = dinheiro positivo, nenhuma outra cor com significado.
 - Novas diretrizes de design do usuário vão para DESIGN.md, não para arquivos soltos.
+- Favicon (símbolo preto, fundo transparente) em todas as páginas: apps/web/src/app/favicon.ico
+  + icon.svg (convenção do Next — vale para toda rota nova sem código). Não remover, não duplicar
+  com <link> manual ou metadata.icons. Mestres em assets/brand/. Detalhes em DESIGN.md › Marca.
 
 ## Comandos
 - dev web: npm run dev | migração: supabase db push | status: supabase status
