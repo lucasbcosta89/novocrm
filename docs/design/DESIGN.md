@@ -569,13 +569,32 @@ mantém a marca reconhecível em qualquer página.
 
 ## Marca (logo)
 
-### Arquivos (fornecidos pelo usuário, em `assets/brand/`)
-| Arquivo | Uso |
+### Arquivos (em `assets/brand/`)
+**Use sempre o SVG.** Os WebP são os originais enviados pelo usuário e ficam só como referência.
+
+| Arquivo (SVG — oficial) | Uso |
 |---|---|
-| `plurima-logo-positivo.webp` | Símbolo colorido + "Plurima" em navy — fundo claro (cabeçalho) |
-| `plurima-logo-negativo.webp` | Tudo branco sobre navy — rodapé e faixas navy |
-| `plurima-simbolo-positivo.webp` | Só o símbolo colorido — favicon, avatar, ícone do app |
-| `plurima-simbolo-negativo.webp` | Símbolo branco sobre navy — app icon, redes |
+| `plurima-logo-positivo.svg` | Símbolo colorido + "Plurima" em `--navy`, fundo transparente — fundo claro (cabeçalho) |
+| `plurima-logo-negativo.svg` | Tudo branco, fundo transparente — rodapé e faixas navy |
+| `plurima-simbolo-positivo.svg` | Só o símbolo colorido, transparente — favicon, avatar |
+| `plurima-simbolo-negativo.svg` | Símbolo branco sobre quadrado `--navy` — ícone de app, redes sociais |
+
+Como os SVG foram feitos (11/11/2026):
+- **Símbolo:** redesenhado com geometria limpa a partir de `plurima-simbolo-positivo.webp` —
+  círculos de verdade, eixo horizontal simétrico, linhas apontando para o centro com folga igual
+  nas duas pontas. Cores exatas dos tokens: esquerda `--blue #2962FF`, centro e direita
+  `--green #00C853`. O mesmo desenho é usado no logo completo (no WebP do logo completo o nó
+  central era menor; padronizado pelo símbolo isolado).
+- **Palavra "Plurima":** vetorizada por contorno do `plurima-logo-positivo.webp` (traçado
+  automático, ~420 pontos). Proporção do original mantida: altura da palavra ≈ 0,51 × altura do
+  símbolo. Se surgir o arquivo da fonte original, refazer a palavra a partir dela.
+
+| Arquivo (WebP — referência) | Conteúdo |
+|---|---|
+| `plurima-logo-positivo.webp` | Logo colorido sobre branco |
+| `plurima-logo-negativo.webp` | Logo branco sobre navy |
+| `plurima-simbolo-positivo.webp` | Símbolo colorido sobre branco |
+| `plurima-simbolo-negativo.webp` | Símbolo branco sobre navy |
 
 O símbolo é a promessa desenhada: vários pontos (representadas) convergem para um centro e
 saem consolidados.
@@ -591,14 +610,13 @@ saem consolidados.
 - Não recolorir, esticar, rotacionar, aplicar sombra/gradiente nem pôr sobre foto.
 
 ### Pendências da marca
-1. **Vetor mestre (SVG).** Os arquivos são WebP 1024px gerados como imagem (há ruído no fundo
-   navy). Para o site é preciso o logo em SVG — nítido em qualquer tamanho e leve.
+1. ~~Vetor mestre (SVG)~~ — **resolvido (11/11/2026):** 4 SVG em `assets/brand/` (ver Arquivos).
 2. ~~Duas versões do símbolo~~ — **decidido pelo usuário (05/11/2026): os arquivos de imagem são
    oficiais.** Símbolo oficial: 3 nós + linhas à esquerda em azul; nó central e 6 linhas + nós à
    direita em verde; cada linha tem a cor dos nós do seu lado. O SVG do template (nó central
    azul, linhas cinza `#94A3B8`) está **desatualizado** e não deve ser usado.
-3. **Cores do símbolo ≠ tokens.** O azul/verde dos arquivos são próximos, mas não iguais, a
-   `--blue #2962FF` e `--green #00C853`. No vetor, usar os tokens exatos.
+3. ~~Cores do símbolo ≠ tokens~~ — **resolvido:** os SVG usam `--blue #2962FF`,
+   `--green #00C853` e `--navy #1A3B73` exatos.
 
 ## Template de página interna
 
@@ -632,7 +650,7 @@ O DESIGN.md prevalece; ao portar o template para Next.js, corrigir:
 | Header "Testar grátis" × CTA "Testar grátis por 7 dias" | Um CTA, um texto | Mesmo rótulo nos dois (ex.: "Testar grátis por 7 dias"; no header cabe só "Testar grátis" se faltar espaço no celular) |
 | Painel de KPIs desenhado em HTML | Princípio 3 prefere tela real | Aceito como recorte fiel do produto, com dados realistas; trocar por screenshot quando houver |
 | `html { scroll-behavior: smooth }` | — | OK, já anulado por reduced-motion |
-| SVG inline do logo (nó central azul, linhas cinza, 5 nós à direita) | Versão não oficial do símbolo | Usar o logo oficial de `assets/brand/` (SVG vetorizado dele, quando existir) |
+| SVG inline do logo (nó central azul, linhas cinza, 5 nós à direita) | Versão não oficial do símbolo | Usar `assets/brand/plurima-logo-positivo.svg` no cabeçalho e `plurima-logo-negativo.svg` no rodapé |
 
 ## Acessibilidade e performance
 
