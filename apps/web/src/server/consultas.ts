@@ -1,3 +1,4 @@
+import { filtroPedidosSchema, limitesPeriodoPedidos, type FiltroPedidos } from "@/lib/filtro-pedidos";
 import { idSchema } from "@/lib/validacao";
 import type { Contexto } from "./contexto";
 import { erroBanco } from "./erros";
@@ -45,6 +46,28 @@ export async function listarPedidos(
     .returns<PedidoResumo[]>();
   if (error) throw erroBanco(error);
   return data;
+}
+
+/**
+ * Página Pedidos: código, cliente e período (data do pedido, fuso de Brasília). Mesma regra da exportação.
+ * limite: tela mostra os mais recentes; exportação leva até 5.000.
+ */
+export async function listarPedidosFiltrados(
+  { supabase }: Contexto,
+  entrada: unknown,
+  { limite = 200 }: { limite?: number } = {},
+): Promise<{ pedidos: PedidoResumo[]; filtro: FiltroPedidos; limitado: boolean }> {
+  const filtro = filtroPedidosSchema.parse(entrada);
+  let q = supabase.from("pedidos").select(CAMPOS_PEDIDO);
+  if (filtro.cliente) q = q.eq("cliente_id", filtro.cliente);
+  const padrao = padraoBusca(filtro.q);
+  if (padrao) q = q.ilike("codigo_pedido", padrao);
+  const { desde, antes } = limitesPeriodoPedidos(filtro);
+  if (desde) q = q.gte("data", desde);
+  if (antes) q = q.lt("data", antes);
+  const { data, error } = await q.order("data", { ascending: false }).limit(limite + 1).returns<PedidoResumo[]>();
+  if (error) throw erroBanco(error);
+  return { pedidos: data.slice(0, limite), filtro, limitado: data.length > limite };
 }
 
 export type PrecoTabela = {
