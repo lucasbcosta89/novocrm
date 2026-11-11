@@ -24,7 +24,15 @@ export default async function ClientesPage({ searchParams }: { searchParams: Bus
     <>
       <div className="cabecalho-pagina">
         <h1 className="titulo-icone"><Icone nome="pessoas" tamanho={24} /> Clientes</h1>
-        {importar && <Link className="btn-secundario" href="/app/clientes/importar"><Icone nome="arquivo" tamanho={16} /> Cadastrar Clientes com Excel</Link>}
+        <div className="acoes-linha">
+          {clientes.length > 0 && (
+            <>
+              <a className="btn-suave btn-peq" href="/api/clientes/exportar?formato=xlsx" download><Icone nome="download" tamanho={16} /> Exportar XLSX</a>
+              <a className="btn-suave btn-peq" href="/api/clientes/exportar?formato=csv" download><Icone nome="download" tamanho={16} /> Exportar CSV</a>
+            </>
+          )}
+          {importar && <Link className="btn-secundario" href="/app/clientes/importar"><Icone nome="arquivo" tamanho={16} /> Cadastrar Clientes com Excel</Link>}
+        </div>
       </div>
       <Mensagens erro={erro} ok={ok} />
       {semDocumento > 0 && (
