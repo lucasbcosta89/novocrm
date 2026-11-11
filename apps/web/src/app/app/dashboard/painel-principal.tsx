@@ -5,13 +5,12 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CardKpi as CardKpiBase } from "@/components/card-kpi";
 import { Icone, type NomeIcone } from "@/components/icones";
-import { PERIODOS, type Periodo } from "@/lib/dashboard";
+import { PERIODOS, ROTULO_PERIODO, type Periodo } from "@/lib/dashboard";
 import type { BlocoAlerta, DashboardPrincipal, Kpi } from "@/server/dashboard-principal";
 import { EditarTarefa } from "./editar-tarefa";
 import { GraficoComissoes, GraficoVendas } from "./graficos";
 
 const CHAVE_LOCAL = "plurima.dashboard.filtros";
-const ROTULO_PERIODO: Record<Periodo, string> = { "3m": "Últimos 3 meses", "6m": "Últimos 6 meses", "12m": "Últimos 12 meses", ano: "Este ano" };
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const pct = (v: number) => `${v.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
 /** dd/MM (data AAAA-MM-DD ou ISO, fuso de Brasília). */
@@ -21,6 +20,9 @@ const ddmm = (d: string) =>
 const rota = (r: string) => (r === "/app" ? "/app/calendario" : r);
 
 type Estado = { chave: string; dados: DashboardPrincipal | null; erro: string | null };
+/** Data AAAA-MM-DD válida (ou null). */
+const dataOk = (v: string | null | undefined) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v)) ? v : null);
+const ddmmaaaa = (d: string) => d.split("-").reverse().join("/");
 
 /**
  * Dashboard principal: consome só GET /api/dashboard (Fase 9-1). Filtros na query string
@@ -33,39 +35,67 @@ export function PainelPrincipal({ representadas, dataExtenso }: { representadas:
   const perUrl = params.get("periodo");
   const temFiltro = repUrl !== null && perUrl !== null;
   const representada = repUrl && representadas.some((r) => r.id === repUrl) ? repUrl : "todas";
-  const periodo: Periodo = (PERIODOS as readonly string[]).includes(perUrl ?? "") ? (perUrl as Periodo) : "6m";
-  const chave = `${representada}|${periodo}`;
+  const periodo: Periodo = (PERIODOS as readonly string[]).includes(perUrl ?? "") ? (perUrl as Periodo) : "mes";
+  // período personalizado: datas na URL (AAAA-MM-DD); sem as duas datas, cai para "Esse mês"
+  const deUrl = dataOk(params.get("de"));
+  const ateUrl = dataOk(params.get("ate"));
+  const personalizado = periodo === "personalizado" && !!deUrl && !!ateUrl;
+  const perEfetivo: Periodo = periodo === "personalizado" && !personalizado ? "mes" : periodo;
+  const intervalo = personalizado ? `&de=${deUrl}&ate=${ateUrl}` : "";
+  const chave = `${representada}|${perEfetivo}${intervalo}`;
+  // rascunho das datas do "Personalizado" (só vale ao clicar em Aplicar)
+  const [rascunho, setRascunho] = useState<{ aberto: boolean; de: string; ate: string }>({ aberto: false, de: "", ate: "" });
   const [estado, setEstado] = useState<Estado>({ chave: "", dados: null, erro: null });
   // popup de edição de tarefa aberto a partir dos alertas; versao recarrega os dados após salvar
   const [editando, setEditando] = useState<{ tipo: "subtarefa" | "tarefa"; id: string; rota: string } | null>(null);
   const [versao, setVersao] = useState(0);
 
-  function aplicar(rep: string, per: Periodo) {
+  function aplicar(rep: string, per: Periodo, datas?: { de: string; ate: string }) {
     try {
-      localStorage.setItem(CHAVE_LOCAL, JSON.stringify({ representada: rep, periodo: per }));
+      localStorage.setItem(CHAVE_LOCAL, JSON.stringify({ representada: rep, periodo: per, ...(datas ?? {}) }));
     } catch {
       // sem armazenamento local: o filtro vale só pela URL
     }
     // sem ida ao servidor: só a query string muda (useSearchParams acompanha)
-    window.history.replaceState(null, "", `${caminho}?representada=${rep}&periodo=${per}`);
+    const extra = per === "personalizado" && datas ? `&de=${datas.de}&ate=${datas.ate}` : "";
+    window.history.replaceState(null, "", `${caminho}?representada=${rep}&periodo=${per}${extra}`);
   }
+
+  /** Troca no seletor: "Personalizado" abre as datas (aplicadas no botão); os outros aplicam na hora. */
+  function escolherPeriodo(per: Periodo) {
+    if (per !== "personalizado") {
+      setRascunho((r) => ({ ...r, aberto: false }));
+      return aplicar(representada, per);
+    }
+    const hoje = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
+    setRascunho({ aberto: true, de: deUrl ?? `${hoje.slice(0, 7)}-01`, ate: ateUrl ?? hoje });
+  }
+  const rascunhoValido = !!dataOk(rascunho.de) && !!dataOk(rascunho.ate);
+  function aplicarPersonalizado() {
+    if (!rascunhoValido) return;
+    const [de, ate] = rascunho.de <= rascunho.ate ? [rascunho.de, rascunho.ate] : [rascunho.ate, rascunho.de];
+    setRascunho({ aberto: false, de, ate });
+    aplicar(representada, "personalizado", { de, ate });
+  }
+  const rotuloPeriodo = personalizado ? `${ddmmaaaa(deUrl!)} a ${ddmmaaaa(ateUrl!)}` : ROTULO_PERIODO[perEfetivo];
 
   useEffect(() => {
     // primeira visita sem filtros na URL: restaura a última escolha (ou o padrão) e só então busca
     if (!temFiltro) {
-      let salvo: { representada?: string; periodo?: string } = {};
+      let salvo: { representada?: string; periodo?: string; de?: string; ate?: string } = {};
       try {
         salvo = JSON.parse(localStorage.getItem(CHAVE_LOCAL) ?? "{}");
       } catch {
         salvo = {};
       }
       const rep = salvo.representada && (salvo.representada === "todas" || representadas.some((r) => r.id === salvo.representada)) ? salvo.representada : "todas";
-      const per = (PERIODOS as readonly string[]).includes(salvo.periodo ?? "") ? (salvo.periodo as Periodo) : "6m";
-      window.history.replaceState(null, "", `${caminho}?representada=${rep}&periodo=${per}`);
+      const per = (PERIODOS as readonly string[]).includes(salvo.periodo ?? "") ? (salvo.periodo as Periodo) : "mes";
+      const datas = per === "personalizado" && dataOk(salvo.de) && dataOk(salvo.ate) ? `&de=${salvo.de}&ate=${salvo.ate}` : "";
+      window.history.replaceState(null, "", `${caminho}?representada=${rep}&periodo=${datas || per !== "personalizado" ? per : "mes"}${datas}`);
       return;
     }
     const ctrl = new AbortController();
-    fetch(`/api/dashboard?periodo=${periodo}&representada_id=${representada}`, { signal: ctrl.signal })
+    fetch(`/api/dashboard?periodo=${perEfetivo}${intervalo}&representada_id=${representada}`, { signal: ctrl.signal })
       .then(async (r) => {
         const corpo = await r.json();
         if (!r.ok) throw new Error(corpo.erro ?? "Falha ao carregar o dashboard");
@@ -75,7 +105,7 @@ export function PainelPrincipal({ representadas, dataExtenso }: { representadas:
         if (!ctrl.signal.aborted) setEstado({ chave, dados: null, erro: e instanceof Error ? e.message : "Falha ao carregar o dashboard" });
       });
     return () => ctrl.abort();
-  }, [temFiltro, representada, periodo, chave, caminho, representadas, versao]);
+  }, [temFiltro, representada, perEfetivo, intervalo, chave, caminho, representadas, versao]);
 
   const carregando = estado.chave !== chave;
   const d = carregando ? null : estado.dados;
@@ -90,27 +120,44 @@ export function PainelPrincipal({ representadas, dataExtenso }: { representadas:
           <p className="subtitulo">
             {representada !== "todas" && nomeRep ? (
               <>
-                <strong>{nomeRep}</strong> · <Link href={`/app/representadas/${representada}`}>Ver representada</Link> · {ROTULO_PERIODO[periodo]}
+                <strong>{nomeRep}</strong> · <Link href={`/app/representadas/${representada}`}>Ver representada</Link> · {rotuloPeriodo}
               </>
             ) : (
-              <>{dataExtenso} · Todas as representadas · {ROTULO_PERIODO[periodo]}</>
+              <>{dataExtenso} · Todas as representadas · {rotuloPeriodo}</>
             )}
           </p>
         </div>
         <div className="dash-filtros">
           <label className="campo">
             <span>Representada</span>
-            <select value={representada} onChange={(e) => aplicar(e.target.value, periodo)}>
+            <select value={representada} onChange={(e) => aplicar(e.target.value, perEfetivo, personalizado ? { de: deUrl!, ate: ateUrl! } : undefined)}>
               <option value="todas">Todas as representadas</option>
               {representadas.map((r) => <option key={r.id} value={r.id}>{r.nome}</option>)}
             </select>
           </label>
           <label className="campo">
             <span>Período</span>
-            <select value={periodo} onChange={(e) => aplicar(representada, e.target.value as Periodo)}>
+            <select value={rascunho.aberto ? "personalizado" : perEfetivo} onChange={(e) => escolherPeriodo(e.target.value as Periodo)}>
               {PERIODOS.map((p) => <option key={p} value={p}>{ROTULO_PERIODO[p]}</option>)}
             </select>
           </label>
+          {(rascunho.aberto || personalizado) && (
+            <div className="dash-periodo-personalizado">
+              <label className="campo">
+                <span>De</span>
+                <input type="date" value={rascunho.aberto ? rascunho.de : deUrl!} max={rascunho.aberto ? rascunho.ate || undefined : undefined}
+                  onChange={(e) => setRascunho((r) => ({ aberto: true, de: e.target.value, ate: r.aberto ? r.ate : ateUrl ?? "" }))} />
+              </label>
+              <label className="campo">
+                <span>Até</span>
+                <input type="date" value={rascunho.aberto ? rascunho.ate : ateUrl!} min={rascunho.aberto ? rascunho.de || undefined : undefined}
+                  onChange={(e) => setRascunho((r) => ({ aberto: true, de: r.aberto ? r.de : deUrl ?? "", ate: e.target.value }))} />
+              </label>
+              {rascunho.aberto && (
+                <button className="btn btn-peq" type="button" disabled={!rascunhoValido} onClick={aplicarPersonalizado}>Aplicar</button>
+              )}
+            </div>
+          )}
         </div>
       </header>
 
@@ -144,13 +191,13 @@ export function PainelPrincipal({ representadas, dataExtenso }: { representadas:
       {/* Gráficos */}
       <section className="dash-graficos">
         <div className="dash-card">
-          <h2 className="titulo-icone"><Icone nome="grafico" tamanho={20} /> Vendas por mês</h2>
+          <h2 className="titulo-icone"><Icone nome="grafico" tamanho={20} /> Vendas por {d?.meta.granularidade === "mes" ? "mês" : "dia"}</h2>
           {d ? (
             d.serie_vendas.some((s) => s.valor > 0) ? <GraficoVendas dados={d.serie_vendas} /> : <Vazio texto="Nenhuma venda confirmada neste período." />
           ) : <div className="esqueleto esqueleto-grafico" />}
         </div>
         <div className="dash-card">
-          <h2 className="titulo-icone"><Icone nome="cifrao" tamanho={20} /> Comissões x custos por mês</h2>
+          <h2 className="titulo-icone"><Icone nome="cifrao" tamanho={20} /> Comissões x custos por {d?.meta.granularidade === "mes" ? "mês" : "dia"}</h2>
           {d ? (
             d.serie_comissoes.some((s) => s.a_receber + s.recebida + s.atrasada > 0) || d.serie_custos.some((c) => c.valor > 0)
               ? <GraficoComissoes dados={d.serie_comissoes.map((c, i) => ({ ...c, custos: d.serie_custos[i]?.valor ?? 0 }))} />

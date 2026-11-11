@@ -1,6 +1,7 @@
 import "server-only";
 import {
-  centavos, dashboardQuerySchema, diaSP, janelas, mesSP, naJanela, serieMensal, somarPor, topN, variacao, type Periodo,
+  centavos, dashboardQuerySchema, diaSP, janelas, mesAnteriorDe, mesSP, naJanela, pontoDe, serie, somarDias, somarPor, topN, variacao,
+  type DashboardQuery, type Janela, type Periodo,
 } from "@/lib/dashboard";
 import { emAberto } from "@/lib/funis";
 import type { Contexto } from "./contexto";
@@ -14,16 +15,20 @@ export type BlocoAlerta = { total: number; itens: ItemAlerta[] };
 export type ProximaAcao = { id: string; tipo: "visita" | "subtarefa" | "tarefa"; titulo: string; data: string; detalhe: string | null; rota_edicao: string };
 
 export type DashboardPrincipal = {
-  meta: { periodo: Periodo; representada_id: string; representada_nome: string | null; atualizado_em: string; meses: string[]; cache: "hit" | "miss" };
+  meta: {
+    periodo: Periodo; representada_id: string; representada_nome: string | null; atualizado_em: string; cache: "hit" | "miss";
+    /** período efetivo (AAAA-MM-DD, inclusive) e os pontos dos gráficos (dias ou meses) */
+    de: string; ate: string; granularidade: Janela["granularidade"]; pontos: string[];
+  };
   kpis: Record<
     | "vendas_total" | "vendas_mes_atual" | "comissao_a_receber" | "comissao_recebida" | "comissao_atrasada" | "oportunidades_abertas" | "ticket_medio" | "taxa_conversao"
     // Fase 11: custos = despesas do período; bruto = comissões recebidas; líquido = bruto − custos
     | "custos_total" | "resultado_bruto" | "resultado_liquido",
     Kpi
   >;
-  serie_vendas: { mes: string; valor: number }[];
-  serie_comissoes: { mes: string; a_receber: number; recebida: number; atrasada: number }[];
-  serie_custos: { mes: string; valor: number }[];
+  serie_vendas: { ponto: string; valor: number }[];
+  serie_comissoes: { ponto: string; a_receber: number; recebida: number; atrasada: number }[];
+  serie_custos: { ponto: string; valor: number }[];
   alertas: Record<"tarefas_vencidas" | "tarefas_a_vencer" | "comissoes_atrasadas" | "visitas_atrasadas" | "oportunidades_paradas", BlocoAlerta>;
   proximas_acoes: ProximaAcao[];
   extras: {
@@ -76,25 +81,27 @@ export function limparCacheDashboard(userId: string) {
  */
 export async function obterDashboardPrincipal(ctx: Contexto, query: unknown): Promise<DashboardPrincipal> {
   const q = dashboardQuerySchema.parse(query);
-  const chave = `${ctx.userId}|${q.periodo}|${q.representada_id}`;
+  const chave = `${ctx.userId}|${q.periodo}|${q.de ?? ""}|${q.ate ?? ""}|${q.representada_id}`;
   const guardado = cache.get(chave);
   if (guardado && guardado.expira > Date.now()) return { ...guardado.dados, meta: { ...guardado.dados.meta, cache: "hit" } };
 
-  const dados = await calcular(ctx, q.periodo, q.representada_id === "todas" ? null : q.representada_id);
+  const dados = await calcular(ctx, q, q.representada_id === "todas" ? null : q.representada_id);
   cache.set(chave, { expira: Date.now() + TTL_MS, dados });
   if (cache.size > 500) for (const [k, v] of cache) if (v.expira <= Date.now()) cache.delete(k);
   return { ...dados, meta: { ...dados.meta, cache: "miss" } };
 }
 
-async function calcular(ctx: Contexto, periodo: Periodo, rep: string | null) {
+async function calcular(ctx: Contexto, q: DashboardQuery, rep: string | null) {
+  const periodo = q.periodo;
   const { supabase } = ctx;
   const agora = new Date();
   const hoje = diaSP(agora);
   const em7 = diaSP(new Date(agora.getTime() + 7 * 86_400_000));
   const ha30 = new Date(agora.getTime() - 30 * 86_400_000).toISOString();
-  const { atual, anterior } = janelas(periodo, agora);
+  const { atual, anterior } = janelas(q, agora);
+  const gran = atual.granularidade;
   const mesAtual = mesSP(agora);
-  const mesAnterior = janelas("3m", agora).atual.meses[1]!; // mês imediatamente anterior ao atual
+  const mesAnterior = mesAnteriorDe(mesAtual); // KPI "vendas do mês" compara com o mês anterior
   const inicioLeitura = [anterior.inicio, `${mesAnterior}-01T00:00:00-03:00`].sort((a, b) => Date.parse(a) - Date.parse(b))[0]!;
   const isoUtc = (s: string) => new Date(s).toISOString();
 
@@ -116,7 +123,8 @@ async function calcular(ctx: Contexto, periodo: Periodo, rep: string | null) {
     .from("pedido_itens")
     .select("quantidade, produto_id, produto:produtos(nome, sku), pedido:pedidos!inner(data, status, representada_id)")
     .in("pedido.status", VENDA)
-    .gte("pedido.data", isoUtc(atual.inicio));
+    .gte("pedido.data", isoUtc(atual.inicio))
+    .lt("pedido.data", isoUtc(atual.fim));
   let comissoesQ = supabase
     .from("comissoes")
     .select("id, valor, status, data_prevista, pedido:pedidos(id, codigo_pedido, cliente:clientes(nome))")
@@ -179,7 +187,7 @@ async function calcular(ctx: Contexto, periodo: Periodo, rep: string | null) {
   for (const r of [pedidosR, itensR, comissoesR, opsR, acoesR, tarefasR, visitasR, carteiraR, despesasR]) if (r.error) throw erroBanco(r.error);
   const despesas = despesasR.data ?? [];
   const custosNa = (j: typeof atual) => despesas.filter((d) => naJanela(d.data, j)).reduce((t, d) => t + Number(d.valor), 0);
-  const custosPorMes = somarPor(despesas, (d) => d.data.slice(0, 7), (d) => Number(d.valor));
+  const custosPorPonto = somarPor(despesas, (d) => pontoDe(d.data, gran), (d) => Number(d.valor));
   const pedidos = pedidosR.data ?? [];
   const comissoes = comissoesR.data ?? [];
   const ops = opsR.data ?? [];
@@ -191,6 +199,7 @@ async function calcular(ctx: Contexto, periodo: Periodo, rep: string | null) {
   const vendasAnterior = pedidos.filter((p) => naJanela(p.data, anterior));
   const soma = (xs: PedidoRow[]) => xs.reduce((t, p) => t + Number(p.valor_total), 0);
   const porMes = somarPor(pedidos, (p) => mesSP(p.data), (p) => Number(p.valor_total));
+  const porPonto = somarPor(pedidos, (p) => pontoDe(p.data, gran), (p) => Number(p.valor_total));
   const totalAtual = soma(vendasAtual);
   const totalAnterior = soma(vendasAnterior);
   const ticket = (xs: PedidoRow[]) => (xs.length ? soma(xs) / xs.length : 0);
@@ -198,10 +207,10 @@ async function calcular(ctx: Contexto, periodo: Periodo, rep: string | null) {
   /* Comissões (por data_prevista no período; canceladas fora) */
   const comissaoNa = (j: typeof atual, status: string) =>
     comissoes.filter((c) => c.status === status && naJanela(c.data_prevista, j)).reduce((t, c) => t + Number(c.valor), 0);
-  const serieComissoes = atual.meses.map((mes) => {
-    const doMes = comissoes.filter((c) => c.data_prevista && mesSP(c.data_prevista) === mes);
-    const s = (st: string) => centavos(doMes.filter((c) => c.status === st).reduce((t, c) => t + Number(c.valor), 0));
-    return { mes, a_receber: s("a_receber"), recebida: s("recebida"), atrasada: s("atrasada") };
+  const serieComissoes = atual.pontos.map((ponto) => {
+    const doPonto = comissoes.filter((c) => c.data_prevista && pontoDe(c.data_prevista, gran) === ponto);
+    const s = (st: string) => centavos(doPonto.filter((c) => c.status === st).reduce((t, c) => t + Number(c.valor), 0));
+    return { ponto, a_receber: s("a_receber"), recebida: s("recebida"), atrasada: s("atrasada") };
   });
 
   /* Oportunidades */
@@ -276,11 +285,14 @@ async function calcular(ctx: Contexto, periodo: Periodo, rep: string | null) {
   const carteira = carteiraR.count ?? 0;
 
   return {
-    meta: { periodo, representada_id: rep ?? "todas", representada_nome: representadaNome, atualizado_em: agora.toISOString(), meses: atual.meses },
+    meta: {
+      periodo, representada_id: rep ?? "todas", representada_nome: representadaNome, atualizado_em: agora.toISOString(),
+      de: diaSP(atual.inicio), ate: somarDias(diaSP(atual.fim), -1), granularidade: gran, pontos: atual.pontos,
+    },
     kpis,
-    serie_vendas: serieMensal(atual.meses, porMes),
+    serie_vendas: serie(atual.pontos, porPonto),
     serie_comissoes: serieComissoes,
-    serie_custos: serieMensal(atual.meses, custosPorMes),
+    serie_custos: serie(atual.pontos, custosPorPonto),
     alertas: {
       tarefas_vencidas: bloco(vencidas),
       tarefas_a_vencer: bloco(aVencer),

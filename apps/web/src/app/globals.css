@@ -723,6 +723,8 @@ h1.titulo-icone .icone, h2.titulo-icone .icone, h3.titulo-icone .icone { color: 
 .dash-cabecalho .subtitulo strong { color: var(--text); font-weight: 500; }
 .dash-filtros { display: flex; flex-wrap: wrap; gap: 10px; }
 .dash-filtros .campo { min-width: 190px; }
+.dash-periodo-personalizado { display: flex; flex-wrap: wrap; gap: 8px; align-items: end; }
+.dash-filtros .dash-periodo-personalizado .campo { min-width: 150px; }
 
 .dash-kpis, .dash-graficos, .dash-meio, .dash-rodape { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 16px; }
 .dash-kpis > *, .dash-graficos > *, .dash-meio > *, .dash-rodape > * { grid-column: span 12; }
