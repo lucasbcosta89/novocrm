@@ -619,6 +619,9 @@ O símbolo é a promessa desenhada: vários pontos (representadas) convergem par
 saem consolidados.
 
 ### Regras
+- **Grafia do nome: "Plurima", sem acento** (decisão do usuário, 12/11/2026), igual ao logo —
+  em textos, títulos, metadados, e-mails e documentos. O Brand Blueprint v1.2 escreve "Plúrima";
+  ao citar o Blueprint, prevalece esta regra.
 - **Logo colorida no cabeçalho, logo branca no rodapé** (Estrutura padrão). Altura: 32px no
   cabeçalho, 28px no rodapé (template).
 - O azul e o verde do símbolo são **arte de marca**: a exceção única ao princípio "cor é

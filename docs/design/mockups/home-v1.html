@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<!--
+  MOCKUP v1 — Página inicial Plurima (para validação; não é código de produção)
+  Base: docs/design/DESIGN.md + Brand Blueprint v1.2 (nov/2026).
+  Só no mockup: Inter vem do Google Fonts para facilitar a revisão. Em produção a fonte é
+  auto-hospedada (DESIGN.md › Tipografia › Carregamento da fonte).
+  Logos embutidos inline (cópia de assets/brand) para o arquivo abrir sozinho.
+  O painel do hero é desenhado em HTML com dados fictícios; trocar por screenshot real.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plurima — Gestão para representantes comerciais multimarcas</title>
+<meta name="description" content="Gestão completa para o representante comercial multimarcas: pedidos, comissões, clientes, catálogos, custos e análises em um só lugar. Traga seu histórico do Excel e teste grátis por 7 dias.">
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9Ii0zNjYgLTM2NiA3MzIgNzMyIj48ZyBzdHJva2U9IiMwMDAiIHN0cm9rZS13aWR0aD0iMzQiIGZpbGw9Im5vbmUiPjxwYXRoIGQ9Ik0tNTguOCAtMzhMLTIyNS42IC0xNDUuN00tNzAgMEwtMjUwIDBNLTU4LjggMzhMLTIyNS42IDE0NS43TTQ4LjggLTUwLjJMMjA5LjMgLTIxNS40TTYxLjggLTMyLjlMMjUyLjIgLTEzNC4zTTY5LjEgLTExLjRMMjc4LjYgLTQ1LjlNNjkuMSAxMS40TDI3OC42IDQ1LjlNNjEuOCAzMi45TDI1Mi4yIDEzNC4zTTQ4LjggNTAuMkwyMDkuMyAyMTUuNCIvPjwvZz48ZyBmaWxsPSIjMDAwIj48Y2lyY2xlIHI9IjcwIi8+PGNpcmNsZSBjeD0iLTI3MSIgY3k9Ii0xNzUiIHI9IjU0Ii8+PGNpcmNsZSBjeD0iLTMwNCIgY3k9IjAiIHI9IjU0Ii8+PGNpcmNsZSBjeD0iLTI3MSIgY3k9IjE3NSIgcj0iNTQiLz48Y2lyY2xlIGN4PSIyNDAiIGN5PSItMjQ3IiByPSI0NCIvPjxjaXJjbGUgY3g9IjI5MSIgY3k9Ii0xNTUiIHI9IjQ0Ii8+PGNpcmNsZSBjeD0iMzIyIiBjeT0iLTUzIiByPSI0NCIvPjxjaXJjbGUgY3g9IjMyMiIgY3k9IjUzIiByPSI0NCIvPjxjaXJjbGUgY3g9IjI5MSIgY3k9IjE1NSIgcj0iNDQiLz48Y2lyY2xlIGN4PSIyNDAiIGN5PSIyNDciIHI9IjQ0Ii8+PC9nPjwvc3ZnPgo=" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
+<style>
+/* ===== Tokens (DESIGN.md) ===== */
+:root {
+  --navy: #1A3B73; --blue: #2962FF; --green: #00C853;
+  --ink: #0F172A; --gray-600: #475569; --gray-400: #94A3B8;
+  --surface: #FFFFFF; --surface-alt: #F5F7FA; --border: #E2E8F0;
+  --blue-hover: #1E4FD8; --green-text: #007A33; --on-navy-muted: #C6CEDC;
+  --border-input: #7B8798;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --fs-display: clamp(2.25rem, 5vw + 1rem, 3.5rem);
+  --fs-h1: clamp(2rem, 4vw + 1rem, 3rem);
+  --fs-h2: clamp(1.75rem, 3vw + 1rem, 2.5rem);
+  --fs-h3: clamp(1.25rem, 1vw + 1rem, 1.5rem);
+  --fs-lead: clamp(1.125rem, .5vw + 1rem, 1.25rem);
+  --fs-body: 1rem; --fs-small: .875rem; --fs-micro: .75rem;
+
+  --space-1: 8px; --space-2: 16px; --space-3: 24px; --space-4: 32px;
+  --space-5: 40px; --space-6: 48px; --space-8: 64px; --space-12: 96px;
+  --section-y: var(--space-12); --section-head-gap: var(--space-8);
+  --card-pad: var(--space-4); --grid-gap: var(--space-3); --page-x: var(--space-3);
+  --header-h: 72px;
+}
+@media (max-width: 639px) {
+  :root {
+    --section-y: var(--space-8); --section-head-gap: var(--space-6);
+    --card-pad: var(--space-3); --grid-gap: var(--space-2); --page-x: var(--space-2);
+    --header-h: 64px;
+  }
+}
+
+/* ===== Base ===== */
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-padding-top: calc(var(--header-h) + var(--space-2)); -webkit-text-size-adjust: 100%; }
+body { margin: 0; font-family: var(--font-sans); font-size: var(--fs-body); line-height: 1.6; color: var(--ink); background: var(--surface); -webkit-font-smoothing: antialiased; }
+h1, h2, h3, p, ul, ol { margin: 0; padding: 0; }
+ul, ol { list-style: none; }
+img, svg { display: block; max-width: 100%; }
+a { color: var(--blue); text-decoration: none; }
+a:hover { text-decoration: underline; text-underline-offset: 3px; }
+:where(a, button, input, summary):focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; border-radius: 4px; }
+.on-navy :focus-visible { outline-color: #fff; }
+.skip { position: absolute; left: var(--space-2); top: -100px; background: var(--surface); padding: var(--space-1) var(--space-2); z-index: 100; }
+.skip:focus { top: var(--space-1); }
+.num { font-variant-numeric: tabular-nums; }
+
+.container { width: 100%; max-width: calc(1200px + 2 * var(--page-x)); margin: 0 auto; padding: 0 var(--page-x); }
+.section { padding: var(--section-y) 0; }
+.section--alt { background: var(--surface-alt); }
+
+/* ===== Tipografia ===== */
+.display { font-size: var(--fs-display); font-weight: 700; line-height: 1.05; letter-spacing: -0.03em; max-width: 16ch; }
+.h2 { font-size: var(--fs-h2); font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; max-width: 24ch; }
+.h3 { font-size: var(--fs-h3); font-weight: 600; line-height: 1.25; letter-spacing: -0.01em; }
+.lead { font-size: var(--fs-lead); line-height: 1.5; color: var(--gray-600); max-width: 52ch; }
+.eyebrow { font-size: var(--fs-micro); font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--gray-600); }
+.muted { color: var(--gray-600); }
+.small { font-size: var(--fs-small); }
+
+.section-head { margin-bottom: var(--section-head-gap); }
+.section-head .eyebrow + .h2 { margin-top: var(--space-2); }
+.section-head .h2 + .lead { margin-top: var(--space-3); }
+
+/* ===== Botões ===== */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1); min-height: 48px; padding: 16px 32px; font: inherit; font-size: var(--fs-body); font-weight: 600; line-height: 1; border-radius: 8px; border: 1.5px solid transparent; cursor: pointer; text-decoration: none; transition: background .18s ease, transform .18s ease, box-shadow .18s ease; }
+.btn:hover { text-decoration: none; }
+.btn--primary { background: var(--blue); color: #fff; }
+.btn--primary:hover { background: var(--blue-hover); transform: translateY(-1px); box-shadow: 0 8px 24px -8px rgba(26,59,115,.12); }
+.btn--primary:active { transform: none; box-shadow: none; background: #1A44BD; }
+.btn--sm { min-height: 40px; padding: 10px 20px; font-size: var(--fs-small); border-radius: 999px; }
+.btn--block { width: 100%; }
+
+/* ===== Cabeçalho ===== */
+.site-header { position: sticky; top: 0; z-index: 50; height: var(--header-h); background: var(--surface); border-bottom: 1px solid transparent; transition: border-color .18s ease; }
+.site-header.is-scrolled { border-bottom-color: var(--border); }
+.header-inner { height: 100%; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.logo svg { height: 32px; width: auto; }
+.nav { display: flex; align-items: center; gap: var(--space-4); }
+.nav-links { display: flex; gap: var(--space-4); }
+.nav a:not(.btn) { color: var(--ink); font-size: var(--fs-small); font-weight: 600; padding: 12px 0; }
+.nav a:not(.btn):hover { color: var(--blue); text-decoration: none; }
+.nav-actions { display: flex; align-items: center; gap: var(--space-3); }
+.menu-toggle { display: none; width: 44px; height: 44px; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 8px; background: none; color: var(--ink); cursor: pointer; }
+@media (max-width: 767px) {
+  .menu-toggle { display: inline-flex; }
+  .nav { display: none; position: absolute; top: var(--header-h); left: 0; right: 0; background: var(--surface); border-bottom: 1px solid var(--border); padding: var(--space-2) var(--page-x) var(--space-3); flex-direction: column; align-items: stretch; gap: var(--space-1); }
+  .nav.is-open { display: flex; }
+  .nav-links, .nav-actions { flex-direction: column; align-items: stretch; gap: 0; }
+  .nav a:not(.btn) { font-size: var(--fs-body); padding: 12px 0; }
+  .nav-actions .btn { margin-top: var(--space-2); }
+}
+
+/* ===== Hero ===== */
+.hero { padding: var(--space-8) 0 var(--section-y); }
+.hero-grid { display: grid; grid-template-columns: 5fr 7fr; gap: var(--space-8); align-items: center; }
+.hero .lead { margin-top: var(--space-3); }
+.hero-cta { margin-top: var(--space-4); }
+.hero-micro { margin-top: var(--space-2); font-size: var(--fs-small); color: var(--gray-600); }
+@media (max-width: 1023px) { .hero-grid { grid-template-columns: 1fr; gap: var(--space-6); } }
+@media (max-width: 639px) { .hero { padding-top: var(--space-6); } .hero-cta .btn { width: 100%; } }
+
+/* Painel de produto (recorte de tela) */
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 24px 48px -12px rgba(26,59,115,.18); overflow: hidden; }
+.panel-bar { display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-bottom: 1px solid var(--border); }
+.panel-bar .eyebrow { letter-spacing: .04em; }
+.panel-filter { white-space: nowrap; font-size: var(--fs-micro); color: var(--gray-600); border: 1px solid var(--border); border-radius: 999px; padding: 4px 12px; }
+.panel-body { padding: var(--space-3); display: grid; gap: var(--space-3); }
+.kpis { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-2); }
+.kpi { background: var(--surface-alt); border-radius: 12px; padding: var(--space-2); }
+.kpi dt { font-size: var(--fs-micro); font-weight: 600; color: var(--gray-600); }
+.kpi dd { margin: var(--space-1) 0 0; font-size: var(--fs-h3); font-weight: 700; letter-spacing: -0.01em; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.kpi dd small { font-size: .6em; font-weight: 600; margin-right: 2px; }
+.kpi .pos { color: var(--green-text); }
+.kpi p { margin-top: 4px; font-size: var(--fs-micro); color: var(--gray-600); }
+.mini-table { width: 100%; border-collapse: collapse; font-size: var(--fs-small); }
+.mini-table caption { text-align: left; font-size: var(--fs-micro); font-weight: 600; color: var(--gray-600); padding-bottom: var(--space-1); }
+.mini-table th { text-align: left; font-size: var(--fs-micro); font-weight: 600; color: var(--gray-600); padding: var(--space-1) 0; border-bottom: 1px solid var(--border); }
+.mini-table td { padding: 10px 0; border-bottom: 1px solid var(--border); }
+.mini-table tr:last-child td { border-bottom: 0; }
+.mini-table .r { text-align: right; font-variant-numeric: tabular-nums; }
+.status { display: inline-block; font-size: var(--fs-micro); font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--surface-alt); color: var(--gray-600); }
+.status--ok { background: #E0F8EA; color: var(--green-text); }
+.mock-note { margin-top: var(--space-1); font-size: var(--fs-micro); color: var(--gray-600); text-align: right; }
+@media (max-width: 479px) { .kpis { grid-template-columns: 1fr; } .mini-table .hide-xs { display: none; } }
+
+/* ===== Faixa de identificação ===== */
+.ident { background: var(--surface-alt); padding: var(--space-4) 0; }
+.ident p { font-size: var(--fs-lead); text-align: center; max-width: 64ch; margin: 0 auto; }
+
+/* ===== Dor ===== */
+.pains { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--grid-gap); }
+.pain { border-top: 2px solid var(--ink); padding-top: var(--space-3); }
+.pain q { display: block; font-size: var(--fs-h3); font-weight: 600; line-height: 1.3; letter-spacing: -0.01em; quotes: "“" "”"; }
+.pain p { margin-top: var(--space-2); color: var(--gray-600); }
+@media (max-width: 1023px) { .pains { grid-template-columns: 1fr; gap: var(--space-5); } }
+
+/* ===== Virada ===== */
+.flow { display: grid; grid-template-columns: 1fr 120px auto 120px 1fr; align-items: center; margin-bottom: var(--space-8); }
+.flow-files { display: grid; gap: var(--space-1); justify-items: end; }
+.file { font-size: var(--fs-small); color: var(--gray-600); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; font-variant-numeric: tabular-nums; }
+.flow-lines { height: 100%; min-height: 240px; width: 120px; }
+.flow-core { display: grid; justify-items: center; gap: var(--space-1); text-align: center; }
+.flow-core svg { width: 96px; height: auto; }
+.flow-core strong { font-size: var(--fs-small); font-weight: 600; }
+.flow-out { display: grid; gap: var(--space-1); }
+.flow-out li { font-size: var(--fs-small); font-weight: 600; color: var(--navy); }
+@media (max-width: 1023px) {
+  .flow { grid-template-columns: 1fr; gap: var(--space-3); justify-items: center; }
+  .flow-files { justify-items: center; grid-template-columns: repeat(2, auto); }
+  .flow-lines { display: none; }
+  .flow-out { grid-template-columns: repeat(3, auto); gap: var(--space-1) var(--space-3); justify-content: center; }
+  .flow-arrow { display: block !important; color: var(--gray-600); font-size: var(--fs-h3); line-height: 1; }
+}
+.flow-arrow { display: none; }
+
+.features { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--grid-gap); }
+.feature { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: var(--card-pad); }
+.feature .eyebrow { display: block; }
+.feature .h3 { margin-top: var(--space-1); }
+.feature p { margin-top: var(--space-1); color: var(--gray-600); }
+@media (max-width: 1023px) { .features { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 639px) { .features { grid-template-columns: 1fr; } }
+
+/* ===== Como funciona ===== */
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--grid-gap); counter-reset: s; }
+.step-num { font-size: var(--fs-micro); font-weight: 600; letter-spacing: .06em; color: var(--navy); }
+.step .h3 { margin-top: var(--space-2); }
+.step p { margin-top: var(--space-1); color: var(--gray-600); }
+.step + .step { border-left: 1px solid var(--border); padding-left: var(--space-3); }
+@media (max-width: 1023px) { .steps { grid-template-columns: 1fr; gap: var(--space-5); } .step + .step { border-left: 0; padding-left: 0; } }
+
+/* ===== Prova: dados são seus ===== */
+.trust { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--grid-gap); }
+.trust-item .h3 { font-size: 1.25rem; }
+.trust-item p { margin-top: var(--space-1); color: var(--gray-600); }
+.trust-item .tag { display: inline-block; margin-bottom: var(--space-2); font-size: var(--fs-micro); font-weight: 600; color: var(--navy); border: 1px solid var(--border); background: var(--surface); border-radius: 999px; padding: 2px 10px; font-variant-numeric: tabular-nums; }
+.launch-note { margin-top: var(--space-6); padding-top: var(--space-3); border-top: 1px solid var(--border); color: var(--gray-600); max-width: 72ch; }
+@media (max-width: 1023px) { .trust { grid-template-columns: 1fr; gap: var(--space-4); } }
+
+/* ===== CTA final ===== */
+.cta { text-align: center; }
+.cta .h2, .cta .lead { margin-left: auto; margin-right: auto; }
+.cta .lead { margin-top: var(--space-3); }
+.cta-form { max-width: 800px; margin: var(--space-6) auto 0; text-align: left; }
+.fields { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-2); margin-bottom: var(--space-3); }
+.field { display: grid; gap: var(--space-1); }
+.field label { font-size: var(--fs-small); font-weight: 600; color: var(--ink); }
+.field input { min-height: 48px; padding: 0 var(--space-2); font: inherit; font-size: var(--fs-body); color: var(--ink); background: var(--surface); border: 1px solid var(--border-input); border-radius: 8px; }
+.field input::placeholder { color: var(--gray-400); }
+.field input:focus { border-color: var(--blue); }
+.cta-micro { margin-top: var(--space-2); font-size: var(--fs-small); color: var(--gray-600); text-align: center; }
+@media (max-width: 767px) { .fields { grid-template-columns: 1fr; } }
+
+/* ===== Rodapé ===== */
+.site-footer { background: var(--navy); color: #fff; padding: var(--space-8) 0 var(--space-4); }
+.footer-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
+.footer-logo svg { height: 28px; width: auto; }
+.footer-links { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); }
+.footer-links a { color: #fff; font-size: var(--fs-small); padding: 12px 0; }
+.footer-bottom { margin-top: var(--space-6); padding-top: var(--space-3); border-top: 1px solid rgba(255,255,255,.12); display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--space-2); font-size: var(--fs-micro); color: var(--on-navy-muted); }
+.footer-bottom a { color: var(--on-navy-muted); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  .btn--primary:hover { transform: none; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#conteudo">Pular para o conteúdo</a>
+
+<!-- 1. CABEÇALHO -->
+<header class="site-header" id="topo">
+  <div class="container header-inner">
+    <a href="#" class="logo" aria-label="Plurima — início">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="-352 -284 2020 568" class="logo-svg" width="114" height="32" role="img" aria-label="Plurima"><title>Plurima</title><g fill="none" stroke-linecap="butt"><path stroke="#2962FF" stroke-width="11" d="M-58 -37.4L-224.8 -145.2M-69 0L-249 0M-58 37.4L-224.8 145.2"/><path stroke="#00C853" stroke-width="10" d="M48.1 -49.5L208.6 -214.7M60.9 -32.4L251.3 -133.8M68.1 -11.2L277.6 -45.7M68.1 11.2L277.6 45.7M60.9 32.4L251.3 133.8M48.1 49.5L208.6 214.7"/></g><g fill="#2962FF"><circle cx="-271" cy="-175" r="45"/><circle cx="-304" cy="0" r="45"/><circle cx="-271" cy="175" r="45"/></g><g fill="#00C853"><circle cx="0" cy="0" r="59"/><circle cx="240" cy="-247" r="35"/><circle cx="291" cy="-155" r="35"/><circle cx="322" cy="-53" r="35"/><circle cx="322" cy="53" r="35"/><circle cx="291" cy="155" r="35"/><circle cx="240" cy="247" r="35"/></g><path fill="#1A3B73" fill-rule="evenodd" transform="translate(493 0) scale(2.8342) translate(-471 -489)" d="M548.50 437.13L553.38 437.08L554.50 437.26L555.77 438.13L556.73 439.38L557.05 440.75L557.01 535.75L556.78 537.38L555.86 538.75L554.50 539.77L553.38 539.97L547.50 539.83L546.13 538.78L545.25 537.69L544.94 535.88L544.90 442.00L545.13 439.98L546.17 438.38L547.63 437.39ZM690.69 442.00L693.88 442.07L696.53 443.25L698.79 445.38L699.80 447.13L700.04 448.13L700.25 450.25L700.07 452.63L699.84 453.50L698.93 455.00L697.32 456.75L695.88 457.73L693.50 458.46L691.13 458.46L688.63 457.83L687.13 456.96L685.13 454.76L684.13 452.25L684.09 448.25L685.25 445.55L686.21 444.25L687.50 443.19L689.50 442.22ZM474.34 442.13L504.75 442.05L511.38 443.15L514.50 444.23L516.75 445.18L520.13 447.15L522.88 449.15L525.76 452.13L527.80 454.88L529.82 458.50L531.79 464.13L532.42 468.63L532.58 472.25L532.43 475.38L531.79 480.38L530.75 483.55L528.78 487.75L525.88 491.95L523.02 494.88L520.63 496.81L517.38 498.78L515.13 499.83L509.25 501.68L504.75 502.11L490.25 502.17L483.75 502.06L483.25 502.20L482.98 502.63L482.92 535.75L482.74 536.88L481.86 538.50L480.38 539.72L479.63 539.97L473.50 539.92L471.38 538.60L470.38 536.47L470.29 447.50L471.19 444.25L472.27 443.13ZM483.50 454.47L483.13 454.82L482.88 455.63L482.90 488.25L483.25 489.58L483.88 489.81L488.50 489.83L504.88 489.63L508.63 488.77L511.00 487.77L512.75 486.68L514.63 485.01L516.75 482.66L518.75 479.18L519.74 475.63L519.96 472.75L519.75 468.88L518.76 465.25L516.75 461.42L514.75 459.14L512.38 457.26L510.63 456.29L507.13 455.06L503.25 454.54ZM850.50 468.88L855.94 469.13L859.88 470.13L862.63 471.17L868.13 474.20L872.50 477.97L873.01 477.38L873.27 472.63L874.13 471.25L875.61 470.13L876.88 469.94L882.50 470.10L883.94 471.13L885.01 473.00L885.16 509.88L884.96 535.50L883.88 536.97L882.50 537.97L880.13 538.11L875.50 537.86L874.16 536.88L873.22 535.50L873.09 530.63L872.88 530.13L872.50 529.97L869.43 532.75L866.63 534.76L865.25 535.42L862.50 536.83L856.25 538.76L851.63 539.09L848.13 539.04L844.63 538.66L840.63 537.70L836.00 535.84L832.50 533.77L830.00 531.85L827.13 529.04L824.21 525.63L821.18 520.75L819.29 515.50L818.25 511.41L817.74 507.38L817.70 504.38L818.32 496.50L819.21 493.00L821.22 487.63L823.05 484.25L824.25 482.55L826.25 480.06L829.09 477.13L831.25 475.24L834.38 473.18L838.38 471.21L841.38 470.16L845.00 469.27ZM739.44 469.00L743.75 468.94L747.13 469.21L750.75 470.23L753.25 471.22L757.75 474.13L760.85 477.25L762.35 479.50L762.88 479.71L763.63 479.44L766.13 476.14L768.25 474.20L771.16 472.25L773.25 471.15L775.75 470.19L779.75 469.15L784.75 468.92L789.63 469.22L795.63 471.14L799.13 473.19L800.75 474.31L802.88 476.25L805.87 480.25L807.80 484.13L808.76 486.63L809.78 492.63L809.85 535.13L809.63 536.35L808.75 537.84L807.69 538.88L806.38 539.28L801.25 539.35L799.25 538.78L798.02 537.00L797.81 535.25L797.63 495.00L796.81 490.38L794.86 486.50L792.75 484.13L789.88 482.11L787.50 481.18L785.25 480.85L781.88 480.80L778.88 481.13L775.88 482.21L774.03 483.25L771.41 485.38L770.09 487.13L768.19 490.88L767.13 495.38L767.04 520.38L767.00 535.75L766.89 536.75L766.57 537.38L765.55 538.63L764.63 539.13L763.25 539.48L759.88 539.53L757.00 539.02L756.38 538.65L755.42 537.50L754.97 536.13L754.87 531.50L754.85 496.25L754.75 494.17L753.89 490.13L752.75 487.45L751.78 486.00L749.88 484.01L747.26 482.25L743.38 481.02L738.75 480.89L736.13 481.19L733.25 482.19L731.38 483.21L728.13 486.03L726.20 488.75L725.24 491.00L724.36 494.25L724.00 497.38L724.00 535.38L723.84 536.63L722.13 538.78L720.00 539.45L715.88 539.50L714.75 539.32L713.38 538.75L712.18 537.50L711.80 535.25L711.77 476.25L712.10 472.38L713.13 471.09L714.63 470.08L719.38 469.94L721.25 470.17L722.75 471.36L723.63 473.00L723.94 476.25L724.38 476.71L728.13 473.18L731.46 471.25L734.38 470.12ZM670.31 469.25L674.63 469.36L676.50 470.29L677.60 471.63L678.00 472.75L678.10 478.13L677.90 479.50L676.75 480.86L675.38 481.63L668.63 481.73L665.88 482.22L663.38 483.21L660.17 485.25L658.26 487.25L657.13 488.88L655.25 492.88L654.34 496.38L654.09 499.00L654.07 535.38L653.89 537.00L652.73 538.75L650.75 539.68L645.63 539.76L643.33 538.75L642.10 536.75L641.92 532.75L641.93 474.63L642.21 472.50L643.13 471.17L644.63 470.06L651.50 470.14L652.82 471.25L653.72 472.88L653.96 474.13L653.97 476.75L654.19 477.25L654.50 477.38L657.38 474.29L660.25 472.16L662.00 471.25L664.98 470.13L668.50 469.39ZM575.58 469.75L580.00 469.72L581.63 470.05L582.94 471.13L583.94 472.88L584.07 513.13L585.20 518.50L586.24 520.88L587.31 522.50L590.26 525.63L592.00 526.80L593.99 527.75L596.88 528.64L598.75 528.91L603.25 528.89L608.25 527.75L610.26 526.75L612.99 524.75L615.68 521.63L616.75 519.58L617.75 516.52L618.19 513.50L618.24 474.13L618.38 473.13L619.22 471.25L620.38 470.18L621.38 469.86L625.50 469.69L628.22 470.13L629.63 471.52L630.08 472.50L630.38 474.63L630.39 485.00L630.31 515.50L629.79 519.50L628.75 522.96L627.75 525.44L625.76 528.88L622.75 532.64L620.38 534.75L617.50 536.78L613.27 538.88L609.75 539.97L603.75 540.91L596.88 540.78L591.75 539.81L588.81 538.75L584.65 536.75L581.88 534.85L579.27 532.50L577.13 529.88L575.19 526.75L573.21 522.00L572.24 518.13L571.89 512.63L571.93 474.38L572.17 472.38L573.13 470.90L574.13 470.08ZM689.58 470.00L694.25 469.98L695.63 470.17L696.79 471.13L697.73 472.38L698.13 474.00L698.14 535.38L697.84 537.00L696.75 538.50L696.06 539.00L694.88 539.41L691.38 539.55L688.25 539.10L687.25 538.43L686.25 536.88L686.05 536.00L686.05 473.88L686.25 472.75L687.18 471.25L688.50 470.25ZM851.00 480.88L847.75 481.13L843.88 482.29L840.18 484.25L836.30 487.50L834.22 490.25L833.25 491.92L831.30 496.38L830.42 500.50L830.15 504.88L830.33 507.63L831.13 511.50L832.25 514.53L834.19 518.00L836.38 520.74L838.50 522.64L840.19 523.75L844.13 525.68L848.25 526.85L852.50 527.01L855.84 526.63L858.88 525.78L861.13 524.80L864.54 522.63L867.73 519.63L869.76 516.88L871.85 512.50L872.93 508.13L873.13 502.50L872.65 498.38L871.83 495.38L870.87 493.00L868.74 489.50L866.75 487.24L863.16 484.25L859.48 482.25L855.75 481.15Z"/></svg>
+    </a>
+    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="menu" aria-label="Abrir menu">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <nav class="nav" id="menu" aria-label="Principal">
+      <ul class="nav-links">
+        <li><a href="#">Sobre</a></li>
+        <li><a href="#">Blog</a></li>
+      </ul>
+      <div class="nav-actions">
+        <a href="#">Login</a>
+        <a href="#cadastro" class="btn btn--primary btn--sm">Cadastro</a>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main id="conteudo">
+
+  <!-- 2. HERO -->
+  <section class="hero" aria-labelledby="hero-titulo">
+    <div class="container hero-grid">
+      <div>
+        <h1 class="display" id="hero-titulo">Gestão para o representante multimarcas.</h1>
+        <p class="lead">Pedidos, comissões, clientes e análises das suas representadas em um só lugar. Traga seu histórico do Excel e faça mais com os dados que você já gera — em menos tempo.</p>
+        <div class="hero-cta">
+          <a href="#cadastro" class="btn btn--primary">Testar grátis por 7 dias</a>
+          <p class="hero-micro">Sem compromisso. Você só paga se gostar.</p>
+        </div>
+      </div>
+
+      <figure class="hero-visual" style="margin:0">
+        <div class="panel" role="img" aria-label="Painel da Plurima com vendas do mês, comissões a receber, recebidas e em atraso, e comissão por representada">
+          <div class="panel-bar">
+            <span class="eyebrow">Painel · Outubro de 2026</span>
+            <span class="panel-filter">3 representadas</span>
+          </div>
+          <div class="panel-body">
+            <dl class="kpis">
+              <div class="kpi"><dt>Vendas no mês</dt><dd><small>R$</small>186.420,00</dd><p>58 pedidos · 31 clientes</p></div>
+              <div class="kpi"><dt>Comissões recebidas</dt><dd class="pos"><small>R$</small>4.115,00</dd><p>+ R$ 612,30 sobre setembro</p></div>
+              <div class="kpi"><dt>Comissões a receber</dt><dd><small>R$</small>3.692,40</dd><p>Bolsas Aurora · previsto para 08/11</p></div>
+              <div class="kpi"><dt>Comissões em atraso</dt><dd><small>R$</small>2.129,00</dd><p>Têxtil Vale Verde · venceu em 30/10</p></div>
+            </dl>
+            <table class="mini-table">
+              <caption>Comissão por representada</caption>
+              <thead><tr><th scope="col">Representada</th><th scope="col" class="r hide-xs">Vendas</th><th scope="col" class="r">Comissão</th><th scope="col" class="r">Situação</th></tr></thead>
+              <tbody>
+                <tr><td>Calçados Serra Azul</td><td class="r hide-xs">R$ 82.300,00</td><td class="r">R$ 4.115,00</td><td class="r"><span class="status status--ok">Recebida</span></td></tr>
+                <tr><td>Bolsas Aurora</td><td class="r hide-xs">R$ 61.540,00</td><td class="r">R$ 3.692,40</td><td class="r"><span class="status">A receber</span></td></tr>
+                <tr><td>Têxtil Vale Verde</td><td class="r hide-xs">R$ 42.580,00</td><td class="r">R$ 2.129,00</td><td class="r"><span class="status">Em atraso</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <figcaption class="mock-note">Mockup: dados fictícios — substituir por tela real do produto.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 3. FAIXA DE IDENTIFICAÇÃO -->
+  <section class="ident" aria-label="Para quem é">
+    <div class="container">
+      <p>Para o representante comercial que atende várias representadas — e já domina o Excel, mas não quer mais gerir o negócio em dezenas de planilhas.</p>
+    </div>
+  </section>
+
+  <!-- 4. DOR -->
+  <section class="section" aria-labelledby="dor-titulo">
+    <div class="container">
+      <header class="section-head">
+        <p class="eyebrow">O problema</p>
+        <h2 class="h2" id="dor-titulo">O dado existe. Só não vira decisão.</h2>
+        <p class="lead">O pedido vai para o sistema da representada e depois para a sua planilha. A comissão, para outra. O cliente novo, para mais uma. No fim do mês, a pergunta continua sem resposta.</p>
+      </header>
+      <div class="pains">
+        <article class="pain">
+          <q>Não sei o que tenho a receber, nem quando.</q>
+          <p>Uma comissão lançada errado, e o dinheiro com que você contava não chega.</p>
+        </article>
+        <article class="pain">
+          <q>Trabalho muito e não vejo o dinheiro sobrar.</q>
+          <p>Sem saber quanto gasta e quanto ganha por marca, esforço e resultado não se encontram.</p>
+        </article>
+        <article class="pain">
+          <q>Rodo muito e vendo pouco.</q>
+          <p>Muitas visitas, muita conversa — e nenhuma clareza sobre onde vale a pena insistir.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. VIRADA + RESUMO DAS FUNCIONALIDADES -->
+  <section class="section section--alt" aria-labelledby="virada-titulo">
+    <div class="container">
+      <header class="section-head">
+        <p class="eyebrow">A Plurima</p>
+        <h2 class="h2" id="virada-titulo">Tudo o que está disperso, em uma só gestão.</h2>
+        <p class="lead">Feita para o multimarcas — não um CRM adaptado. Cada pedido alimenta comissões, carteira e análises ao mesmo tempo.</p>
+      </header>
+
+      <div class="flow" aria-label="Planilhas e arquivos separados convergem para a Plurima">
+        <ul class="flow-files">
+          <li class="file">pedidos_2026.xlsx</li>
+          <li class="file">comissoes_serra-azul.xlsx</li>
+          <li class="file">clientes.xlsx</li>
+          <li class="file">catalogo_aurora.pdf</li>
+          <li class="file">despesas_viagem.xlsx</li>
+          <li class="file">sistema da representada</li>
+        </ul>
+        <svg class="flow-lines" viewBox="0 0 120 240" preserveAspectRatio="none" aria-hidden="true">
+          <g stroke="#94A3B8" stroke-width="1.5" fill="none" vector-effect="non-scaling-stroke">
+            <path d="M0 20 C60 20 60 120 120 120" vector-effect="non-scaling-stroke"/>
+            <path d="M0 60 C60 60 60 120 120 120" vector-effect="non-scaling-stroke"/>
+            <path d="M0 100 C60 100 60 120 120 120" vector-effect="non-scaling-stroke"/>
+            <path d="M0 140 C60 140 60 120 120 120" vector-effect="non-scaling-stroke"/>
+            <path d="M0 180 C60 180 60 120 120 120" vector-effect="non-scaling-stroke"/>
+            <path d="M0 220 C60 220 60 120 120 120" vector-effect="non-scaling-stroke"/>
+          </g>
+        </svg>
+        <span class="flow-arrow" aria-hidden="true">↓</span>
+        <div class="flow-core">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="-352 -284 712 568" class="core-svg" width="96" height="77" aria-hidden="true"><g fill="none" stroke-linecap="butt"><path stroke="#2962FF" stroke-width="11" d="M-58 -37.4L-224.8 -145.2M-69 0L-249 0M-58 37.4L-224.8 145.2"/><path stroke="#00C853" stroke-width="10" d="M48.1 -49.5L208.6 -214.7M60.9 -32.4L251.3 -133.8M68.1 -11.2L277.6 -45.7M68.1 11.2L277.6 45.7M60.9 32.4L251.3 133.8M48.1 49.5L208.6 214.7"/></g><g fill="#2962FF"><circle cx="-271" cy="-175" r="45"/><circle cx="-304" cy="0" r="45"/><circle cx="-271" cy="175" r="45"/></g><g fill="#00C853"><circle cx="0" cy="0" r="59"/><circle cx="240" cy="-247" r="35"/><circle cx="291" cy="-155" r="35"/><circle cx="322" cy="-53" r="35"/><circle cx="322" cy="53" r="35"/><circle cx="291" cy="155" r="35"/><circle cx="240" cy="247" r="35"/></g></svg>
+          <strong>Plurima</strong>
+        </div>
+        <svg class="flow-lines" viewBox="0 0 120 240" preserveAspectRatio="none" aria-hidden="true">
+          <g stroke="#1A3B73" stroke-width="1.5" fill="none">
+            <path d="M0 120 C60 120 60 97 120 97" vector-effect="non-scaling-stroke"/>
+            <path d="M0 120 L120 120" vector-effect="non-scaling-stroke"/>
+            <path d="M0 120 C60 120 60 143 120 143" vector-effect="non-scaling-stroke"/>
+          </g>
+        </svg>
+        <span class="flow-arrow" aria-hidden="true">↓</span>
+        <ul class="flow-out">
+          <li>Uma base</li>
+          <li>Um painel</li>
+          <li>Uma decisão</li>
+        </ul>
+      </div>
+
+      <div class="features">
+        <article class="feature">
+          <span class="eyebrow">Pedidos</span>
+          <h3 class="h3">Lance uma vez, use em tudo</h3>
+          <p>Pedidos por representada e por cliente, com itens, prazos e descontos — e exportação em Excel.</p>
+        </article>
+        <article class="feature">
+          <span class="eyebrow">Comissões</span>
+          <h3 class="h3">Calculadas a cada pedido</h3>
+          <p>A comissão nasce com o pedido. Você só marca como recebida — e vê na hora o que está a receber ou em atraso.</p>
+        </article>
+        <article class="feature">
+          <span class="eyebrow">Carteira de clientes</span>
+          <h3 class="h3">Cada lojista, um histórico</h3>
+          <p>Compras, mix e frequência de cada cliente em um só cadastro, com oportunidades e próximos passos.</p>
+        </article>
+        <article class="feature">
+          <span class="eyebrow">Catálogos</span>
+          <h3 class="h3">Catálogo interativo por marca</h3>
+          <p>Tabela de preços e produtos de cada representada, pronta para enviar ao cliente pelo WhatsApp.</p>
+        </article>
+        <article class="feature">
+          <span class="eyebrow">Custos</span>
+          <h3 class="h3">Quanto custa cada visita</h3>
+          <p>Despesas de viagem e operação lançadas ao lado das vendas, para você ver o resultado real.</p>
+        </article>
+        <article class="feature">
+          <span class="eyebrow">Análises</span>
+          <h3 class="h3">Seu território em uma tela</h3>
+          <p>Vendas por marca, cliente, região e período, com filtros em um clique. Sem montar gráfico em planilha.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. COMO FUNCIONA -->
+  <section class="section" aria-labelledby="como-titulo">
+    <div class="container">
+      <header class="section-head">
+        <p class="eyebrow">Como funciona</p>
+        <h2 class="h2" id="como-titulo">Do Excel à decisão em três passos.</h2>
+      </header>
+      <ol class="steps">
+        <li class="step">
+          <span class="step-num">01</span>
+          <h3 class="h3">Traga seu histórico</h3>
+          <p>Baixe a planilha modelo, cole os dados que você já tem e faça o upload. Anos de histórico entram em minutos — ou nossa equipe faz a migração por você.</p>
+        </li>
+        <li class="step">
+          <span class="step-num">02</span>
+          <h3 class="h3">Lance seus pedidos</h3>
+          <p>Cada pedido atualiza comissões, carteira e resultados. Nada de copiar o mesmo dado em três planilhas.</p>
+        </li>
+        <li class="step">
+          <span class="step-num">03</span>
+          <h3 class="h3">Decida com dados</h3>
+          <p>Abra Análises e veja onde vender mais, o que está para receber e quanto sobra no fim do mês.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 7. PROVA: soberania de dados + transparência de lançamento -->
+  <section class="section section--alt" aria-labelledby="dados-titulo">
+    <div class="container">
+      <header class="section-head">
+        <p class="eyebrow">Seus dados são seus</p>
+        <h2 class="h2" id="dados-titulo">Excel entra, Excel sai.</h2>
+        <p class="lead">Você entra com seus dados e sai com eles, quando quiser. Nenhuma ferramenta deveria prender o seu negócio.</p>
+      </header>
+      <div class="trust">
+        <div class="trust-item">
+          <span class="tag">Entrada</span>
+          <h3 class="h3">Migração em minutos</h3>
+          <p>Planilha modelo, upload e importação automática. Para bases grandes, migração assistida com especialista.</p>
+        </div>
+        <div class="trust-item">
+          <span class="tag">.xlsx · .csv</span>
+          <h3 class="h3">Exportação integral</h3>
+          <p>Baixe toda a sua base a qualquer momento, pela própria plataforma, no formato que você já domina.</p>
+        </div>
+        <div class="trust-item">
+          <span class="tag">Saída</span>
+          <h3 class="h3">Sem amarras</h3>
+          <p>Se decidir sair, você leva tudo. Seus dados ficam protegidos e nunca são vendidos.</p>
+        </div>
+      </div>
+      <p class="launch-note">A Plurima está em lançamento. Em vez de depoimentos que ainda não existem, mostramos a plataforma funcionando: teste por 7 dias com o seu próprio histórico e tire suas conclusões.</p>
+    </div>
+  </section>
+
+  <!-- 9. CTA FINAL -->
+  <section class="section cta" id="cadastro" aria-labelledby="cta-titulo">
+    <div class="container">
+      <h2 class="h2" id="cta-titulo">Faça mais com os dados que você já gera.</h2>
+      <p class="lead">Comece hoje com o seu histórico real e veja, ainda na primeira semana, o que as suas planilhas não mostram.</p>
+      <form class="cta-form" action="#" novalidate>
+        <div class="fields">
+          <div class="field">
+            <label for="nome">Nome</label>
+            <input id="nome" name="nome" type="text" autocomplete="name" placeholder="Carla Mendes">
+          </div>
+          <div class="field">
+            <label for="email">E-mail</label>
+            <input id="email" name="email" type="email" autocomplete="email" placeholder="carla@email.com.br">
+          </div>
+          <div class="field">
+            <label for="whatsapp">WhatsApp</label>
+            <input id="whatsapp" name="whatsapp" type="tel" inputmode="tel" autocomplete="tel" placeholder="(11) 90000-0000">
+          </div>
+        </div>
+        <button type="submit" class="btn btn--primary btn--block">Testar grátis por 7 dias</button>
+        <p class="cta-micro">Sem compromisso. Você só paga se gostar — e leva sua base em Excel quando quiser.</p>
+      </form>
+    </div>
+  </section>
+</main>
+
+<!-- 10. RODAPÉ -->
+<footer class="site-footer on-navy">
+  <div class="container">
+    <div class="footer-top">
+      <a href="#" class="footer-logo" aria-label="Plurima — início">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="-352 -284 2020 568" class="logo-svg" width="100" height="28" role="img" aria-label="Plurima"><title>Plurima</title><g fill="none" stroke-linecap="butt"><path stroke="#FFFFFF" stroke-width="11" d="M-58 -37.4L-224.8 -145.2M-69 0L-249 0M-58 37.4L-224.8 145.2"/><path stroke="#FFFFFF" stroke-width="10" d="M48.1 -49.5L208.6 -214.7M60.9 -32.4L251.3 -133.8M68.1 -11.2L277.6 -45.7M68.1 11.2L277.6 45.7M60.9 32.4L251.3 133.8M48.1 49.5L208.6 214.7"/></g><g fill="#FFFFFF"><circle cx="-271" cy="-175" r="45"/><circle cx="-304" cy="0" r="45"/><circle cx="-271" cy="175" r="45"/></g><g fill="#FFFFFF"><circle cx="0" cy="0" r="59"/><circle cx="240" cy="-247" r="35"/><circle cx="291" cy="-155" r="35"/><circle cx="322" cy="-53" r="35"/><circle cx="322" cy="53" r="35"/><circle cx="291" cy="155" r="35"/><circle cx="240" cy="247" r="35"/></g><path fill="#FFFFFF" fill-rule="evenodd" transform="translate(493 0) scale(2.8342) translate(-471 -489)" d="M548.50 437.13L553.38 437.08L554.50 437.26L555.77 438.13L556.73 439.38L557.05 440.75L557.01 535.75L556.78 537.38L555.86 538.75L554.50 539.77L553.38 539.97L547.50 539.83L546.13 538.78L545.25 537.69L544.94 535.88L544.90 442.00L545.13 439.98L546.17 438.38L547.63 437.39ZM690.69 442.00L693.88 442.07L696.53 443.25L698.79 445.38L699.80 447.13L700.04 448.13L700.25 450.25L700.07 452.63L699.84 453.50L698.93 455.00L697.32 456.75L695.88 457.73L693.50 458.46L691.13 458.46L688.63 457.83L687.13 456.96L685.13 454.76L684.13 452.25L684.09 448.25L685.25 445.55L686.21 444.25L687.50 443.19L689.50 442.22ZM474.34 442.13L504.75 442.05L511.38 443.15L514.50 444.23L516.75 445.18L520.13 447.15L522.88 449.15L525.76 452.13L527.80 454.88L529.82 458.50L531.79 464.13L532.42 468.63L532.58 472.25L532.43 475.38L531.79 480.38L530.75 483.55L528.78 487.75L525.88 491.95L523.02 494.88L520.63 496.81L517.38 498.78L515.13 499.83L509.25 501.68L504.75 502.11L490.25 502.17L483.75 502.06L483.25 502.20L482.98 502.63L482.92 535.75L482.74 536.88L481.86 538.50L480.38 539.72L479.63 539.97L473.50 539.92L471.38 538.60L470.38 536.47L470.29 447.50L471.19 444.25L472.27 443.13ZM483.50 454.47L483.13 454.82L482.88 455.63L482.90 488.25L483.25 489.58L483.88 489.81L488.50 489.83L504.88 489.63L508.63 488.77L511.00 487.77L512.75 486.68L514.63 485.01L516.75 482.66L518.75 479.18L519.74 475.63L519.96 472.75L519.75 468.88L518.76 465.25L516.75 461.42L514.75 459.14L512.38 457.26L510.63 456.29L507.13 455.06L503.25 454.54ZM850.50 468.88L855.94 469.13L859.88 470.13L862.63 471.17L868.13 474.20L872.50 477.97L873.01 477.38L873.27 472.63L874.13 471.25L875.61 470.13L876.88 469.94L882.50 470.10L883.94 471.13L885.01 473.00L885.16 509.88L884.96 535.50L883.88 536.97L882.50 537.97L880.13 538.11L875.50 537.86L874.16 536.88L873.22 535.50L873.09 530.63L872.88 530.13L872.50 529.97L869.43 532.75L866.63 534.76L865.25 535.42L862.50 536.83L856.25 538.76L851.63 539.09L848.13 539.04L844.63 538.66L840.63 537.70L836.00 535.84L832.50 533.77L830.00 531.85L827.13 529.04L824.21 525.63L821.18 520.75L819.29 515.50L818.25 511.41L817.74 507.38L817.70 504.38L818.32 496.50L819.21 493.00L821.22 487.63L823.05 484.25L824.25 482.55L826.25 480.06L829.09 477.13L831.25 475.24L834.38 473.18L838.38 471.21L841.38 470.16L845.00 469.27ZM739.44 469.00L743.75 468.94L747.13 469.21L750.75 470.23L753.25 471.22L757.75 474.13L760.85 477.25L762.35 479.50L762.88 479.71L763.63 479.44L766.13 476.14L768.25 474.20L771.16 472.25L773.25 471.15L775.75 470.19L779.75 469.15L784.75 468.92L789.63 469.22L795.63 471.14L799.13 473.19L800.75 474.31L802.88 476.25L805.87 480.25L807.80 484.13L808.76 486.63L809.78 492.63L809.85 535.13L809.63 536.35L808.75 537.84L807.69 538.88L806.38 539.28L801.25 539.35L799.25 538.78L798.02 537.00L797.81 535.25L797.63 495.00L796.81 490.38L794.86 486.50L792.75 484.13L789.88 482.11L787.50 481.18L785.25 480.85L781.88 480.80L778.88 481.13L775.88 482.21L774.03 483.25L771.41 485.38L770.09 487.13L768.19 490.88L767.13 495.38L767.04 520.38L767.00 535.75L766.89 536.75L766.57 537.38L765.55 538.63L764.63 539.13L763.25 539.48L759.88 539.53L757.00 539.02L756.38 538.65L755.42 537.50L754.97 536.13L754.87 531.50L754.85 496.25L754.75 494.17L753.89 490.13L752.75 487.45L751.78 486.00L749.88 484.01L747.26 482.25L743.38 481.02L738.75 480.89L736.13 481.19L733.25 482.19L731.38 483.21L728.13 486.03L726.20 488.75L725.24 491.00L724.36 494.25L724.00 497.38L724.00 535.38L723.84 536.63L722.13 538.78L720.00 539.45L715.88 539.50L714.75 539.32L713.38 538.75L712.18 537.50L711.80 535.25L711.77 476.25L712.10 472.38L713.13 471.09L714.63 470.08L719.38 469.94L721.25 470.17L722.75 471.36L723.63 473.00L723.94 476.25L724.38 476.71L728.13 473.18L731.46 471.25L734.38 470.12ZM670.31 469.25L674.63 469.36L676.50 470.29L677.60 471.63L678.00 472.75L678.10 478.13L677.90 479.50L676.75 480.86L675.38 481.63L668.63 481.73L665.88 482.22L663.38 483.21L660.17 485.25L658.26 487.25L657.13 488.88L655.25 492.88L654.34 496.38L654.09 499.00L654.07 535.38L653.89 537.00L652.73 538.75L650.75 539.68L645.63 539.76L643.33 538.75L642.10 536.75L641.92 532.75L641.93 474.63L642.21 472.50L643.13 471.17L644.63 470.06L651.50 470.14L652.82 471.25L653.72 472.88L653.96 474.13L653.97 476.75L654.19 477.25L654.50 477.38L657.38 474.29L660.25 472.16L662.00 471.25L664.98 470.13L668.50 469.39ZM575.58 469.75L580.00 469.72L581.63 470.05L582.94 471.13L583.94 472.88L584.07 513.13L585.20 518.50L586.24 520.88L587.31 522.50L590.26 525.63L592.00 526.80L593.99 527.75L596.88 528.64L598.75 528.91L603.25 528.89L608.25 527.75L610.26 526.75L612.99 524.75L615.68 521.63L616.75 519.58L617.75 516.52L618.19 513.50L618.24 474.13L618.38 473.13L619.22 471.25L620.38 470.18L621.38 469.86L625.50 469.69L628.22 470.13L629.63 471.52L630.08 472.50L630.38 474.63L630.39 485.00L630.31 515.50L629.79 519.50L628.75 522.96L627.75 525.44L625.76 528.88L622.75 532.64L620.38 534.75L617.50 536.78L613.27 538.88L609.75 539.97L603.75 540.91L596.88 540.78L591.75 539.81L588.81 538.75L584.65 536.75L581.88 534.85L579.27 532.50L577.13 529.88L575.19 526.75L573.21 522.00L572.24 518.13L571.89 512.63L571.93 474.38L572.17 472.38L573.13 470.90L574.13 470.08ZM689.58 470.00L694.25 469.98L695.63 470.17L696.79 471.13L697.73 472.38L698.13 474.00L698.14 535.38L697.84 537.00L696.75 538.50L696.06 539.00L694.88 539.41L691.38 539.55L688.25 539.10L687.25 538.43L686.25 536.88L686.05 536.00L686.05 473.88L686.25 472.75L687.18 471.25L688.50 470.25ZM851.00 480.88L847.75 481.13L843.88 482.29L840.18 484.25L836.30 487.50L834.22 490.25L833.25 491.92L831.30 496.38L830.42 500.50L830.15 504.88L830.33 507.63L831.13 511.50L832.25 514.53L834.19 518.00L836.38 520.74L838.50 522.64L840.19 523.75L844.13 525.68L848.25 526.85L852.50 527.01L855.84 526.63L858.88 525.78L861.13 524.80L864.54 522.63L867.73 519.63L869.76 516.88L871.85 512.50L872.93 508.13L873.13 502.50L872.65 498.38L871.83 495.38L870.87 493.00L868.74 489.50L866.75 487.24L863.16 484.25L859.48 482.25L855.75 481.15Z"/></svg>
+      </a>
+      <nav class="footer-links" aria-label="Rodapé">
+        <a href="#">Sobre</a>
+        <a href="#">Blog</a>
+        <a href="#">Cadastro</a>
+        <a href="#">Login</a>
+        <a href="#">Contato</a>
+      </nav>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Plurima. Gestão para representantes comerciais multimarcas.</span>
+      <span><a href="#">Termos de uso</a> · <a href="#">Privacidade</a></span>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var header = document.getElementById('topo');
+  var onScroll = function () { header.classList.toggle('is-scrolled', window.scrollY > 8); };
+  window.addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  var btn = document.querySelector('.menu-toggle'), menu = document.getElementById('menu');
+  btn.addEventListener('click', function () {
+    var open = btn.getAttribute('aria-expanded') === 'true';
+    btn.setAttribute('aria-expanded', String(!open));
+    btn.setAttribute('aria-label', open ? 'Abrir menu' : 'Fechar menu');
+    menu.classList.toggle('is-open', !open);
+  });
+  document.querySelector('.cta-form').addEventListener('submit', function (e) { e.preventDefault(); });
+})();
+</script>
+</body>
+</html>
