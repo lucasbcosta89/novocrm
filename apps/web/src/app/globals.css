@@ -1110,3 +1110,51 @@ tr[id^="item-"]:target > td { background: var(--accent-suave); }
 .onboarding-acoes .btn-link:last-child { margin-left: auto; }
 .destaque-onboarding { outline: 3px solid var(--accent); outline-offset: 6px; border-radius: 6px; transition: outline-color 300ms ease; }
 .guia-rodape { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+
+/* ---------- Fase 23.3: menu lateral em três zonas, grupos recolhíveis, zero rolagem ----------
+   topo e rodapé não encolhem; o meio ocupa o resto SEM overflow (compacta em vez de rolar). */
+.sidebar { padding: 12px 10px; gap: 0; }
+.sidebar-topo, .saudacao, .sidebar-rodape { flex-shrink: 0; }
+.saudacao { margin: 2px 4px 6px; padding-bottom: 8px; font-size: .85rem; }
+.sidebar-nav { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 4px; padding: 4px 0; }
+.nav-grupo { display: grid; gap: 1px; }
+.nav-grupo-itens { display: grid; gap: 1px; }
+.nav-grupo-itens[hidden] { display: none; }
+.nav-grupo-cabecalho {
+  display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border: 0; border-radius: 6px; background: none; cursor: pointer;
+  color: var(--sidebar-apoio); font: inherit; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; text-align: left;
+}
+.nav-grupo-cabecalho:hover { background: var(--sidebar-hover); color: var(--sidebar-texto); }
+.nav-grupo-cabecalho .rotulo { flex: 1; }
+.nav-chevron { font-size: 12px; transition: transform 150ms ease; transform: rotate(-90deg); }
+.nav-chevron.aberto { transform: none; }
+.sidebar .nav-item { height: 36px; padding: 0 12px; gap: 10px; font-size: .9rem; }
+.sidebar .nav-item .rotulo { flex: 1; min-width: 0; text-overflow: ellipsis; }
+.nav-selo {
+  flex: none; min-width: 20px; height: 18px; padding: 0 6px; border-radius: 999px; display: inline-grid; place-items: center;
+  background: var(--sidebar-texto); color: var(--marca); font-size: 11px; font-weight: 700; line-height: 1;
+}
+.nav-selo-grupo { margin-left: auto; }
+.sidebar-rodape { margin-top: 0; padding-top: 6px; gap: 1px; }
+.sidebar-divisor { border: 0; border-top: 1px solid var(--sidebar-divisor); margin: 4px 6px; }
+/* alturas baixas: itens de 32px; abaixo de 620px some a saudação (subtítulo) */
+.menu-baixo .sidebar .nav-item { height: 32px; }
+.menu-baixo .nav-grupo-cabecalho { height: 28px; }
+.menu-minimo .saudacao { display: none; }
+.menu-minimo .sidebar-topo { min-height: 36px; }
+/* recolhida (só ícones): sem cabeçalhos de grupo; todos os itens visíveis como ícones */
+.colapsada .nav-grupo-cabecalho { display: none; }
+.colapsada .nav-grupo-itens[hidden] { display: grid; }
+.colapsada .sidebar .nav-item { padding: 0; justify-content: center; }
+.colapsada .nav-selo { position: absolute; top: 2px; right: 6px; min-width: 16px; height: 14px; font-size: 10px; padding: 0 4px; }
+.colapsada .sidebar-divisor { margin: 4px 0; }
+@media (max-width: 767px) {
+  .colapsada .nav-grupo-cabecalho { display: flex; }
+  .colapsada .nav-grupo-itens[hidden] { display: none; }
+  .colapsada .sidebar .nav-item { padding: 0 12px; justify-content: flex-start; }
+  .colapsada .nav-selo { position: static; }
+}
+/* recolhida (só ícones) em altura mínima: ícones de 28px e sem folga entre grupos (todos os ícones cabem) */
+.colapsada.menu-minimo .sidebar .nav-item { height: 28px; }
+.colapsada.menu-minimo .sidebar-nav { gap: 0; }
+.colapsada.menu-minimo .sidebar-topo { gap: 2px; }
