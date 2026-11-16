@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
-import { COOKIE_SIDEBAR, GRUPOS_MENU, ITEM_COMO_USAR, type GrupoMenu, type ItemMenu } from "@/lib/navegacao";
+import { COOKIE_SIDEBAR, GRUPOS_MENU, ITEM_COMO_USAR, ITEM_SAIR, ITENS_CONTA, type GrupoMenu, type ItemMenu } from "@/lib/navegacao";
 import { BotaoTema } from "./botao-tema";
 import { Icone } from "./icones";
 import { LogoSimbolo } from "./logo";
@@ -147,11 +147,13 @@ export function Shell({ nome, colapsadaInicial, pendencias = { pedidos: 0, comis
           })}
         </nav>
 
-        {/* RODAPÉ FIXO: tema e, abaixo, Como usar (nunca recolhe, nunca rola) */}
+        {/* RODAPÉ FIXO em três blocos (nunca recolhe, nunca rola): conta · tema e sair · como usar */}
         <div className="sidebar-rodape">
-          <BotaoTema />
+          <div className="sidebar-bloco">{ITENS_CONTA.map(link)}</div>
           <hr className="sidebar-divisor" />
-          {link(ITEM_COMO_USAR)}
+          <div className="sidebar-bloco"><BotaoTema />{link(ITEM_SAIR)}</div>
+          <hr className="sidebar-divisor" />
+          <div className="sidebar-bloco">{link(ITEM_COMO_USAR)}</div>
         </div>
       </aside>
 

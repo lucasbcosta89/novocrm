@@ -32,15 +32,15 @@ export const GRUPOS_MENU: GrupoMenu[] = [
   { id: "vendas", rotulo: "Vendas", itens: [secao("pedidos", { pendencia: "pedidos" }), secao("oportunidades")] },
   { id: "financeiro", rotulo: "Financeiro", itens: [secao("comissoes", { pendencia: "comissoes" }), secao("custos")] },
   { id: "analise", rotulo: "Análise", itens: [secao("analises"), secao("biblioteca")] },
-  {
-    id: "conta", rotulo: "Conta", itens: [
-      { href: "/app/configurar", rotulo: "Configurações", icone: "engrenagem" },
-      { href: "/app/perfil", rotulo: "Meus dados", icone: "usuario" },
-      { rotulo: "Sair", icone: "sair" },
-    ],
-  },
 ];
-/** Rodapé fixo, abaixo do botão de tema: nunca participa de grupo. */
+/** Bloco 2 do rodapé fixo (sempre visível, fora dos grupos). */
+export const ITENS_CONTA: ItemMenu[] = [
+  { href: "/app/configurar", rotulo: "Configurações", icone: "engrenagem" },
+  { href: "/app/perfil", rotulo: "Meus dados", icone: "usuario" },
+];
+/** Bloco 3 do rodapé fixo: junto do botão de tema. */
+export const ITEM_SAIR: ItemMenu = { rotulo: "Sair", icone: "sair" };
+/** Bloco 4 do rodapé fixo (último): nunca participa de grupo. */
 export const ITEM_COMO_USAR: ItemMenu = { href: "/app/como-usar", rotulo: "Como usar", icone: "info" };
 
 export function buscarSecao(slug: string) {

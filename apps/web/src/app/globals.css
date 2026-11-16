@@ -1158,3 +1158,20 @@ tr[id^="item-"]:target > td { background: var(--accent-suave); }
 .colapsada.menu-minimo .sidebar .nav-item { height: 28px; }
 .colapsada.menu-minimo .sidebar-nav { gap: 0; }
 .colapsada.menu-minimo .sidebar-topo { gap: 2px; }
+
+/* ---------- Menu lateral: mais estreito, rodapé em três blocos, ícones centralizados quando recolhido ---------- */
+:root { --sidebar-largura: 208px; --sidebar-colapsada: 64px; }
+.sidebar .nav-item.ativo::before { left: -10px; }
+.sidebar-rodape { display: flex; flex-direction: column; gap: 0; }
+.sidebar-bloco { display: grid; gap: 1px; }
+.sidebar-bloco form { margin: 0; }
+/* recolhido: só o ícone, exatamente no centro (sem o espaço do rótulo) */
+.colapsada .sidebar .nav-item { gap: 0; padding: 0; justify-content: center; }
+.colapsada .sidebar .nav-item .rotulo { display: none; }
+.colapsada .sidebar-topo { align-items: center; }
+.colapsada .sidebar .marca { justify-content: center; }
+@media (max-width: 767px) {
+  .shell, .shell.colapsada { --sidebar-largura: 232px; }
+  .colapsada .sidebar .nav-item { gap: 10px; padding: 0 12px; justify-content: flex-start; }
+  .colapsada .sidebar .nav-item .rotulo { display: inline; }
+}

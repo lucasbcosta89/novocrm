@@ -57,7 +57,7 @@ describe("fase 23.2 — passo a passo do primeiro login", () => {
 describe("fase 23.3 — menu lateral em grupos", () => {
   it("grupos com itens de rota real; Como usar fora dos grupos; nenhuma rota nova", async () => {
     const { GRUPOS_MENU, ITEM_COMO_USAR } = await import("@/lib/navegacao");
-    expect(GRUPOS_MENU.map((g) => g.rotulo)).toEqual(["Visão geral", "Cadastros", "Vendas", "Financeiro", "Análise", "Conta"]);
+    expect(GRUPOS_MENU.map((g) => g.rotulo)).toEqual(["Visão geral", "Cadastros", "Vendas", "Financeiro", "Análise"]);
     const hrefs = GRUPOS_MENU.flatMap((g) => g.itens.flatMap((i) => (i.href ? [i.href] : [])));
     expect(hrefs.filter((h) => h !== "/app" && !rotaExiste(h))).toEqual([]);
     expect(GRUPOS_MENU.flatMap((g) => g.itens).some((i) => i.href === ITEM_COMO_USAR.href)).toBe(false);
