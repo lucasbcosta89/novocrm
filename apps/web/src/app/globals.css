@@ -1063,3 +1063,33 @@ tr[id^="item-"]:target > td { background: var(--accent-suave); }
 .tabela-compacta td[data-rotulo="Status"] { min-width: 170px; max-width: 260px; }
 .tabela-compacta .menu-linha > summary { padding: 2px 6px; min-height: 0; line-height: 1.3; }
 .tabela-compacta .data-editavel input[type="date"] { height: 28px; }
+
+/* ---------- Fase 23.1: Como usar ---------- */
+.diagnostico-guia .barra { margin: 8px 0 14px; }
+.lista-diagnostico { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.lista-diagnostico li { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: start; }
+.lista-diagnostico .dica { margin: 2px 0 0; }
+.guia-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; align-items: start; }
+.guia-ancoras { position: sticky; top: 16px; }
+.guia-ancoras ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.guia-ancoras a { display: block; padding: 6px 10px; border-radius: 8px; color: var(--text); text-decoration: none; font-size: .9rem; }
+.guia-ancoras a:hover { background: var(--accent-suave); color: var(--accent-fg); }
+.guia-seletor { display: none; }
+.guia-etapa > summary { cursor: pointer; display: grid; gap: 2px; list-style: none; }
+.guia-etapa > summary::-webkit-details-marker { display: none; }
+.guia-etapa > summary::before { content: "▸"; float: left; margin-right: 8px; color: var(--muted); }
+.guia-etapa[open] > summary::before { content: "▾"; }
+.guia-etapa-titulo { font-weight: 600; font-size: 1.05rem; }
+.guia-etapa-corpo h3 { font-size: .9rem; margin: 14px 0 4px; }
+.guia-etapa-corpo ul { margin: 0; padding-left: 20px; }
+.guia-nota { display: flex; gap: 8px; align-items: flex-start; font-weight: 400; margin-top: 12px; }
+.guia-faq { display: grid; gap: 12px; margin: 0; }
+.guia-faq dt { font-weight: 600; }
+.guia-faq dd { margin: 2px 0 0; color: var(--muted); }
+@media (max-width: 900px) {
+  .guia-layout { grid-template-columns: 1fr; }
+  .guia-ancoras { position: static; }
+  .guia-ancoras ul { display: none; }
+  .guia-seletor { display: grid; }
+  .lista-diagnostico li { grid-template-columns: auto 1fr; }
+}
