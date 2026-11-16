@@ -192,6 +192,26 @@ Toda fase termina com commit + tag no GitHub.
   - [ ] Meta: credenciais WHATSAPP_* + templates aprovados no WhatsApp Manager → opcional (hoje envia via wa.me)
   - [ ] Build Android EAS (APK) → opcional: testes via Expo Go; builds de loja (Play/App Store) ficam para a publicação
   - [x] Critério verificado (envia catálogo; pedido público chega no CRM; visita offline sincroniza)
+- [x] Fase 17.1 — Vínculo de produto, integridade de exclusão e comissão de item órfão (tag fase-17.1)
+  - [x] FK pedido_itens.produto_id ON DELETE SET NULL (antes NO ACTION; nenhum dado alterado)
+  - [x] Exclusão de produto em uso (pedidos/oportunidades/devoluções) bloqueada com "Desative-o em vez de excluir"; ação Desativar/Reativar no Catálogo
+  - [x] Item sem produto no pedido manual (descrição obrigatória até 200, SKU opcional); mesma pendência da importação (selo vermelho, tabela de pendências, alerta do Catálogo)
+  - [x] Snapshot sku_informado/descricao_informada/linha_planilha; registrar_pendencia_produto_nao_vinculado; edição preserva itens sem produto
+  - [x] Comissão de item sem produto: planilha > representada > 0 (incompleta, comissao_nao_definida)
+  - [x] Recálculo único ao vincular (preserva recebida/manual), idempotente
+  - [x] Desconto máximo em cascata: produto > representada (novo campo) > padrão da conta (Meus dados, default 10) > 10
+  - [x] Critério verificado no banco (transação desfeita) + 6 testes; valores de comissão gravados inalterados
+- [x] Fase 21 — Comissões: status, filtro temporal, completude, fila de análise, lote e edição de data (tag fase-21)
+  - [x] Mapa único de status (lib/comissoes/status.ts: recebida | prevista/reaberta | pendente_analise); filtros inline substituídos + teste de varredura
+  - [x] Status legados migrados (a_receber 4 → prevista; recebida 10 mantidas; cancelada = status técnico fora dos totais); job 'comissoes-atrasadas' desligado
+  - [x] Colunas mapeadas (data_prevista → data_prevista_recebimento, recebida_em → data_recebimento, motivo_analise → motivos_pendencia) + comissoes_historico e comissoes_lotes (RLS)
+  - [x] Precedência representada > catálogo > zero; alerta "catálogo sem representada" removido; propagação segue manual
+  - [x] Previsão de recebimento (E), completude com 5 motivos (F), liquidação automática só de importados completos com previsão anterior ao upload (G)
+  - [x] Página de Comissões: filtro temporal na URL (presets, campo de data, Sem previsão, lote, data editada), totais do filtro inteiro, fila de análise, aprovação/reabertura em lote (até 2.000, transacional), data de recebimento editável com histórico
+  - [x] Dashboard com 3 indicadores distintos + aviso agregado; relatórios PDF e exportação CSV/XLSX com status e completude
+  - [x] Importação: coluna opcional "Data de Faturamento" (modelo Excel regenerado)
+  - [x] Rotina retroativa: 0 liquidadas, 3 em análise (sem data de faturamento); valores inalterados
+  - [x] Critério verificado no banco (transação desfeita) + 15 testes; telas só em página temporária com dados simulados (exigem login)
 
 ## Pendências (fazer após a tag fase-8)
 - [ ] Segurança: ativar leaked password protection no Supabase Auth (requer plano Pro; ao ativar, validar que o cadastro via admin.createUser também bloqueia senha vazada)
