@@ -25,6 +25,10 @@ export interface Representada {
   uf: string;
   comissao_percentual: number | null; // comissão fixa (se houver); a do produto prevalece
   prazo_pagamento_dias: number | null;
+  /** pagamento da comissão (só cadastro): referência e dias só quando tipo = "outro" */
+  comissao_pagamento_tipo: "faturamento" | "pagamento" | "outro";
+  comissao_pagamento_referencia: "faturamento" | "pagamento" | null;
+  comissao_pagamento_dias: number | null;
   tabela_preco: string | null;
   status: StatusRepresentada;
   observacoes: string | null;

@@ -13,7 +13,7 @@ describe("representadas fase 2 — listagem", () => {
   });
 
   it("ordenação disponível em todas as colunas da tabela", () => {
-    expect(Object.keys(ORDENACOES)).toEqual(["codigo", "razao_social", "cnpj", "cidade_uf", "comissao", "status", "clientes", "vendido_90d"]);
+    expect(Object.keys(ORDENACOES)).toEqual(["codigo", "razao_social", "cnpj", "cidade_uf", "comissao", "pagamento_comissao", "status", "clientes", "vendido_90d"]);
   });
 
   it("CNPJ com e sem máscara vira o mesmo termo; texto fica como está (curingas escapados)", () => {

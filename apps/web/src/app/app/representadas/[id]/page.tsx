@@ -18,6 +18,7 @@ import {
 } from "../actions";
 import { CamposEmpresa, empresaDaRepresentada, enderecoTexto } from "../campos-empresa";
 import { Icone } from "@/components/icones";
+import { rotuloPagamentoComissao } from "@/lib/cadastros/representada";
 
 /** Início da representada: quadro da empresa → vendas → alertas → pontos de faturamento. */
 export default async function RepresentadaInicio({
@@ -49,6 +50,7 @@ export default async function RepresentadaInicio({
           <div><dt>Código</dt><dd><code>{r.codigo_representada}</code></dd></div>
           {r.nome_fantasia && <div><dt>Nome fantasia</dt><dd>{r.nome_fantasia}</dd></div>}
           <div><dt>Comissão fixa (se houver)</dt><dd>{r.comissao_percentual == null ? "— (varia por produto)" : formatarPercentual(Number(r.comissao_percentual))}</dd></div>
+          <div><dt>Pagamento da comissão</dt><dd>{rotuloPagamentoComissao(r.comissao_pagamento_tipo, r.comissao_pagamento_referencia, r.comissao_pagamento_dias)}</dd></div>
           <div><dt className="com-icone"><Icone nome="identidade" tamanho={16} /> CNPJ</dt><dd>{formatarDocumento(r.cnpj)}</dd></div>
           <div><dt className="com-icone"><Icone nome="mapa" tamanho={16} /> Endereço</dt><dd>{enderecoTexto(empresaDaRepresentada(r))}</dd></div>
           <div><dt className="com-icone"><Icone nome="email" tamanho={16} /> E-mail</dt><dd>{r.email_comercial ?? "—"}</dd></div>

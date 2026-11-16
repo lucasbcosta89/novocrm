@@ -15,6 +15,20 @@ const textoOpcional = (max: number, rotulo: string) =>
 /** Vazio vira undefined: o z.string("Informe …") do campo dá a mensagem de obrigatório. */
 const obrigatorio = (v: unknown) => (vazio(v) ? undefined : v);
 
+export const TIPOS_PAGAMENTO_COMISSAO = ["faturamento", "pagamento", "outro"] as const;
+export const REFERENCIAS_PAGAMENTO_COMISSAO = ["faturamento", "pagamento"] as const;
+export type TipoPagamentoComissao = (typeof TIPOS_PAGAMENTO_COMISSAO)[number];
+export type ReferenciaPagamentoComissao = (typeof REFERENCIAS_PAGAMENTO_COMISSAO)[number];
+export const MSG_DIAS_COMISSAO = "Informe o número de dias entre 1 e 365.";
+export const MSG_REFERENCIA_COMISSAO = "Selecione a referência.";
+
+/** Rótulo de exibição (listagem e detalhe): "No faturamento", "No pagamento" ou "30 dias após o faturamento". */
+export function rotuloPagamentoComissao(tipo: string | null | undefined, referencia?: string | null, dias?: number | null): string {
+  if (tipo === "pagamento") return "No pagamento";
+  if (tipo === "outro" && dias != null && referencia) return `${dias} ${dias === 1 ? "dia" : "dias"} após o ${referencia === "pagamento" ? "pagamento" : "faturamento"}`;
+  return "No faturamento";
+}
+
 export const CAMPOS_REPRESENTADA = {
   codigo_representada: z.preprocess(
     (v) => (vazio(v) ? null : String(v).trim().toUpperCase()),
@@ -61,6 +75,19 @@ export const CAMPOS_REPRESENTADA = {
     z.number("Prazo deve ser um número de dias").int("Prazo deve ser em dias inteiros").min(0, "Prazo entre 0 e 365 dias").max(365, "Prazo entre 0 e 365 dias").nullable(),
   ),
   tabela_preco: textoOpcional(60, "Tabela de preço"),
+  /** Pagamento da comissão (só cadastro): no faturamento, no pagamento ou "outro" (N dias após faturamento/pagamento). */
+  comissao_pagamento_tipo: z.preprocess(
+    (v) => (vazio(v) ? "faturamento" : String(v).trim().toLowerCase()),
+    z.enum(TIPOS_PAGAMENTO_COMISSAO, "Pagamento da comissão inválido"),
+  ),
+  comissao_pagamento_referencia: z.preprocess(
+    (v) => (vazio(v) ? null : String(v).trim().toLowerCase()),
+    z.enum(REFERENCIAS_PAGAMENTO_COMISSAO, MSG_REFERENCIA_COMISSAO).nullable(),
+  ),
+  comissao_pagamento_dias: z.preprocess(
+    (v) => (vazio(v) ? null : /^\s*\d+\s*$/.test(String(v)) ? Number(String(v).trim()) : typeof v === "number" ? v : NaN),
+    z.number(MSG_DIAS_COMISSAO).int(MSG_DIAS_COMISSAO).min(1, MSG_DIAS_COMISSAO).max(365, MSG_DIAS_COMISSAO).nullable(),
+  ),
   status: z.preprocess((v) => (vazio(v) ? "ativa" : String(v).trim().toLowerCase()), z.enum(["ativa", "inativa"], "Status deve ser Ativa ou Inativa")),
   observacoes: textoOpcional(500, "Observações"),
 } as const;
@@ -71,17 +98,44 @@ export const CAMPOS_FORM_REPRESENTADA = Object.keys(CAMPOS_REPRESENTADA) as Camp
 /** Obrigatórios do cadastro (marcados com * no formulário). */
 export const OBRIGATORIOS_REPRESENTADA: readonly CampoRepresentada[] = ["razao_social", "cnpj", "email_comercial", "cidade", "uf"];
 
-export const representadaFormSchema = z.object({
+const objetoRepresentada = z.object({
   ...CAMPOS_REPRESENTADA,
   catalogo_publico: z.boolean().optional(),
   criar_pedido_publico: z.boolean().optional(),
 });
+
+type Pagamento = { comissao_pagamento_tipo?: string; comissao_pagamento_referencia?: string | null; comissao_pagamento_dias?: number | null };
+/** "Outro" exige referência e dias. */
+function exigirPagamento(d: Pagamento, ctx: z.RefinementCtx) {
+  if (d.comissao_pagamento_tipo !== "outro") return;
+  if (!d.comissao_pagamento_referencia) ctx.addIssue({ code: "custom", message: MSG_REFERENCIA_COMISSAO, path: ["comissao_pagamento_referencia"] });
+  if (d.comissao_pagamento_dias == null) ctx.addIssue({ code: "custom", message: MSG_DIAS_COMISSAO, path: ["comissao_pagamento_dias"] });
+}
+/** Fora de "outro", referência e dias são sempre null (nada de resíduo de uma escolha anterior). */
+function limparPagamento<T extends Pagamento>(d: T): T {
+  return d.comissao_pagamento_tipo !== undefined && d.comissao_pagamento_tipo !== "outro"
+    ? { ...d, comissao_pagamento_referencia: null, comissao_pagamento_dias: null }
+    : d;
+}
+
+/** Antes de validar: fora de "outro", referência e dias enviados são descartados (não bloqueiam o salvamento). */
+function descartarResiduo(v: unknown) {
+  if (!v || typeof v !== "object") return v;
+  const o = v as Record<string, unknown>;
+  if (o.comissao_pagamento_tipo === undefined) return v;
+  return String(o.comissao_pagamento_tipo ?? "").trim().toLowerCase() === "outro"
+    ? v
+    : { ...o, comissao_pagamento_referencia: null, comissao_pagamento_dias: null };
+}
+
+export const representadaFormSchema = z.preprocess(descartarResiduo, objetoRepresentada.superRefine(exigirPagamento).transform(limparPagamento));
 export type DadosRepresentada = z.infer<typeof representadaFormSchema>;
 
-/** PATCH da API: só os campos enviados (sem os padrões). */
-export const representadaParcialSchema = z.object(
-  Object.fromEntries(Object.entries(representadaFormSchema.shape).map(([k, s]) => [k, (s as z.ZodType).optional()])),
-) as unknown as z.ZodType<Partial<DadosRepresentada>>;
+/** PATCH da API: só os campos enviados (sem os padrões). Mudar o tipo para "outro" exige mandar referência e dias. */
+export const representadaParcialSchema = z.preprocess(descartarResiduo, z
+  .object(Object.fromEntries(Object.entries(objetoRepresentada.shape).map(([k, s]) => [k, (s as z.ZodType).optional()])))
+  .superRefine((d, ctx) => exigirPagamento(d as Pagamento, ctx))
+  .transform((d) => limparPagamento(d as Pagamento))) as unknown as z.ZodType<Partial<DadosRepresentada>>;
 
 /** Validação de UM campo (ao sair do campo): mensagem do primeiro problema, ou null. */
 export function validarCampoRepresentada(campo: CampoRepresentada, valor: unknown): string | null {
@@ -89,12 +143,19 @@ export function validarCampoRepresentada(campo: CampoRepresentada, valor: unknow
   return r.success ? null : (r.error.issues[0]?.message ?? "Valor inválido");
 }
 
-/** Todas as mensagens por campo (formulário inteiro). */
+/** Todas as mensagens por campo (formulário inteiro), inclusive a regra entre os campos do pagamento da comissão. */
 export function validarRepresentada(valores: Record<string, unknown>): Partial<Record<CampoRepresentada, string>> {
   const erros: Partial<Record<CampoRepresentada, string>> = {};
+  const outro = String(valores.comissao_pagamento_tipo ?? "").trim().toLowerCase() === "outro";
   for (const c of CAMPOS_FORM_REPRESENTADA) {
+    // referência e dias só contam quando o tipo é "outro" (fora dele são descartados)
+    if (!outro && (c === "comissao_pagamento_referencia" || c === "comissao_pagamento_dias")) continue;
     const m = validarCampoRepresentada(c, valores[c]);
     if (m) erros[c] = m;
+  }
+  if (outro) {
+    if (!erros.comissao_pagamento_referencia && vazio(valores.comissao_pagamento_referencia)) erros.comissao_pagamento_referencia = MSG_REFERENCIA_COMISSAO;
+    if (!erros.comissao_pagamento_dias && vazio(valores.comissao_pagamento_dias)) erros.comissao_pagamento_dias = MSG_DIAS_COMISSAO;
   }
   return erros;
 }
@@ -119,7 +180,8 @@ export type ValoresFormRepresentada = Record<CampoRepresentada, string>;
 export const VALORES_VAZIOS_REPRESENTADA: ValoresFormRepresentada = {
   codigo_representada: "", razao_social: "", nome_fantasia: "", cnpj: "", inscricao_estadual: "", email_comercial: "",
   telefone: "", contato_nome: "", contato_telefone: "", cep: "", endereco: "", numero: "", complemento: "", bairro: "",
-  cidade: "", uf: "", comissao_percentual: "", prazo_pagamento_dias: "", tabela_preco: "", status: "ativa", observacoes: "",
+  cidade: "", uf: "", comissao_percentual: "", prazo_pagamento_dias: "", tabela_preco: "",
+  comissao_pagamento_tipo: "faturamento", comissao_pagamento_referencia: "", comissao_pagamento_dias: "", status: "ativa", observacoes: "",
 };
 
 /** Registro do banco → valores do formulário (comissão com vírgula decimal). */

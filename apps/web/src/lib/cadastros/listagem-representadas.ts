@@ -12,6 +12,7 @@ export const ORDENACOES = {
   cnpj: ["cnpj"],
   cidade_uf: ["uf", "cidade"],
   comissao: ["comissao_percentual"],
+  pagamento_comissao: ["comissao_pagamento_ordem", "comissao_pagamento_dias"],
   status: ["status"],
   clientes: ["clientes_vinculados"],
   vendido_90d: ["valor_vendido_90d"],

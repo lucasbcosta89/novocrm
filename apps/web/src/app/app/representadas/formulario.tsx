@@ -56,6 +56,14 @@ export function FormularioRepresentada({ acao, iniciais, edicao = false, catalog
   }
   const sair = (c: CampoRepresentada) => setTocados((t) => (t.has(c) ? t : new Set(t).add(c)));
 
+  // Pagamento da comissão: "Outro" abre referência + dias; trocar o tipo limpa os dois (sem resíduo)
+  const outro = valores.comissao_pagamento_tipo === "outro";
+  function mudarTipoPagamento(tipo: string) {
+    setValores((x) => ({ ...x, comissao_pagamento_tipo: tipo, comissao_pagamento_referencia: "", comissao_pagamento_dias: "" }));
+    setTocados((t) => { const n = new Set(t); n.delete("comissao_pagamento_referencia"); n.delete("comissao_pagamento_dias"); return n; });
+    setErrosServidor((e) => { const n = { ...e }; delete n.comissao_pagamento_referencia; delete n.comissao_pagamento_dias; return n; });
+  }
+
   /** Campo de texto com rótulo, validação ao sair e mensagem abaixo. */
   function C({ c, rotulo, ref, ...props }: { c: CampoRepresentada; rotulo: string; ref?: Ref<HTMLInputElement> } & InputHTMLAttributes<HTMLInputElement>) {
     const erro = erroDo(c);
@@ -131,6 +139,35 @@ export function FormularioRepresentada({ acao, iniciais, edicao = false, catalog
         <legend>Condições Comerciais</legend>
         <div className="grade">
           {C({ c: "comissao_percentual", rotulo: "Comissão fixa (se houver) (%)", inputMode: "decimal", placeholder: "Vazio = varia por produto" })}
+          <label className="campo" htmlFor="rep-comissao_pagamento_tipo">
+            <span>Pagamento da Comissão</span>
+            <select id="rep-comissao_pagamento_tipo" name="comissao_pagamento_tipo" value={valores.comissao_pagamento_tipo}
+              onChange={(e) => mudarTipoPagamento(e.target.value)} aria-describedby={outro ? "rep-comissao_pagamento-dica" : undefined}>
+              <option value="faturamento">No faturamento</option>
+              <option value="pagamento">No pagamento</option>
+              <option value="outro">Outro</option>
+            </select>
+            {outro && <small id="rep-comissao_pagamento-dica" className="dica">Ex.: 30 dias após o faturamento.</small>}
+          </label>
+          {outro && (
+            <>
+              <label className="campo" htmlFor="rep-comissao_pagamento_referencia">
+                <span>Referência *</span>
+                <select id="rep-comissao_pagamento_referencia" name="comissao_pagamento_referencia" value={valores.comissao_pagamento_referencia}
+                  onChange={(e) => mudar("comissao_pagamento_referencia", e.target.value)} onBlur={() => sair("comissao_pagamento_referencia")}
+                  aria-invalid={!!erroDo("comissao_pagamento_referencia")}
+                  aria-describedby={erroDo("comissao_pagamento_referencia") ? "rep-comissao_pagamento_referencia-erro" : undefined}>
+                  <option value="">Selecione…</option>
+                  <option value="faturamento">Dias após faturamento</option>
+                  <option value="pagamento">Dias após pagamento</option>
+                </select>
+                {erroDo("comissao_pagamento_referencia") && (
+                  <small id="rep-comissao_pagamento_referencia-erro" className="erro-campo">{erroDo("comissao_pagamento_referencia")}</small>
+                )}
+              </label>
+              {C({ c: "comissao_pagamento_dias", rotulo: "Dias *", inputMode: "numeric", placeholder: "1 a 365" })}
+            </>
+          )}
           {C({ c: "prazo_pagamento_dias", rotulo: "Prazo de pagamento (dias)", inputMode: "numeric", placeholder: "0 a 365" })}
           {C({ c: "tabela_preco", rotulo: "Tabela de preço", maxLength: 60 })}
         </div>

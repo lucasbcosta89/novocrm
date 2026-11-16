@@ -6,6 +6,7 @@ import { AvisoLimite } from "@/components/limite";
 import { StatusRepresentada } from "@/components/status";
 import { POR_PAGINA, urlListagem, type FiltroRepresentadas, type Ordenacao } from "@/lib/cadastros/listagem-representadas";
 import { formatarDocumento, formatarMoeda, formatarPercentual } from "@/lib/formato";
+import { rotuloPagamentoComissao } from "@/lib/cadastros/representada";
 import { UFS } from "@/lib/ufs";
 import { carregar } from "@/server/acao";
 import { podeImportar } from "@/server/importacao";
@@ -114,6 +115,7 @@ export default async function RepresentadasPage({ searchParams }: { searchParams
                       <Th f={f} col="cnpj">CNPJ</Th>
                       <Th f={f} col="cidade_uf">Cidade/UF</Th>
                       <Th f={f} col="comissao" num>Comissão fixa</Th>
+                      <Th f={f} col="pagamento_comissao">Pagamento da comissão</Th>
                       <Th f={f} col="status">Status</Th>
                       <Th f={f} col="clientes" num>Clientes</Th>
                       <Th f={f} col="vendido_90d" num>Vendido 90 dias</Th>
@@ -131,6 +133,7 @@ export default async function RepresentadasPage({ searchParams }: { searchParams
                         <td data-rotulo="CNPJ">{formatarDocumento(r.cnpj)}</td>
                         <td data-rotulo="Cidade/UF">{[r.cidade, r.uf].filter(Boolean).join("/") || "—"}</td>
                         <td className="num" data-rotulo="Comissão fixa">{r.comissao_percentual == null ? <span className="dica">por produto</span> : formatarPercentual(r.comissao_percentual)}</td>
+                        <td data-rotulo="Pagamento da comissão">{rotuloPagamentoComissao(r.comissao_pagamento_tipo, r.comissao_pagamento_referencia, r.comissao_pagamento_dias)}</td>
                         <td data-rotulo="Status"><StatusRepresentada status={r.status} /></td>
                         <td className="num" data-rotulo="Clientes">{r.clientes_vinculados}</td>
                         <td className="num" data-rotulo="Vendido 90 dias">{formatarMoeda(r.valor_vendido_90d)}</td>
