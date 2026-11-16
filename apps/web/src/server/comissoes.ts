@@ -34,7 +34,7 @@ export type Comissao = {
   /** Fase 22: 'estorno' = comissão negativa de uma devolução */
   tipo: "normal" | "estorno";
   observacoes: string | null;
-  devolucao: { id: string; numero: string; data: string; data_processamento: string | null; status: string } | null;
+  devolucao: { id: string; numero: string; data: string; data_processamento: string | null; status: string; chave_unica: string | null } | null;
   representada: { id: string; nome: string } | null;
   pedido: {
     id: string; codigo_pedido: string; data: string; data_faturamento: string | null; valor_total: number; origem: string;
@@ -44,7 +44,7 @@ export type Comissao = {
 
 const CAMPOS = `id, representada_id, percentual, valor, status, completude, motivos_pendencia, origem_calculo, data_prevista_recebimento, data_recebimento,
   liquidada_automaticamente, data_recebimento_editada, lote_aprovacao_id, aprovada_em, reaberta_em, tipo, observacoes,
-  devolucao:devolucoes!comissoes_devolucao_id_fkey(id, numero, data, data_processamento, status),
+  devolucao:devolucoes!comissoes_devolucao_id_fkey(id, numero, data, data_processamento, status, chave_unica),
   representada:representadas(id, nome:razao_social),
   pedido:pedidos!inner(id, codigo_pedido, data, data_faturamento, valor_total, origem, cliente_id, cliente:clientes(id, nome),
     itens:pedido_itens(descricao, descricao_informada, produto:produtos(nome, sku)))`;

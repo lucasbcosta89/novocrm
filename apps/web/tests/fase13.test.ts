@@ -15,21 +15,22 @@ const base = {
 describe("devoluções (fase 13)", () => {
   it("devolução avulsa: pedido vazio vira null e status padrão é pendente", () => {
     const d = devolucaoSchema.parse(base);
-    expect(d).toMatchObject({ pedido_id: null, status: "pendente", forma_pagamento: null, prazo_dias: null, observacoes: null });
+    expect(d).toMatchObject({ pedido_id: null, status: "pendente", forma_pagamento: null, data_processamento: null, observacoes: null });
     expect(d.itens[0]).toMatchObject({ quantidade: 2, preco_unitario: 100, desconto_percentual: 10 });
   });
 
-  it("devolução vinculada a pedido, à prazo", () => {
-    const d = devolucaoSchema.parse({ ...base, pedido_id: PED, status: "aprovada", prazo_tipo: "a_prazo", prazo_dias: "30" });
-    expect(d).toMatchObject({ pedido_id: PED, status: "aprovada", prazo_dias: 30 });
+  it("devolução vinculada a pedido, com geração de crédito e data de processamento", () => {
+    const d = devolucaoSchema.parse({ ...base, pedido_id: PED, status: "aprovada", forma_pagamento: "geracao_credito", data_processamento: base.data });
+    expect(d).toMatchObject({ pedido_id: PED, status: "aprovada", forma_pagamento: "geracao_credito", data_processamento: base.data });
+    expect(devolucaoSchema.safeParse({ ...base, forma_pagamento: "pix" }).success).toBe(false); // só Geração de Crédito ou Outros
   });
 
-  it("validações: motivo, status, data, itens e prazo", () => {
+  it("validações: motivo, status, data, itens e data de processamento", () => {
     expect(devolucaoSchema.safeParse({ ...base, motivo: "" }).success).toBe(false);
     expect(devolucaoSchema.safeParse({ ...base, status: "cancelada" }).success).toBe(false);
     expect(devolucaoSchema.safeParse({ ...base, data: "" }).success).toBe(false);
     expect(devolucaoSchema.safeParse({ ...base, itens: [] }).success).toBe(false);
-    expect(devolucaoSchema.safeParse({ ...base, prazo_tipo: "a_prazo", prazo_dias: "" }).success).toBe(false);
+    expect(devolucaoSchema.safeParse({ ...base, data_processamento: "2000-01-01" }).success).toBe(false); // anterior à devolução
     expect(devolucaoSchema.safeParse({ ...base, itens: [{ ...base.itens[0], quantidade: "0" }] }).success).toBe(false);
   });
 

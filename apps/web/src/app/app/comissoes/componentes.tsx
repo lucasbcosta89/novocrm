@@ -101,7 +101,7 @@ export type LinhaComissao = {
   motivos: string[]; origem: OrigemCalculo | null; editada: boolean; lote: string | null; historico: string[];
   /** Fase 22: tipo e devolução vinculada (estorno) */
   tipo: "normal" | "estorno"; observacao: string | null;
-  devolucao: { id: string; numero: string; status: string; data: string; data_processamento: string | null } | null;
+  devolucao: { id: string; numero: string; status: string; data: string; data_processamento: string | null; importada?: boolean; cliente_id?: string | null } | null;
 };
 
 /**
@@ -270,10 +270,13 @@ export function TabelaComissoes({ linhas, selecionaveis, assinatura, filtro, ana
                         )}
                         {acoes.editarData && <button type="button" className="btn-link" onClick={() => document.getElementById(`data-${l.id}`)?.focus()}>Editar data</button>}
                         {acoes.editarData && l.recebimento && <button type="button" className="btn-link" disabled={ocupado} onClick={() => removerData(l)}>Remover data</button>}
-                        {acoes.processar && l.devolucao && (
+                        {l.devolucao && l.devolucao.importada === false && (
+                          <span className="dica">Devolução manual: informe a Data de Processamento no cadastro da devolução (Clientes › Devoluções).</span>
+                        )}
+                        {acoes.processar && l.devolucao && l.devolucao.importada !== false && (
                           <ProcessarDevolucoes ids={[l.devolucao.id]} rotulo="Marcar como processada" classe="btn-link" />
                         )}
-                        {acoes.reabrirDevolucao && l.devolucao && <ReabrirDevolucao id={l.devolucao.id} />}
+                        {acoes.reabrirDevolucao && l.devolucao && l.devolucao.importada !== false && <ReabrirDevolucao id={l.devolucao.id} />}
                         {acoes.definir && (
                           <button type="button" className="btn-link" disabled={ocupado} onClick={() => definir(l)}>{l.origem === "zero" || l.valor <= 0 ? "Definir comissão" : "Editar comissão"}</button>
                         )}

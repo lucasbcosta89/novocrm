@@ -351,6 +351,8 @@ export const produtoOportunidadeSchema = z.object({
 
 export const MOTIVOS_DEVOLUCAO = ["produto_avariado", "produto_incorreto", "desistencia", "prazo_entrega", "outro"] as const;
 export const STATUS_DEVOLUCAO = ["pendente", "aprovada", "recusada", "concluida"] as const;
+/** Forma de pagamento da devolução: só Geração de Crédito ou Outros. */
+export const FORMAS_PAGAMENTO_DEVOLUCAO = ["geracao_credito", "outros"] as const;
 
 /** Devolução: mesmos campos do pedido (itens com preço informado, pagamento, prazo) + pedido de origem, motivo e status. */
 export const devolucaoSchema = z
@@ -361,15 +363,11 @@ export const devolucaoSchema = z
     data: z.iso.date("Data inválida"),
     motivo: z.enum(MOTIVOS_DEVOLUCAO, "Escolha o motivo"),
     status: z.enum(STATUS_DEVOLUCAO, "Status inválido").default("pendente"),
-    forma_pagamento: z.preprocess(vazioParaNull, z.enum(FORMAS_PAGAMENTO, "Forma de pagamento inválida").nullable().optional()),
-    prazo_tipo: z.enum(PRAZOS_PAGAMENTO, "Prazo de pagamento inválido").default("a_vista"),
-    prazo_dias: z.preprocess(
-      (v) => (v === "" || v == null ? null : Number(v)),
-      z.number("Prazo inválido").int("Prazo deve ser em dias inteiros").min(1, "Prazo mínimo de 1 dia").max(365, "Prazo máximo de 365 dias").nullable().optional(),
-    ),
+    forma_pagamento: z.preprocess(vazioParaNull, z.enum(FORMAS_PAGAMENTO_DEVOLUCAO, "Forma de pagamento inválida").nullable().optional()),
+    /** Data em que a comissão NEGATIVA (estorno) é lançada em Comissões; vazia = estorno previsto (pendente). */
+    data_processamento: z.preprocess(vazioParaNull, z.iso.date("Data de Processamento inválida").nullable().optional()).transform((d) => d ?? null),
     observacoes: textoOpcional(2000),
     itens: itensComPrecoSchema,
   })
-  .refine((p) => p.prazo_tipo === "a_vista" || p.prazo_dias != null, { message: "Informe o prazo em dias", path: ["prazo_dias"] })
-  .transform((p) => (p.prazo_tipo === "a_vista" ? { ...p, prazo_dias: null } : p));
+  .refine((p) => !p.data_processamento || p.data_processamento >= p.data, { message: "A Data de Processamento não pode ser anterior à data da devolução", path: ["data_processamento"] });
 export type DevolucaoInput = z.infer<typeof devolucaoSchema>;

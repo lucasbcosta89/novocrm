@@ -9,6 +9,7 @@ import { STATUS_DEVOLUCAO } from "@/lib/validacao";
 import { carregar } from "@/server/acao";
 import { listarDevolucoes } from "@/server/devolucoes";
 import { excluirDevolucaoAction } from "./actions";
+import { podeImportar } from "@/server/importacao";
 
 const dataValida = (v?: string) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
 const qtd = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 3 });
@@ -19,7 +20,7 @@ export default async function ClienteDevolucoes({ params, searchParams }: {
 }) {
   const [{ id }, sp] = await Promise.all([params, searchParams]);
   const filtro = { de: dataValida(sp.de), ate: dataValida(sp.ate), status: (STATUS_DEVOLUCAO as readonly string[]).includes(sp.status ?? "") ? sp.status! : null };
-  const devolucoes = await carregar((ctx) => listarDevolucoes(ctx, id, filtro));
+  const [devolucoes, importar] = await carregar((ctx) => Promise.all([listarDevolucoes(ctx, id, filtro), podeImportar(ctx)]));
   const filtrando = !!(filtro.de || filtro.ate || filtro.status);
   const base = `/app/clientes/${id}/devolucoes`;
   const total = devolucoes.reduce((t, d) => t + Number(d.valor_total), 0);
@@ -30,7 +31,10 @@ export default async function ClienteDevolucoes({ params, searchParams }: {
       <section className="card">
         <div className="cabecalho">
           <h2 className="titulo-icone"><Icone nome="historico" tamanho={20} /> Devoluções</h2>
-          <Link className="btn btn-peq" href={`${base}/nova`}><Icone nome="mais" tamanho={16} /> Registrar Devolução</Link>
+          <span className="acoes-linha">
+            {importar && <Link className="btn-secundario btn-peq" href="/app/comissoes/devolucoes/importar"><Icone nome="arquivo" tamanho={16} /> Cadastrar Devoluções com Excel</Link>}
+            <Link className="btn btn-peq" href={`${base}/nova`}><Icone nome="mais" tamanho={16} /> Registrar Devolução</Link>
+          </span>
         </div>
 
         <form method="get" className="filtros-custos">
@@ -57,7 +61,7 @@ export default async function ClienteDevolucoes({ params, searchParams }: {
               <thead>
                 <tr>
                   <th>Nº</th><th>Data</th><th>Pedido de origem</th><th className="num">Itens (qtd)</th><th className="num">Valor</th>
-                  <th>Motivo</th><th>Status</th><th className="col-acoes">Ações</th>
+                  <th>Motivo</th><th>Status</th><th>Processamento</th><th className="num">Comissão estornada</th><th className="col-acoes">Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -66,11 +70,14 @@ export default async function ClienteDevolucoes({ params, searchParams }: {
                     <td data-rotulo="Nº">{d.numero}</td>
                     <td data-rotulo="Data">{formatarData(`${d.data}T12:00:00Z`)}</td>
                     <td data-rotulo="Pedido de origem">{d.pedido ? <Link href={`/app/pedidos/${d.pedido.id}`}>{d.pedido.codigo_pedido}</Link> : <span className="dica">Avulsa</span>}</td>
-                    <td className="num" data-rotulo="Itens (qtd)">{d.itens.length} ({qtd(d.itens.reduce((t, i) => t + Number(i.quantidade), 0))})</td>
+                    <td className="num" data-rotulo="Itens (qtd)">{d.chave_unica ? `1 (${qtd(Number(d.quantidade ?? 0))})` : `${d.itens.length} (${qtd(d.itens.reduce((t, i) => t + Number(i.quantidade), 0))})`}</td>
                     <td className="num" data-rotulo="Valor">{formatarMoeda(Number(d.valor_total))}</td>
                     <td data-rotulo="Motivo">{ROTULO_MOTIVO_DEVOLUCAO[d.motivo] ?? d.motivo}</td>
-                    <td data-rotulo="Status"><StatusDevolucao status={d.status} /></td>
+                    <td data-rotulo="Status"><StatusDevolucao status={d.status} />{d.chave_unica && <div className="dica">importada por Excel</div>}</td>
+                    <td data-rotulo="Processamento">{d.data_processamento ? formatarData(`${d.data_processamento}T12:00:00Z`) : <span className="dica">pendente</span>}</td>
+                    <td className="num" data-rotulo="Comissão estornada">{d.comissao_id ? `−${formatarMoeda(Number(d.comissao_estornada))}` : "—"}</td>
                     <td className="col-acoes" data-rotulo="Ações">
+                      {d.chave_unica ? <Link className="btn-link" href="/app/comissoes?visao=devolucoes">Processar em Comissões</Link> : (
                       <span className="acoes-icones">
                         <span className="com-dica" data-dica="Editar devolução">
                           <Link className="botao-icone botao-acao" href={`${base}/${d.id}/editar`} aria-label={`Editar devolução ${d.numero}`}>
@@ -79,15 +86,16 @@ export default async function ClienteDevolucoes({ params, searchParams }: {
                         </span>
                         <form action={excluirDevolucaoAction.bind(null, id, d.id)}>
                           <BotaoConfirmar className="botao-icone botao-acao botao-excluir" icone={<Icone nome="lixeira" tamanho={17} />} rotulo="Excluir devolução"
-                            pergunta={`Excluir a devolução ${d.numero} (${formatarMoeda(Number(d.valor_total))})? Esta ação não pode ser desfeita.`} />
+                            pergunta={`Excluir a devolução ${d.numero} (${formatarMoeda(Number(d.valor_total))})? O estorno de comissão dela também é excluído. Esta ação não pode ser desfeita.`} />
                         </form>
                       </span>
+                      )}
                     </td>
                   </tr>
                 ))}
               </tbody>
               <tfoot>
-                <tr><th colSpan={4}>Total · {devolucoes.length} {devolucoes.length === 1 ? "devolução" : "devoluções"}</th><th className="num">{formatarMoeda(total)}</th><th colSpan={3} /></tr>
+                <tr><th colSpan={4}>Total · {devolucoes.length} {devolucoes.length === 1 ? "devolução" : "devoluções"}</th><th className="num">{formatarMoeda(total)}</th><th colSpan={5} /></tr>
               </tfoot>
             </table>
           </div>

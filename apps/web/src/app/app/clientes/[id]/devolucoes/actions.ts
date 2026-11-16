@@ -30,8 +30,7 @@ const dados = (clienteId: string, fd: FormData) => ({
   motivo: fd.get("motivo"),
   status: fd.get("status") ?? "pendente",
   forma_pagamento: fd.get("forma_pagamento"),
-  prazo_tipo: fd.get("prazo_tipo") ?? "a_vista",
-  prazo_dias: fd.get("prazo_dias"),
+  data_processamento: fd.get("data_processamento"),
   observacoes: fd.get("observacoes"),
   itens: itensDoForm(fd),
 });

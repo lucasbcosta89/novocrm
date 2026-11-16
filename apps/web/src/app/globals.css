@@ -331,7 +331,7 @@ section[id] { scroll-margin-top: 16px; }
 .etiqueta-atrasada { background: var(--danger-suave); color: var(--danger-texto); }
 .etiqueta-cancelada, .etiqueta-cancelado { background: var(--bg); color: var(--muted); }
 .etiqueta-dev-pendente { background: var(--accent-suave); color: var(--accent-fg); }
-.etiqueta-dev-aprovada, .etiqueta-dev-concluida { background: var(--ok-suave); color: var(--ok-texto); }
+.etiqueta-dev-aprovada, .etiqueta-dev-concluida, .etiqueta-dev-processada { background: var(--ok-suave); color: var(--ok-texto); }
 .etiqueta-dev-recusada { background: var(--danger-suave); color: var(--danger-texto); }
 
 /* Fase 6: planos e limites */

@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { Icone } from "@/components/icones";
 import { ItensEditaveis, type LinhaEdicao } from "@/components/itens-editaveis";
-import { PagamentoPedido } from "@/components/pagamento-pedido";
-import { ROTULO_MOTIVO_DEVOLUCAO, ROTULO_STATUS_DEVOLUCAO } from "@/lib/rotulos";
-import { MOTIVOS_DEVOLUCAO, STATUS_DEVOLUCAO } from "@/lib/validacao";
+import { ROTULO_FORMA_PAGAMENTO_DEVOLUCAO, ROTULO_MOTIVO_DEVOLUCAO, ROTULO_STATUS_DEVOLUCAO } from "@/lib/rotulos";
+import { FORMAS_PAGAMENTO_DEVOLUCAO, MOTIVOS_DEVOLUCAO, STATUS_DEVOLUCAO } from "@/lib/validacao";
 import { carregar } from "@/server/acao";
 import { listarPedidos, listarTabelaPrecos } from "@/server/consultas";
 import { devolvidoNoPedido, type Devolucao } from "@/server/devolucoes";
@@ -84,9 +83,7 @@ export async function FormDevolucao({ cliente, devolucao, representadaId, pedido
     }
   }
 
-  const forma = devolucao?.forma_pagamento ?? pedido?.forma_pagamento ?? null;
-  const prazoTipo = devolucao?.prazo_tipo ?? pedido?.prazo_tipo ?? "a_vista";
-  const prazoDias = devolucao?.prazo_dias ?? pedido?.prazo_dias ?? null;
+  const forma = devolucao?.forma_pagamento ?? null;
 
   return (
     <>
@@ -149,7 +146,20 @@ export async function FormDevolucao({ cliente, devolucao, representadaId, pedido
           )}
           <h2 className="titulo-icone"><Icone nome="cartao" tamanho={20} /> Pagamento</h2>
           <div className="grade">
-            <PagamentoPedido forma={forma} prazoTipo={prazoTipo} prazoDias={prazoDias} />
+            <label className="campo">
+              <span>Forma de Pagamento</span>
+              <select name="forma_pagamento" defaultValue={forma ?? ""}>
+                <option value="">Selecione…</option>
+                {FORMAS_PAGAMENTO_DEVOLUCAO.map((f) => <option key={f} value={f}>{ROTULO_FORMA_PAGAMENTO_DEVOLUCAO[f]}</option>)}
+              </select>
+            </label>
+            <label className="campo">
+              <span>Data de Processamento</span>
+              <input type="date" name="data_processamento" defaultValue={devolucao?.data_processamento ?? ""} aria-describedby="data-processamento-dica" />
+              <small id="data-processamento-dica" className="dica">
+                Data em que a comissão negativa (estorno) é lançada em Comissões. Vazia: o estorno fica previsto até você informar a data.
+              </small>
+            </label>
             <label className="campo"><span>Observações</span><textarea name="observacoes" rows={3} maxLength={2000} defaultValue={devolucao?.observacoes ?? ""} /></label>
           </div>
           <div className="acoes-linha">

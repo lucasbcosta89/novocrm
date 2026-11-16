@@ -41,7 +41,8 @@ export default async function ComissoesPage({ searchParams }: { searchParams: Bu
     previsao: c.data_prevista_recebimento, recebimento: c.data_recebimento, status: c.status, completude: c.completude, motivos: c.motivos_pendencia,
     origem: c.origem_calculo, editada: c.data_recebimento_editada, lote: c.lote_aprovacao_id,
     historico: (historico.get(c.id) ?? []).map((e) => descreverEvento(e, nomes)),
-    tipo: c.tipo, observacao: c.observacoes, devolucao: c.devolucao,
+    tipo: c.tipo, observacao: c.observacoes,
+    devolucao: c.devolucao ? { ...c.devolucao, importada: !!c.devolucao.chave_unica, cliente_id: null } : null,
   }));
   const gruposSomados: GrupoStatus[] = f.visao === "analise" ? ["em_analise"] : f.g.length ? f.g : [...GRUPOS_STATUS];
   const totalGeral = gruposSomados.reduce((t, g) => t + res.totais[g].valor, 0);
@@ -52,7 +53,10 @@ export default async function ComissoesPage({ searchParams }: { searchParams: Bu
 
   return (
     <>
-      <h1 className="titulo-icone"><Icone nome="cifrao" tamanho={24} /> Comissões</h1>
+      <div className="cabecalho-pagina">
+        <h1 className="titulo-icone"><Icone nome="cifrao" tamanho={24} /> Comissões</h1>
+        {importar && <Link className="btn-secundario" href="/app/comissoes/devolucoes/importar"><Icone nome="arquivo" tamanho={16} /> Cadastrar Devoluções com Excel</Link>}
+      </div>
       <Mensagens erro={erro} ok={ok} />
       <AvisoPendentesAnalise quantidade={pend.quantidade} valor={pend.valor} />
 

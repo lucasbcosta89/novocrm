@@ -17,7 +17,7 @@ export function StatusPedido({ status }: { status: string }) {
   return <Status classe={status} icone={ICONE_PEDIDO[status] ?? "circulo"} rotulo={ROTULO_STATUS_PEDIDO[status] ?? status} />;
 }
 
-const ICONE_DEVOLUCAO: Record<string, NomeIcone> = { pendente: "relogio", aprovada: "check", recusada: "cancelado", concluida: "concluido" };
+const ICONE_DEVOLUCAO: Record<string, NomeIcone> = { pendente: "relogio", aprovada: "check", recusada: "cancelado", concluida: "concluido", processada: "concluido" };
 
 export function StatusDevolucao({ status }: { status: string }) {
   return <Status classe={`dev-${status}`} icone={ICONE_DEVOLUCAO[status] ?? "circulo"} rotulo={ROTULO_STATUS_DEVOLUCAO[status] ?? status} />;

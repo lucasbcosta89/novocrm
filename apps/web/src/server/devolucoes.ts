@@ -20,8 +20,14 @@ export type Devolucao = {
   status: string;
   valor_total: number;
   forma_pagamento: string | null;
-  prazo_tipo: string;
-  prazo_dias: number | null;
+  /** data em que o estorno de comissão é lançado em Comissões (null = estorno previsto) */
+  data_processamento: string | null;
+  comissao_estornada: number;
+  comissao_id: string | null;
+  /** preenchida = devolução importada por Excel (processada em Comissões › Devoluções) */
+  chave_unica: string | null;
+  quantidade: number | null;
+  sku_informado: string | null;
   observacoes: string | null;
   cliente_id: string;
   representada: { id: string; nome: string } | null;
@@ -29,7 +35,7 @@ export type Devolucao = {
   itens: DevolucaoItem[];
 };
 
-const CAMPOS = `id, numero, data, motivo, status, valor_total, forma_pagamento, prazo_tipo, prazo_dias, observacoes, cliente_id,
+const CAMPOS = `id, numero, data, motivo, status, valor_total, forma_pagamento, data_processamento, comissao_estornada, comissao_id, chave_unica, quantidade, sku_informado, observacoes, cliente_id,
   representada:representadas(id, nome:razao_social), pedido:pedidos(id, codigo_pedido),
   itens:devolucao_itens(id, produto_id, quantidade, preco_unitario, desconto_percentual, subtotal, produto:produtos(sku, nome))`;
 
@@ -54,7 +60,8 @@ export async function obterDevolucao({ supabase }: Contexto, id: string): Promis
 
 /**
  * Cria (id null) ou edita a devolução de forma atômica (função SQL salvar_devolucao): subtotais e total vêm do banco,
- * que também bloqueia quantidade acima do pedido de origem.
+ * que também bloqueia quantidade acima do pedido de origem e cria/atualiza a comissão NEGATIVA (estorno) em
+ * Comissões: sem Data de Processamento = prevista; com data = recebida nessa data; recusada = cancelada.
  */
 export async function salvarDevolucao({ supabase }: Contexto, id: string | null, input: unknown): Promise<string> {
   const d = devolucaoSchema.parse(input);
@@ -67,8 +74,7 @@ export async function salvarDevolucao({ supabase }: Contexto, id: string | null,
     p_motivo: d.motivo,
     p_status: d.status,
     p_forma_pagamento: d.forma_pagamento ?? null,
-    p_prazo_tipo: d.prazo_tipo,
-    p_prazo_dias: d.prazo_dias ?? null,
+    p_data_processamento: d.data_processamento,
     p_observacoes: d.observacoes ?? null,
     p_itens: d.itens,
   });

@@ -41,8 +41,12 @@ export const ROTULO_MOTIVO_DEVOLUCAO: Record<string, string> = {
   desistencia: "Desistência",
   prazo_entrega: "Prazo de entrega",
   outro: "Outro",
+  defeito: "Defeito",
+  erro_pedido: "Erro no pedido",
 };
+export const ROTULO_FORMA_PAGAMENTO_DEVOLUCAO: Record<string, string> = { geracao_credito: "Geração de Crédito", outros: "Outros" };
 export const ROTULO_STATUS_DEVOLUCAO: Record<string, string> = {
+  processada: "Processada",
   pendente: "Pendente",
   aprovada: "Aprovada",
   recusada: "Recusada",
