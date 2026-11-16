@@ -212,6 +212,16 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Importação: coluna opcional "Data de Faturamento" (modelo Excel regenerado)
   - [x] Rotina retroativa: 0 liquidadas, 3 em análise (sem data de faturamento); valores inalterados
   - [x] Critério verificado no banco (transação desfeita) + 15 testes; telas só em página temporária com dados simulados (exigem login)
+- [x] Fase 22 — Devoluções por Excel, comissão negativa (estorno) e processamento (tag fase-22)
+  - [x] Tabela devolucoes existente ESTENDIDA (1 linha da planilha = 1 devolução de item; módulo manual intacto e sem estorno); chave única anti-duplicação
+  - [x] Estorno em comissoes (tipo 'estorno', valor negativo, vínculo com a devolução e o item); comissão original nunca alterada; estorno protegido de rotinas/recálculos/lote
+  - [x] Decisões: estorno nasce 'prevista' e só o processamento subtrai; mês = Data de Processamento; percentual do item original; pedido não encontrado = linha rejeitada
+  - [x] Importação (lib/import/devolucoes.ts) com prévia: válidas, com alerta, inválidas, duplicadas e valor total a estornar; conflito não sobrescreve
+  - [x] Proteções: quantidade acima da vendida (inválida), estorno acima do saldo (limitado com alerta), fórmula sem valor (alerta), data serial do Excel
+  - [x] Marcar como processada (individual/lote, transacional) e Reabrir devolução sem apagar o estorno; histórico da Fase 21
+  - [x] Dashboard: recebida bruta, devoluções, líquido, a receber e em análise; relatório/exportação com Tipo; aba Devoluções com totais por período e representada
+  - [x] Modelo /templates/modelo-devolucoes.xlsx (Devoluções, Instruções, Exemplos) + scripts/gerar-modelo-devolucoes.ts
+  - [x] Critério verificado no banco (transação desfeita) + 14 testes; telas só em página temporária com dados simulados (exigem login)
 
 ## Pendências (fazer após a tag fase-8)
 - [ ] Segurança: ativar leaked password protection no Supabase Auth (requer plano Pro; ao ativar, validar que o cadastro via admin.createUser também bloqueia senha vazada)
