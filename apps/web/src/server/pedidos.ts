@@ -18,9 +18,9 @@ export type PedidoItem = {
   comissao_percentual: number;
   comissao_valor: number;
   produto: { sku: string } | null;
-  /** Fase 17: SKU como veio da planilha e pendência do item (produto não cadastrado / preço divergente) */
+  /** Fase 17: SKU como veio da planilha e pendência de VÍNCULO (produto não cadastrado); divergências viram alertas (Fase 19) */
   sku_planilha: string | null;
-  pendencia: "produto_nao_cadastrado" | "preco_divergente" | null;
+  pendencia: "produto_nao_cadastrado" | null;
 };
 
 export type Pedido = {
@@ -30,6 +30,8 @@ export type Pedido = {
   codigo_gerado: boolean;
   tem_pendencias: boolean;
   data: string;
+  /** Fase 19: data de faturamento (AAAA-MM-DD) ou null; não entra em nenhum cálculo */
+  data_faturamento: string | null;
   status: string;
   valor_total: number;
   comissao_total: number;
@@ -44,7 +46,7 @@ export type Pedido = {
   comissao: { id: string; status: string; valor: number; percentual: number; data_prevista: string | null }[];
 };
 
-const CAMPOS = `id, numero, codigo_pedido, codigo_gerado, tem_pendencias, data, status, valor_total, comissao_total, forma_pagamento, prazo_tipo, prazo_dias, origem, observacoes,
+const CAMPOS = `id, numero, codigo_pedido, codigo_gerado, tem_pendencias, data, data_faturamento, status, valor_total, comissao_total, forma_pagamento, prazo_tipo, prazo_dias, origem, observacoes,
   cliente:clientes(id, nome), representada:representadas(id, nome:razao_social),
   itens:pedido_itens(id, produto_id, descricao, quantidade, preco_unitario, desconto_percentual, acrescimo_percentual, desconto_acima_max, subtotal, comissao_percentual, comissao_valor, sku_planilha, pendencia, produto:produtos(sku)),
   comissao:comissoes(id, status, valor, percentual, data_prevista)`;
@@ -55,7 +57,12 @@ export async function obterPedido({ supabase }: Contexto, id: string): Promise<P
   return data;
 }
 
-/** Cria pedido de forma atômica (função SQL criar_pedido); preço e comissão vêm do banco, nunca do cliente. */
+/**
+ * Cria pedido de forma atômica (função SQL criar_pedido); preço e comissão vêm do banco, nunca do cliente.
+ * F (Fase 19): o pedido é SEMPRE emitido — desconto acima do limite, preço divergente e comissão ausente não
+ * bloqueiam; o banco grava o preço praticado, a comissão pela precedência (lib/comissao.ts) e recalcula os alertas.
+ * Salvar um pedido nunca altera a comissão do catálogo.
+ */
 export async function criarPedido(ctx: Contexto, input: unknown): Promise<Pedido> {
   const p = pedidoSchema.parse(input);
   const { data, error } = await ctx.supabase.rpc("criar_pedido", {
@@ -67,6 +74,7 @@ export async function criarPedido(ctx: Contexto, input: unknown): Promise<Pedido
     p_prazo_tipo: p.prazo_tipo,
     p_prazo_dias: p.prazo_dias,
     p_codigo: p.codigo_pedido,
+    p_data_faturamento: p.data_faturamento,
   });
   if (error) throw erroPedido(error, "Número de pedido em uso; tente novamente");
   return obterPedido(ctx, data as string);
@@ -82,6 +90,7 @@ export async function editarPedido(ctx: Contexto, id: string, input: unknown): P
     p_prazo_tipo: p.prazo_tipo,
     p_prazo_dias: p.prazo_dias,
     p_codigo: p.codigo_pedido ?? null,
+    p_data_faturamento: p.data_faturamento,
   });
   if (error) throw erroPedido(error);
   return obterPedido(ctx, id);

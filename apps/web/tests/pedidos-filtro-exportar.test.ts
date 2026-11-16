@@ -11,7 +11,7 @@ vi.mock("@/server/consultas", () => ({
     recebido.push([entrada, opcoes]);
     return {
       pedidos: [{
-        id: "p", numero: "P000012", codigo_pedido: "1001", tem_pendencias: true, data: "2026-10-20T15:00:00Z", status: "confirmado",
+        id: "p", numero: "P000012", codigo_pedido: "1001", tem_pendencias: true, data: "2026-10-20T15:00:00Z", data_faturamento: "2026-11-05", status: "confirmado",
         valor_total: 686.03, comissao_total: 37.73, cliente: { id: CLI, nome: "Loja São João" }, representada: { id: "r", nome: "Alfa" },
       }],
       filtro: {}, limitado: false,
@@ -44,11 +44,11 @@ describe("página Pedidos: filtros por código, cliente e período + exportaçã
     const req = (q: string) => ({ nextUrl: new URL(`http://x/api/pedidos/exportar${q}`) }) as never;
     const csv = await GET(req(`?cliente=${CLI}&formato=csv`));
     const linha = new TextDecoder().decode(new Uint8Array(await csv.arrayBuffer())).split("\r\n")[1];
-    expect(linha).toBe("1001;P000012;20/10/2026;Loja São João;Alfa;Confirmado;686,03;37,73;Sim");
+    expect(linha).toBe("1001;P000012;20/10/2026;05/11/2026;Loja São João;Alfa;Confirmado;686,03;37,73;Sim");
     const xlsx = await GET(req(`?cliente=${CLI}&formato=xlsx`));
     const m = XLSX.utils.sheet_to_json<unknown[]>(XLSX.read(new Uint8Array(await xlsx.arrayBuffer())).Sheets.Pedidos!, { header: 1 });
-    expect(m[0]).toEqual(["Código", "Nº interno", "Data", "Cliente", "Representada", "Status", "Valor total (R$)", "Comissão (R$)", "Pendências"]);
-    expect(m[1]![6]).toBe(686.03);
+    expect(m[0]).toEqual(["Código", "Nº interno", "Data", "Data de faturamento", "Cliente", "Representada", "Status", "Valor total (R$)", "Comissão (R$)", "Pendências"]);
+    expect(m[1]![7]).toBe(686.03);
     expect(recebido[0]).toEqual([{ cliente: CLI, formato: "csv" }, { limite: 5000 }]);
   });
 });

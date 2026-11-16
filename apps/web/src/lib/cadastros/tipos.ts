@@ -23,7 +23,7 @@ export interface Representada {
   bairro: string | null;
   cidade: string;
   uf: string;
-  comissao_percentual: number | null; // comissão fixa (se houver); a do produto prevalece
+  comissao_percentual: number | null; // comissão fixa (se houver); prevalece sobre a do produto (Fase 19)
   prazo_pagamento_dias: number | null;
   /** pagamento da comissão (só cadastro): referência e dias só quando tipo = "outro" */
   comissao_pagamento_tipo: "faturamento" | "pagamento" | "outro";

@@ -65,18 +65,18 @@ describe("fase 17 — importação de pedidos", () => {
     expect(config.previa!(linhas, base()).linhas[0]).toEqual(["1001", "20/10/2026", "Loja A", "Alfa", 2, formatarMoeda(50), "—"]);
   });
 
-  it("SKU inexistente: item entra com pendência (alerta, não erro); preço >10% diferente: pendência informativa; preço da planilha prevalece", async () => {
+  it("SKU inexistente: item entra com pendência (alerta, não erro); preço diferente do Catálogo: sem pendência nem alerta (Fase 19: importado não verifica preço); preço da planilha prevalece", async () => {
     const linhas = await validarPlanilha(config, config.colunasEsperadas, [
       linha(2, item("", "20/10/2026", CNPJ_A, "S1", "1", "10")),
       linha(3, item("", "20/10/2026", CNPJ_A, "NOVO", "3", "4,50")),
       linha(4, item("", "20/10/2026", CNPJ_A, "S2", "1", "30")),
     ], base());
-    expect(linhas.map((l) => l.classificacao)).toEqual(["valida", "com_alerta", "com_alerta"]);
+    expect(linhas.map((l) => l.classificacao)).toEqual(["valida", "com_alerta", "valida"]);
     expect(linhas[1]!.alertas[0]!.mensagem).toBe("Produto não cadastrado no Catálogo de Alfa: item gravado com pendência");
-    expect(linhas[2]!.alertas[0]!.mensagem).toBe(`Preço da planilha (${formatarMoeda(30)}) difere do Catálogo (${formatarMoeda(20)}): vale o da planilha`);
+    expect(linhas[2]!.alertas).toEqual([]);
     const [g] = agruparPedidos(linhas.map((l) => ({ ...l, erros: [], alertas: [] })), base());
     expect(g!.itens.map((i) => [i.sku, i.produto_id, i.preco_unitario, i.pendencia])).toEqual([
-      ["S1", "p-S1-1", 10, null], ["NOVO", null, 4.5, "produto_nao_cadastrado"], ["S2", "p-S2-1", 30, "preco_divergente"],
+      ["S1", "p-S1-1", 10, null], ["NOVO", null, 4.5, "produto_nao_cadastrado"], ["S2", "p-S2-1", 30, null],
     ]);
     expect(separarParaGravacao(config, linhas, base()).gravar).toHaveLength(3);
   });

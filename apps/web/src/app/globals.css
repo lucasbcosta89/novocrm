@@ -966,3 +966,30 @@ h1.titulo-icone .icone, h2.titulo-icone .icone, h3.titulo-icone .icone { color: 
   color: var(--danger-texto); border: 1px solid currentColor; background: var(--surface); white-space: nowrap; }
 .motivo-pendencia { color: var(--danger-texto); font-weight: 500; }
 .motivo-informativo { color: var(--atencao-texto); background: var(--atencao-suave); padding: 1px 6px; border-radius: 6px; }
+
+/* Fase 19 — avisos do item e quadro de divergências. Severidade (DESIGN.md › Cores fora da paleta):
+   amarelo = desconto, laranja = preço, vermelho = comissão, neutro = informação (oferta de propagação). */
+:root { --laranja: #EA580C; --laranja-texto: #C2410C; --laranja-suave: #FFF7ED; }
+:root[data-tema="escuro"] { --laranja-texto: #FB923C; --laranja-suave: rgba(234, 88, 12, 0.16); }
+@media (prefers-color-scheme: dark) { :root[data-tema="sistema"] { --laranja-texto: #FB923C; --laranja-suave: rgba(234, 88, 12, 0.16); } }
+.linha-avisos > td { padding-top: 0; border-top: 0; }
+.avisos-item { display: grid; gap: 6px; margin: 0 0 4px; }
+.aviso-item { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; padding: 6px 10px; border-radius: 8px; border-left: 3px solid; font-size: 0.875rem; }
+.aviso-item p { margin: 0; flex: 1 1 260px; }
+.aviso-amarelo { color: var(--atencao-texto); border-color: var(--atencao); background: var(--atencao-suave); }
+.aviso-laranja { color: var(--laranja-texto); border-color: var(--laranja); background: var(--laranja-suave); }
+.aviso-vermelho { color: var(--danger-texto); border-color: var(--danger); background: var(--danger-suave); }
+.aviso-neutro { color: var(--text); border-color: var(--border); background: var(--bg); }
+.aviso-item .acoes-aviso { display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; }
+tr[id^="item-"]:target > td { background: var(--accent-suave); }
+.quadro-divergencias .cards-divergencias { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 12px 0; }
+.card-divergencia { border: 1px solid var(--border); border-left: 4px solid; border-radius: 10px; padding: 10px 12px; background: var(--surface); }
+.card-divergencia strong { display: block; font-size: 1.5rem; line-height: 1.2; }
+.card-divergencia.aviso-amarelo { border-left-color: var(--atencao); }
+.card-divergencia.aviso-laranja { border-left-color: var(--laranja); }
+.card-divergencia.aviso-vermelho { border-left-color: var(--danger); }
+.selo-alerta { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
+.selo-alerta.aviso-amarelo { background: var(--atencao-suave); color: var(--atencao-texto); }
+.selo-alerta.aviso-laranja { background: var(--laranja-suave); color: var(--laranja-texto); }
+.selo-alerta.aviso-vermelho { background: var(--danger-suave); color: var(--danger-texto); }
+.form-faturamento { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }

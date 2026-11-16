@@ -37,6 +37,7 @@ export async function criarPedidoAction(fd: FormData) {
         confirmar,
         gerar_codigo: fd.get("gerar_codigo") === "1",
         codigo_pedido: fd.get("codigo_pedido"),
+        data_faturamento: fd.get("data_faturamento"),
         itens: itensDoForm(fd),
       }),
     {
@@ -57,6 +58,7 @@ export async function editarPedidoAction(id: string, fd: FormData) {
         prazo_tipo: fd.get("prazo_tipo") ?? "a_vista",
         prazo_dias: fd.get("prazo_dias"),
         codigo_pedido: fd.get("codigo_pedido"),
+        data_faturamento: fd.get("data_faturamento"),
         itens,
       }),
     { ok: `${BASE}/${id}`, erro: `${BASE}/${id}/editar`, mensagem: "Pedido atualizado" },

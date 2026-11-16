@@ -3,12 +3,13 @@ import { Avatar } from "@/components/avatar";
 import { Mensagens, type Busca } from "@/components/form";
 import { Icone } from "@/components/icones";
 import { StatusPedido } from "@/components/status";
-import { formatarData, formatarDataHora, formatarDocumento, formatarMoeda, formatarPercentual } from "@/lib/formato";
+import { formatarData, formatarDataHora, formatarDocumento, formatarMoeda, formatarPercentual, formatarDia } from "@/lib/formato";
 import { ROTULO_FORMA_PAGAMENTO, ROTULO_STATUS_COMISSAO } from "@/lib/rotulos";
 import { carregar } from "@/server/acao";
 import { obterCliente } from "@/server/clientes";
 import { obterPedido } from "@/server/pedidos";
 import { cancelarPedidoAction, confirmarPedidoAction, excluirPedidoAction } from "../actions";
+import { definirDataFaturamentoAction } from "../alertas-actions";
 import { confirmacaoPedidoAction } from "../../whatsapp-actions";
 
 export default async function PedidoPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Busca }) {
@@ -56,11 +57,12 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
           <div><dt>Código do pedido</dt><dd>{p.codigo_pedido}{!p.codigo_gerado && <span className="dica"> (ERP externo)</span>}</dd></div>
           <div><dt>Nº interno</dt><dd>{p.numero}</dd></div>
           <div><dt>Data</dt><dd>{formatarDataHora(p.data)}</dd></div>
+          <div><dt>Data de faturamento</dt><dd>{p.data_faturamento ? formatarDia(p.data_faturamento) : "—"}</dd></div>
           <div><dt>Valor total</dt><dd>{formatarMoeda(p.valor_total)}</dd></div>
           <div><dt>Comissão total</dt><dd>{formatarMoeda(p.comissao_total)}</dd></div>
           <div><dt>Forma de pagamento</dt><dd>{p.forma_pagamento ? ROTULO_FORMA_PAGAMENTO[p.forma_pagamento] ?? p.forma_pagamento : "—"}</dd></div>
           <div><dt>Prazo</dt><dd>{p.prazo_tipo === "a_prazo" ? `${p.prazo_dias} dias` : "À vista"}</dd></div>
-          <div><dt>Origem</dt><dd>{p.origem === "catalogo_web" ? "Catálogo digital" : p.origem === "whatsapp" ? "WhatsApp" : "App"}</dd></div>
+          <div><dt>Origem</dt><dd>{p.origem === "catalogo_web" ? "Catálogo digital" : p.origem === "whatsapp" ? "WhatsApp" : p.origem === "importacao" ? "Importação (Excel)" : "App"}</dd></div>
           {comissao && (
             <div>
               <dt>Comissão</dt>
@@ -72,6 +74,15 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
           )}
         </dl>
         {p.observacoes && <p className="anotacao">Obs. do cliente: {p.observacoes}</p>}
+        {/* C.2: só a data de faturamento muda aqui (itens, valores e comissão ficam como estão) */}
+        <form action={definirDataFaturamentoAction.bind(null, p.id)} className="form-faturamento">
+          <label className="campo">
+            <span>Data de faturamento</span>
+            <input type="date" name="data_faturamento" defaultValue={p.data_faturamento ?? ""} />
+          </label>
+          <button className="btn-secundario btn-peq" type="submit"><Icone nome="check" tamanho={16} /> Salvar data</button>
+          {p.data_faturamento && p.data_faturamento < p.data.slice(0, 10) && <span className="dica">Faturamento anterior à data do pedido.</span>}
+        </form>
         <div className="acoes-linha">
           {p.status !== "cancelado" && (
             <form action={confirmacaoPedidoAction.bind(null, p.id)}>

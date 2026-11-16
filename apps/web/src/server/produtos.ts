@@ -13,7 +13,7 @@ export type Produto = {
   unidade: string | null;
   preco: number;
   desconto_max: number;
-  comissao: number | null; // null = usa a comissão fixa da representada
+  comissao: number | null; // null/0 = vazia; a comissão da representada (se definida) prevalece — Fase 19
   categoria: string | null;
   ncm: string | null;
   imagem_url: string | null;

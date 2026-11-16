@@ -72,11 +72,12 @@ describe("representadas fase 5 — relatório de erros e reenvio", () => {
 });
 
 describe("comissão fixa da representada × comissão do produto", () => {
-  it("a do produto prevalece; sem ela, a fixa da representada; sem nenhuma, 0%", async () => {
+  it("Fase 19: a da representada prevalece; sem ela, a do produto; sem nenhuma, 0%", async () => {
     const { comissaoEfetiva } = await import("@/lib/formato");
-    expect(comissaoEfetiva(10, 5.5)).toEqual({ valor: 10, origem: "produto" });
-    expect(comissaoEfetiva(0, 5.5)).toEqual({ valor: 0, origem: "produto" });
-    expect(comissaoEfetiva(null, 5.5)).toEqual({ valor: 5.5, origem: "representada" });
+    expect(comissaoEfetiva(10, 5.5)).toEqual({ valor: 5.5, origem: "representada" });
+    expect(comissaoEfetiva(0, 5.5)).toEqual({ valor: 5.5, origem: "representada" });
+    expect(comissaoEfetiva(10, null)).toEqual({ valor: 10, origem: "produto" });
+    expect(comissaoEfetiva(10, 0)).toEqual({ valor: 10, origem: "produto" });
     expect(comissaoEfetiva(null, null)).toEqual({ valor: 0, origem: "nenhuma" });
   });
 

@@ -13,6 +13,8 @@ export type PedidoResumo = {
   /** Fase 17: pedido importado com item pendente (destacado em vermelho nas listas) */
   tem_pendencias: boolean;
   data: string;
+  /** Fase 19: data de faturamento (AAAA-MM-DD) ou null */
+  data_faturamento: string | null;
   status: string;
   valor_total: number;
   comissao_total: number;
@@ -21,7 +23,7 @@ export type PedidoResumo = {
 };
 
 const CAMPOS_PEDIDO =
-  "id, numero, codigo_pedido, tem_pendencias, data, status, valor_total, comissao_total, cliente:clientes(id, nome), representada:representadas(id, nome:razao_social)";
+  "id, numero, codigo_pedido, tem_pendencias, data, data_faturamento, status, valor_total, comissao_total, cliente:clientes(id, nome), representada:representadas(id, nome:razao_social)";
 
 /** Termo de busca vira padrão ilike literal (%, _ e \ escapados); vazio = sem filtro. */
 export function padraoBusca(termo: string | null | undefined): string | null {

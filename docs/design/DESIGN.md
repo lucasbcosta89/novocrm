@@ -234,6 +234,10 @@ Se o azul "aparece muito", há elementos azuis que não são ação — corrigir
 #### Cores fora da paleta
 - Erro de validação de formulário é a única exceção funcional prevista (vermelho, só no campo
   com erro + mensagem). Tom a definir junto com as diretrizes de formulário.
+- Severidade dos alertas de divergência de pedido (Fase 19, decisão do usuário): **amarelo** = desconto
+  acima do limite (política comercial), **laranja** = preço divergente do catálogo, **vermelho** = comissão
+  não definida / representada sem comissão (falha de valor financeiro). Nota informativa (oferta de propagação)
+  em neutro. Só nos avisos do item e no quadro de divergências; nunca em botões (ação continua azul).
 - Logos de marcas de terceiros (WhatsApp, representadas) aparecem nas cores originais, pequenos,
   e nunca transferem sua cor para a interface ao redor.
 

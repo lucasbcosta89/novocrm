@@ -17,6 +17,8 @@ export type ItemPdf = {
 };
 export type DadosPedidoPdf = {
   id: string; numero: string; codigo_pedido: string; data: string; status: string; valor_total: number;
+  /** Fase 19: só aparece no PDF quando preenchida */
+  data_faturamento?: string | null;
   forma_pagamento: string | null; prazo_tipo: string; prazo_dias: number | null;
   cliente: { id: string; nome: string; whatsapp: string | null; celular: string | null } | null;
   representada: { nome: string } | null;
@@ -27,7 +29,7 @@ export async function dadosPedidoPdf({ supabase }: Contexto, pedidoId: string): 
   const { data, error } = await supabase
     .from("pedidos")
     .select(
-      `id, numero, codigo_pedido, data, status, valor_total, forma_pagamento, prazo_tipo, prazo_dias,
+      `id, numero, codigo_pedido, data, data_faturamento, status, valor_total, forma_pagamento, prazo_tipo, prazo_dias,
        cliente:clientes(id, nome, whatsapp, celular), representada:representadas(nome:razao_social),
        itens:pedido_itens(produto_id, descricao, quantidade, preco_unitario, desconto_percentual, acrescimo_percentual, subtotal, produto:produtos(sku, nome, ncm, imagem_url))`,
     )
@@ -96,6 +98,7 @@ export async function pdfPedido(d: DadosPedidoPdf, representante?: Representante
   if (d.forma_pagamento) pagamento.push(`Forma de pagamento: ${ROTULO_FORMA_PAGAMENTO[d.forma_pagamento] ?? d.forma_pagamento}`);
   if (d.prazo_tipo === "a_prazo" && d.prazo_dias) pagamento.push(`Prazo: À prazo — ${d.prazo_dias} dias`);
   else if (d.prazo_tipo === "a_vista") pagamento.push("Prazo: À vista");
+  if (d.data_faturamento) pagamento.push(`Data de faturamento: ${d.data_faturamento.slice(0, 10).split("-").reverse().join("/")}`);
 
   const conteudo: Content[] = [
     cabecalho(`Pedido nº ${d.codigo_pedido} — ${d.cliente?.nome ?? "Cliente"}`, `${d.representada?.nome ?? ""} · ${dataBR(d.data)}`),

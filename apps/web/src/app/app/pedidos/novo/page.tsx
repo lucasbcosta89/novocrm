@@ -2,7 +2,8 @@ import Link from "next/link";
 import { CodigoPedido } from "@/components/codigo-pedido";
 import { Mensagens } from "@/components/form";
 import { Icone } from "@/components/icones";
-import { formatarMoeda, comissaoEfetiva, formatarPercentual } from "@/lib/formato";
+import { CampoDataFaturamento } from "@/components/data-faturamento";
+import { ItensEditaveis, type LinhaEdicao } from "@/components/itens-editaveis";
 import { carregar } from "@/server/acao";
 import { listarClientes } from "@/server/clientes";
 import { listarTabelaPrecos } from "@/server/consultas";
@@ -33,6 +34,18 @@ export default async function NovoPedidoPage({
     precos.filter((t) => t.cliente?.id === cli?.id && t.produto).map((t) => [t.produto!.id, t] as const),
   );
   const ativos = produtos.filter((p) => p.ativo);
+  // Fase 19: dados dos avisos (preço de referência, desconto máximo e comissão do catálogo); nada é gravado aqui
+  const linhas: LinhaEdicao[] = ativos.map((p) => {
+    const especifico = precoCliente.get(p.id);
+    const preco = Number(especifico?.preco ?? p.preco);
+    return {
+      produto_id: p.id, sku: p.sku, nome: p.unidade ? `${p.nome} (${p.unidade})` : p.nome, inativo: false, quantidade: 0, preco, desconto: 0, acrescimo: 0,
+      desconto_max: Number(especifico?.desconto_max ?? p.desconto_max ?? 0), preco_catalogo: preco, comissao_catalogo: p.comissao == null ? null : Number(p.comissao),
+      dica_preco: especifico ? "preço do cliente" : undefined,
+    };
+  });
+  const semComissao = produtos.filter((p) => !(Number(p.comissao ?? 0) > 0)).length;
+  const hoje = new Date().toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" });
 
   return (
     <>
@@ -71,35 +84,14 @@ export default async function NovoPedidoPage({
             <form action={criarPedidoAction}>
               <input type="hidden" name="representada_id" value={rep.id} />
               <input type="hidden" name="cliente_id" value={cli.id} />
-              <div className="tabela-wrap">
-                <table className="tabela">
-                  <thead>
-                    <tr><th>SKU</th><th>Produto</th><th>Preço</th><th>Comissão</th><th>Desc. máx.</th><th>Qtd.</th><th>Desconto (%)</th><th>Acréscimo (%)</th></tr>
-                  </thead>
-                  <tbody>
-                    {ativos.map((p) => {
-                      const especifico = precoCliente.get(p.id);
-                      return (
-                        <tr key={p.id}>
-                          <td><code>{p.sku}</code></td>
-                          <td>{p.nome}{p.unidade && <span className="dica"> ({p.unidade})</span>}</td>
-                          <td>
-                            {formatarMoeda(especifico?.preco ?? p.preco)}
-                            {especifico && <div className="dica">preço do cliente</div>}
-                          </td>
-                          <td>{(() => { const c = comissaoEfetiva(p.comissao, rep.comissao_percentual); return <>{formatarPercentual(c.valor)}{c.origem === "representada" && <div className="dica">fixa da representada</div>}</>; })()}</td>
-                          <td>{formatarPercentual(especifico?.desconto_max ?? p.desconto_max)}</td>
-                          <td><input className="input-num" name={`qtd_${p.id}`} type="number" min="0" step="any" defaultValue="0" /></td>
-                          <td><input className="input-num" name={`desc_${p.id}`} type="number" min="0" max="100" step="0.01" defaultValue="0" aria-label={`Desconto em % de ${p.nome}`} /></td>
-                          <td><input className="input-num" name={`acr_${p.id}`} type="number" min="0" max="100" step="0.01" defaultValue="0" aria-label={`Acréscimo em % de ${p.nome}`} /></td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              <div className="grade" style={{ marginTop: 12 }}>
+              <div className="grade">
                 <div className="bloco-codigo-pedido"><CodigoPedido proximo={proximo} /></div>
+                <label className="campo"><span>Data do pedido</span><input type="date" value={hoje} disabled aria-describedby="data-pedido-dica" /><small id="data-pedido-dica" className="dica">Gravada ao salvar.</small></label>
+                <CampoDataFaturamento dataPedido={hoje} />
+              </div>
+              <ItensEditaveis linhas={linhas} comAcrescimo precoFixo
+                avisos={{ manual: true, representadaId: rep.id, comissaoRepresentada: rep.comissao_percentual == null ? null : Number(rep.comissao_percentual), produtosSemComissao: semComissao }} />
+              <div className="grade" style={{ marginTop: 12 }}>
                 <PagamentoPedido />
                 <div className="acoes acoes-linha">
                   <button className="btn" type="submit" name="confirmar" value="1"><Icone nome="check" tamanho={16} /> Confirmar pedido</button>

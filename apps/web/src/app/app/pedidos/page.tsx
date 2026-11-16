@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { Mensagens } from "@/components/form";
 import { Icone } from "@/components/icones";
+import { QuadroDivergencias } from "@/components/quadro-divergencias";
 import { TabelaPedidos } from "@/components/tabelas";
 import { filtrandoPedidos, urlPedidos } from "@/lib/filtro-pedidos";
 import { carregar } from "@/server/acao";
+import { quadroAlertas } from "@/server/alertas-pedido";
 import { listarClientes } from "@/server/clientes";
 import { listarPedidosFiltrados } from "@/server/consultas";
 import { podeImportar } from "@/server/importacao";
@@ -18,9 +20,10 @@ export default async function PedidosPage({ searchParams }: { searchParams: Busc
   const sp = await searchParams;
   const erro = typeof sp.erro === "string" ? sp.erro : undefined;
   const ok = typeof sp.ok === "string" ? sp.ok : undefined;
-  const [{ pedidos, filtro: f, limitado }, clientes, importar] = await carregar((ctx) =>
-    Promise.all([listarPedidosFiltrados(ctx, sp), listarClientes(ctx), podeImportar(ctx)]),
+  const [{ pedidos, filtro: f, limitado }, clientes, importar, quadro] = await carregar((ctx) =>
+    Promise.all([listarPedidosFiltrados(ctx, sp), listarClientes(ctx), podeImportar(ctx), quadroAlertas(ctx, sp)]),
   );
+  const params = Object.fromEntries(Object.entries(sp).flatMap(([k, v]) => (typeof v === "string" && v ? [[k, v]] : [])));
   const pendentes = pedidos.filter((p) => p.tem_pendencias).length;
   const filtrando = filtrandoPedidos(f);
   const exportar = (formato: "xlsx" | "csv") => urlPedidos(f, "/api/pedidos/exportar", { formato });
@@ -36,6 +39,7 @@ export default async function PedidosPage({ searchParams }: { searchParams: Busc
         </div>
       </div>
       <Mensagens erro={erro} ok={ok} />
+      <QuadroDivergencias quadro={quadro} params={params} />
       {pendentes > 0 && <p className="dica">{pendentes} pedido(s) importado(s) com pendências: abra cada um para resolver.</p>}
       <section className="card">
         <form method="get" className="filtros-custos">

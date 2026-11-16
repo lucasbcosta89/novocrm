@@ -1,13 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { gerarCsv } from "@/lib/csv";
-import { formatarData } from "@/lib/formato";
+import { formatarData, formatarDia } from "@/lib/formato";
 import { gerarXlsx } from "@/lib/planilha";
 import { ROTULO_STATUS_PEDIDO } from "@/lib/rotulos";
 import { listarPedidosFiltrados } from "@/server/consultas";
 import { obterContexto } from "@/server/contexto";
 import { normalizarErro } from "@/server/erros";
 
-const CABECALHO = ["Código", "Nº interno", "Data", "Cliente", "Representada", "Status", "Valor total (R$)", "Comissão (R$)", "Pendências"];
+const CABECALHO = ["Código", "Nº interno", "Data", "Data de faturamento", "Cliente", "Representada", "Status", "Valor total (R$)", "Comissão (R$)", "Pendências"];
 
 /** GET /api/pedidos/exportar?q=&cliente=&de=&ate=&formato=csv|xlsx → visão filtrada da página Pedidos (RLS), até 5.000. */
 export async function GET(req: NextRequest) {
@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     const ctx = await obterContexto();
     const { pedidos } = await listarPedidosFiltrados(ctx, Object.fromEntries(req.nextUrl.searchParams), { limite: 5000 });
     const linhas = pedidos.map((p) => [
-      p.codigo_pedido, p.numero, formatarData(p.data), p.cliente?.nome ?? "", p.representada?.nome ?? "",
+      p.codigo_pedido, p.numero, formatarData(p.data), p.data_faturamento ? formatarDia(p.data_faturamento) : "", p.cliente?.nome ?? "", p.representada?.nome ?? "",
       ROTULO_STATUS_PEDIDO[p.status] ?? p.status, Number(p.valor_total), Number(p.comissao_total), p.tem_pendencias ? "Sim" : "",
     ]);
     const nome = `pedidos-${new Date().toISOString().slice(0, 10)}`;

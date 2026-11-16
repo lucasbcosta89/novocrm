@@ -140,13 +140,13 @@ export const importacaoRepresentadas: ConfiguracaoImportacao<Representada> = {
     notaModelo:
       "Comissão: se a comissão da representada for fixa, preencha a coluna comissao_percentual na planilha. " +
       "Se a comissão variar por produto, deixe essa coluna vazia e informe as comissões no passo de cadastro de produtos " +
-      "(catálogo da representada). Quando houver as duas, vale a comissão do produto.",
+      "(catálogo da representada). Quando houver as duas, vale a comissão da representada.",
   },
   mensagemModelo:
     "Preencha uma representada por linha a partir da linha 2, sem mudar o cabeçalho (nomes e ordem das colunas). " +
     "Obrigatórios: razao_social, cnpj, email_comercial, cidade, uf. " +
     "comissao_percentual = comissão fixa (se houver), de 0 a 100 (vírgula ou ponto): se a comissão da representada é fixa, " +
-    "preencha aqui; se varia por produto, deixe vazio e informe as comissões no cadastro de produtos (a do produto prevalece). " +
+    "preencha aqui (ela prevalece sobre a do produto); se varia por produto, deixe vazio e informe as comissões no cadastro de produtos. " +
     "CNPJ com ou sem máscara; status Ativa ou Inativa (vazio = Ativa); " +
     "codigo_representada vazio = gerado (REP-0001…). CNPJ já cadastrado: só os campos preenchidos são atualizados. " +
     "Pagamento da comissão: comissao_pagamento_tipo = No faturamento, No recebimento ou Outro (vazio = No faturamento na nova; " +

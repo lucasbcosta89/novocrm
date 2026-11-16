@@ -19,6 +19,8 @@ import {
 import { CamposEmpresa, empresaDaRepresentada, enderecoTexto } from "../campos-empresa";
 import { Icone } from "@/components/icones";
 import { rotuloPagamentoComissao } from "@/lib/cadastros/representada";
+import { contarProdutosSemComissao } from "@/server/alertas-pedido";
+import { propagarComissaoRepresentadaFormAction } from "../../pedidos/alertas-actions";
 
 /** Início da representada: quadro da empresa → vendas → alertas → pontos de faturamento. */
 export default async function RepresentadaInicio({
@@ -29,9 +31,10 @@ export default async function RepresentadaInicio({
   searchParams: Promise<{ erro?: string; ok?: string }>;
 }) {
   const [{ id }, { erro, ok }] = await Promise.all([params, searchParams]);
-  const [r, painel, pontos, documentos] = await carregar((ctx) =>
-    Promise.all([obterRepresentada(ctx, id), painelRepresentada(ctx, id), listarPontos(ctx, id), listarDocumentosRepresentada(ctx, id)]),
+  const [r, painel, pontos, documentos, semComissao] = await carregar((ctx) =>
+    Promise.all([obterRepresentada(ctx, id), painelRepresentada(ctx, id), listarPontos(ctx, id), listarDocumentosRepresentada(ctx, id), contarProdutosSemComissao(ctx, id)]),
   );
+  const comissaoRep = Number(r.comissao_percentual ?? 0);
 
   return (
     <>
@@ -56,6 +59,16 @@ export default async function RepresentadaInicio({
           <div><dt className="com-icone"><Icone nome="email" tamanho={16} /> E-mail</dt><dd>{r.email_comercial ?? "—"}</dd></div>
           <div><dt className="com-icone"><Icone nome="telefone" tamanho={16} /> Telefone</dt><dd>{r.telefone ?? "—"}</dd></div>
         </dl>
+        {/* J.2 — propagação manual da comissão: só por clique + confirmação; nada é gravado automaticamente */}
+        {comissaoRep > 0 && semComissao > 0 && (
+          <div className="aviso-item aviso-neutro" role="status">
+            <p>{semComissao} produto(s) vinculado(s) {semComissao === 1 ? "está" : "estão"} sem comissão no Catálogo.</p>
+            <form action={propagarComissaoRepresentadaFormAction.bind(null, r.id)}>
+              <BotaoConfirmar className="btn-secundario btn-peq" texto="Aplicar a todos os produtos"
+                pergunta={`Aplicar a comissão de ${formatarPercentual(comissaoRep)} a ${semComissao} produto(s) sem comissão no Catálogo? Produtos que já têm comissão são preservados.`} />
+            </form>
+          </div>
+        )}
         <div>
           {r.catalogo_publico ? (
             <>

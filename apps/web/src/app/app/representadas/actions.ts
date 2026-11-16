@@ -11,6 +11,7 @@ import { normalizarErro } from "@/server/erros";
 import { atualizarPrecos, atualizarProduto, criarProduto, excluirProduto, salvarImagemProduto } from "@/server/produtos";
 import { excluirDocumentoRepresentada, salvarDocumentosRepresentada } from "@/server/documentos-representada";
 import { atualizarPonto, criarPonto, excluirPonto } from "@/server/pontos-faturamento";
+import { recalcularAlertasPendentes } from "@/server/alertas-pedido";
 import { alterarStatusRepresentada, atualizarRepresentada, criarRepresentada, excluirRepresentada } from "@/server/representadas";
 
 const BASE = "/app/representadas";
@@ -41,6 +42,8 @@ export async function salvarRepresentadaAction(id: string | null, _prev: EstadoF
     const ctx = await obterContexto();
     if (id) {
       await atualizarRepresentada(ctx, id, entrada);
+      // H.4: comissão definida na representada resolve os alertas de comissão pendentes dos pedidos dela
+      await recalcularAlertasPendentes(ctx, { representada_id: id });
       destino = comParam(`${BASE}/${id}`, "ok", "Representada salva");
     } else {
       const r = await criarRepresentada(ctx, entrada);
@@ -153,7 +156,11 @@ export async function vincularProdutoPendentesAction(representadaId: string, sku
 export async function atualizarProdutoAction(representadaId: string, produtoId: string, fd: FormData) {
   // Checkbox desmarcado não é enviado: ausência = inativo.
   const input = { ...dados(fd), ativo: fd.get("ativo") === "on" };
-  await executarAcao((ctx) => atualizarProduto(ctx, produtoId, input), {
+  await executarAcao(async (ctx) => {
+    const p = await atualizarProduto(ctx, produtoId, input);
+    await recalcularAlertasPendentes(ctx, { produto_id: produtoId }); // comissão/preço do catálogo reavalia os alertas
+    return p;
+  }, {
     ok: `${BASE}/${representadaId}/catalogo`,
     erro: `${BASE}/${representadaId}/catalogo`,
     mensagem: "Produto salvo",
@@ -179,7 +186,9 @@ export async function imagemProdutoAction(representadaId: string, produtoId: str
 /** Tabela de preços editável: só chega aqui depois da confirmação no navegador. */
 export async function salvarPrecosAction(representadaId: string, alteracoes: { id: string; preco: number; desconto_max: number }[]) {
   try {
-    const n = await atualizarPrecos(await obterContexto(), representadaId, alteracoes);
+    const ctx = await obterContexto();
+    const n = await atualizarPrecos(ctx, representadaId, alteracoes);
+    await recalcularAlertasPendentes(ctx, { representada_id: representadaId });
     return { ok: `${n} preço(s) salvo(s)` };
   } catch (e) {
     return { erro: normalizarErro(e).message };

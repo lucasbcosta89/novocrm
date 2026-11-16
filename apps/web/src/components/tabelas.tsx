@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatarData, formatarMoeda } from "@/lib/formato";
+import { formatarData, formatarDia, formatarMoeda } from "@/lib/formato";
 import type { PedidoResumo } from "@/server/consultas";
 import { excluirPedidoAction } from "@/app/app/pedidos/actions";
 import { BotaoConfirmar } from "./botao-confirmar";
@@ -21,7 +21,7 @@ export function TabelaPedidos({ pedidos, coluna, acoes, vazio = "Nenhum pedido."
       <table className={acoes ? "tabela tabela-pedidos" : "tabela"}>
         <thead>
           <tr>
-            <th>Código</th><th>Data</th><th>{coluna === "cliente" ? "Cliente" : "Representada"}</th>
+            <th>Código</th><th>Data</th><th>Faturamento</th><th>{coluna === "cliente" ? "Cliente" : "Representada"}</th>
             <th>Status</th><th className="num">Valor</th><th className="num">Comissão</th>{acoes && <th className="col-acoes">Ações</th>}
           </tr>
         </thead>
@@ -35,6 +35,7 @@ export function TabelaPedidos({ pedidos, coluna, acoes, vazio = "Nenhum pedido."
                   {p.tem_pendencias && <span className="selo-pendencias">Com pendências</span>}
                 </td>
                 <td data-rotulo="Data">{formatarData(p.data)}</td>
+                <td data-rotulo="Faturamento">{p.data_faturamento ? formatarDia(p.data_faturamento) : "—"}</td>
                 <td data-rotulo={coluna === "cliente" ? "Cliente" : "Representada"}>{rel ? <Link href={`/app/${coluna === "cliente" ? "clientes" : "representadas"}/${rel.id}`}>{rel.nome}</Link> : "—"}</td>
                 <td data-rotulo="Status"><StatusPedido status={p.status} /></td>
                 <td className="num" data-rotulo="Valor">{formatarMoeda(p.valor_total)}</td>

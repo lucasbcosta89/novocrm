@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { parseNcm, parseNumero, parsePercentual } from "@/lib/import/valores";
+import { recalcularAlertasPendentes } from "@/server/alertas-pedido";
 import { obterContexto } from "@/server/contexto";
 import { AppError, erroBanco } from "@/server/erros";
 
@@ -172,6 +173,7 @@ export async function importarProdutos(dados: unknown): Promise<ResultadoPreview
   });
   if (eLog) throw erroBanco(eLog);
 
+  await recalcularAlertasPendentes(ctx, { representada_id: rep.id }); // comissão/preço do catálogo reavalia os alertas pendentes
   revalidatePath(`/app/representadas/${rep.id}/catalogo`);
   return { modo: "commit", total, inseridos, atualizados, erros };
 }

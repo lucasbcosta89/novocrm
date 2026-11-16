@@ -107,7 +107,7 @@ export const produtoSchema = z.object({
   ncm: digitosOpcional([8], "NCM deve ter 8 dígitos"),
   preco: numero(0, 99_999_999, "Preço inválido"),
   desconto_max: numero(0, 100, "Desconto máximo deve estar entre 0 e 100").default(0),
-  /** % de comissão do produto; vazio = usa a comissão fixa da representada (se houver). A do produto prevalece. */
+  /** % de comissão do produto no catálogo. Fase 19: a comissão da representada (se definida) prevalece; esta vale quando a representada está sem comissão. */
   comissao: z.preprocess(
     (v) => (v === "" || v == null ? null : typeof v === "string" ? Number(v.replace(",", ".")) : v),
     z.number("Comissão deve estar entre 0 e 100").min(0, "Comissão deve estar entre 0 e 100").max(100, "Comissão deve estar entre 0 e 100").nullable(),
@@ -201,6 +201,16 @@ export const PRAZOS_PAGAMENTO = ["a_vista", "a_prazo"] as const;
 /** Código do pedido digitado (ERP externo); vazio = não informado. */
 const codigoPedido = z.preprocess(vazioParaNull, z.string().trim().max(40, "Código do pedido muito longo (máx. 40)").nullable().optional());
 
+/** Fase 19: data de faturamento (opcional; passada, presente ou futura; sem regra de ordem). Vazio = null. */
+export const dataFaturamentoSchema = z.preprocess(
+  vazioParaNull,
+  z.string("Data de faturamento inválida")
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Data de faturamento inválida (use AAAA-MM-DD)")
+    .refine((d) => !Number.isNaN(Date.parse(`${d}T00:00:00Z`)) && new Date(`${d}T00:00:00Z`).toISOString().startsWith(d), "Data de faturamento inválida")
+    .nullable()
+    .optional(),
+).transform((d) => d ?? null);
+
 export const pedidoSchema = z
   .object({
     representada_id: idSchema,
@@ -215,6 +225,7 @@ export const pedidoSchema = z
     /** Fase 14: true = código gerado pela plataforma (igual ao numero, gravado no servidor); false = código do ERP externo. */
     gerar_codigo: z.boolean().default(true),
     codigo_pedido: codigoPedido,
+    data_faturamento: dataFaturamentoSchema,
     itens: z
       .array(
         z.object({
@@ -267,6 +278,7 @@ export const edicaoPedidoSchema = z
     itens: itensComPrecoSchema,
     /** Só altera pedidos com código externo (codigo_gerado = false); ignorado no banco para código gerado. */
     codigo_pedido: codigoPedido,
+    data_faturamento: dataFaturamentoSchema,
   })
   .refine((p) => p.prazo_tipo === "a_vista" || p.prazo_dias != null, { message: "Informe o prazo em dias", path: ["prazo_dias"] })
   .transform((p) => (p.prazo_tipo === "a_vista" ? { ...p, prazo_dias: null } : p));

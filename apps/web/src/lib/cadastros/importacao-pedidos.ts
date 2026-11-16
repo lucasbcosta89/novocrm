@@ -42,8 +42,6 @@ const FORMA_POR_NOME = new Map(Object.entries(FORMAS_PAGAMENTO_PLANILHA).flatMap
 export type ClienteExistente = { id: string; nome: string };
 export type ProdutoExistente = { produto_id: string; representada_id: string; representada: string; nome: string; preco: number | null };
 
-/** Divergência de preço acima disto (em relação ao Catálogo) vira pendência INFORMATIVA (não bloqueia). */
-export const LIMITE_DIVERGENCIA_PRECO = 0.1;
 
 function validarLinhaPedido(bruto: Record<string, string>, ctx: { valoresExistentesNaBase: Map<string, unknown> }): ResultadoValidacaoLinha {
   const erros: ProblemaImportacao[] = [];
@@ -128,7 +126,7 @@ export type GrupoPedido = {
   linhas: number[];
   itens: {
     produto_id: string | null; sku: string; descricao: string | null; quantidade: number; preco_unitario: number;
-    desconto_percentual: number; acrescimo_percentual: number; pendencia: "produto_nao_cadastrado" | "preco_divergente" | null;
+    desconto_percentual: number; acrescimo_percentual: number; pendencia: "produto_nao_cadastrado" | null;
   }[];
 };
 
@@ -201,14 +199,8 @@ export function agruparPedidos(linhas: ResultadoValidacaoLinha[], existentes: Ma
       if (!produto) {
         pendencia = "produto_nao_cadastrado";
         l.alertas.push({ campo: "SKU do Produto", mensagem: `Produto não cadastrado no Catálogo de ${repNome}: item gravado com pendência`, valor_recebido: String(l.dados.sku) });
-      } else if (produto.preco && Math.abs(preco - produto.preco) / produto.preco > LIMITE_DIVERGENCIA_PRECO) {
-        pendencia = "preco_divergente";
-        l.alertas.push({
-          campo: "Preço Unitário",
-          mensagem: `Preço da planilha (${formatarMoeda(preco)}) difere do Catálogo (${formatarMoeda(produto.preco)}): vale o da planilha`,
-          valor_recebido: String(preco),
-        });
       }
+      // Fase 19: pedido importado não passa pela verificação de preço/desconto (vale o preço da planilha, sem pendência)
       return {
         produto_id: produto?.produto_id ?? null, sku: String(l.dados.sku), descricao: (l.dados.descricao as string | undefined) ?? produto?.nome ?? null,
         quantidade: Number(l.dados.quantidade), preco_unitario: preco, desconto_percentual: Number(l.dados.desconto_percentual ?? 0),
@@ -243,7 +235,7 @@ export const importacaoPedidos: ConfiguracaoImportacao<{ numero_pedido: string }
       colunas: ["Pedido", "Data", "Cliente", "Representada", "Itens", "Total", "Pendências"],
       linhas: agruparPedidos(copia, existentes).map((g) => [
         g.codigo ?? "Automático (P…)", dataBR(g.data), g.cliente, g.representada, g.itens.length, formatarMoeda(totalGrupo(g)),
-        g.itens.filter((i) => i.pendencia === "produto_nao_cadastrado").length ? "Produto não cadastrado" : g.itens.some((i) => i.pendencia) ? "Preço divergente" : "—",
+        g.itens.some((i) => i.pendencia === "produto_nao_cadastrado") ? "Produto não cadastrado" : "—",
       ]),
     };
   },
