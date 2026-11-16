@@ -22,18 +22,18 @@ export type ReferenciaPagamentoComissao = (typeof REFERENCIAS_PAGAMENTO_COMISSAO
 export const MSG_DIAS_COMISSAO = "Informe o número de dias entre 1 e 365.";
 export const MSG_REFERENCIA_COMISSAO = "Selecione a referência.";
 
-/** Rótulo de exibição (listagem e detalhe): "No faturamento", "No pagamento" ou "30 dias após o faturamento". */
+/** Rótulo de exibição (listagem e detalhe): "No faturamento", "No recebimento" ou "30 dias após o faturamento". */
 export function rotuloPagamentoComissao(tipo: string | null | undefined, referencia?: string | null, dias?: number | null): string {
-  if (tipo === "pagamento") return "No pagamento";
-  if (tipo === "outro" && dias != null && referencia) return `${dias} ${dias === 1 ? "dia" : "dias"} após o ${referencia === "pagamento" ? "pagamento" : "faturamento"}`;
+  if (tipo === "pagamento") return "No recebimento";
+  if (tipo === "outro" && dias != null && referencia) return `${dias} ${dias === 1 ? "dia" : "dias"} após o ${referencia === "pagamento" ? "recebimento" : "faturamento"}`;
   return "No faturamento";
 }
 
-/** "No faturamento" / "Dias após o pagamento" / "OUTRO" → faturamento | pagamento | outro (rótulos da tela e da planilha). */
+/** "No faturamento" / "No recebimento" / "Dias após recebimento" / "OUTRO" → faturamento | pagamento | outro (rótulos da tela e da planilha; no banco "recebimento" = pagamento). */
 const opcaoPagamento = (v: unknown) =>
   String(v).normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase()
     .replace(/^(no|na|dias apos( o| a)?)\s+/, "")
-    .replace(/^recebimento$/, "pagamento"); // "Dias após recebimento" (rótulo da tela) = pagamento
+    .replace(/^recebimento$/, "pagamento"); // "recebimento" (rótulo da tela e do modelo) = pagamento no banco
 
 export const CAMPOS_REPRESENTADA = {
   codigo_representada: z.preprocess(

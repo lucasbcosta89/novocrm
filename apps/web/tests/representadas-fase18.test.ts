@@ -57,9 +57,9 @@ describe("pagamento da comissão (fase 18)", () => {
 
   it("rótulo da listagem/detalhe e ordenação", () => {
     expect(rotuloPagamentoComissao("faturamento")).toBe("No faturamento");
-    expect(rotuloPagamentoComissao("pagamento")).toBe("No pagamento");
+    expect(rotuloPagamentoComissao("pagamento")).toBe("No recebimento");
     expect(rotuloPagamentoComissao("outro", "faturamento", 30)).toBe("30 dias após o faturamento");
-    expect(rotuloPagamentoComissao("outro", "pagamento", 45)).toBe("45 dias após o pagamento");
+    expect(rotuloPagamentoComissao("outro", "pagamento", 45)).toBe("45 dias após o recebimento");
     expect(ORDENACOES.pagamento_comissao).toEqual(["comissao_pagamento_ordem", "comissao_pagamento_dias"]);
     expect(filtroRepresentadasSchema.parse({ ordem: "pagamento_comissao" }).ordem).toBe("pagamento_comissao");
   });
@@ -76,6 +76,9 @@ describe("pagamento da comissão na importação por planilha (fase 18)", async 
   it("modelo traz as 3 colunas e a linha de exemplo preenchida", () => {
     expect(cab.slice(-3)).toEqual(["comissao_pagamento_tipo", "comissao_pagamento_referencia", "comissao_pagamento_dias"]);
     expect(config.linhaExemplo).toMatchObject({ comissao_pagamento_tipo: "Outro", comissao_pagamento_referencia: "faturamento", comissao_pagamento_dias: "30" });
+    expect(config.mensagemModelo).toContain("faturamento ou recebimento");
+    expect(validarCampoRepresentada("comissao_pagamento_referencia", "recebimento")).toBeNull();
+    expect(validarCampoRepresentada("comissao_pagamento_referencia", "pagamento")).toBeNull(); // planilhas antigas
     expect(config.mensagemModelo).toContain("comissao_pagamento_tipo");
   });
 
@@ -92,8 +95,8 @@ describe("pagamento da comissão na importação por planilha (fase 18)", async 
     expect(r2.erros).toEqual([{ campo: "comissao_pagamento_dias", mensagem: MSG_DIAS_COMISSAO, valor_recebido: "12,5" }]);
   });
 
-  it("No faturamento/No pagamento limpam referência e dias (preenchidos = alerta e ignorados)", async () => {
-    const r = await umaLinha({ comissao_pagamento_tipo: "No pagamento", comissao_pagamento_dias: "999" });
+  it("No faturamento/No recebimento limpam referência e dias (preenchidos = alerta e ignorados)", async () => {
+    const r = await umaLinha({ comissao_pagamento_tipo: "No recebimento", comissao_pagamento_dias: "999" });
     expect(r.erros).toEqual([]);
     expect(r.alertas.some((a) => a.campo === "comissao_pagamento_tipo")).toBe(true);
     expect(r.dados).toMatchObject({ comissao_pagamento_tipo: "pagamento", comissao_pagamento_referencia: null, comissao_pagamento_dias: null });

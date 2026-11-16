@@ -144,7 +144,7 @@ export function FormularioRepresentada({ acao, iniciais, edicao = false, catalog
             <select id="rep-comissao_pagamento_tipo" name="comissao_pagamento_tipo" value={valores.comissao_pagamento_tipo}
               onChange={(e) => mudarTipoPagamento(e.target.value)} aria-describedby={outro ? "rep-comissao_pagamento-dica" : undefined}>
               <option value="faturamento">No faturamento</option>
-              <option value="pagamento">No pagamento</option>
+              <option value="pagamento">No recebimento</option>
               <option value="outro">Outro</option>
             </select>
             {outro && <small id="rep-comissao_pagamento-dica" className="dica">Ex.: 30 dias após o faturamento.</small>}

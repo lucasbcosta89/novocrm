@@ -1,7 +1,7 @@
 import type { ConfiguracaoImportacao, ProblemaImportacao, Representada, ResultadoValidacaoLinha } from "./tipos";
 import { CAMPOS_REPRESENTADA, MSG_DIAS_COMISSAO, type CampoRepresentada } from "./representada";
 
-const MSG_REFERENCIA_COMISSAO_PLANILHA = 'Com o tipo Outro, informe a referência: "faturamento" ou "pagamento"';
+const MSG_REFERENCIA_COMISSAO_PLANILHA = 'Com o tipo Outro, informe a referência: "faturamento" ou "recebimento"';
 import { soDigitos } from "./normalizadores";
 import { chaveImportacao } from "@/lib/importacao/motor";
 
@@ -43,7 +43,7 @@ const cnpjDaCelula = (v: string) => {
 /**
  * Pagamento da comissão na linha (as células vazias não apagam nada):
  *  - tipo vazio: referência/dias exigem o tipo "Outro" (sem ele, erro); nada é gravado (nova = No faturamento);
- *  - "No faturamento"/"No pagamento": referência e dias são limpos no cadastro (preenchidos = ignorados, com alerta);
+ *  - "No faturamento"/"No recebimento": referência e dias são limpos no cadastro (preenchidos = ignorados, com alerta);
  *  - "Outro": referência e dias obrigatórios.
  */
 function regraPagamentoComissao(bruto: Record<string, string>, dados: Record<string, string | number | null>, erros: ProblemaImportacao[], alertas: ProblemaImportacao[]) {
@@ -149,8 +149,8 @@ export const importacaoRepresentadas: ConfiguracaoImportacao<Representada> = {
     "preencha aqui; se varia por produto, deixe vazio e informe as comissões no cadastro de produtos (a do produto prevalece). " +
     "CNPJ com ou sem máscara; status Ativa ou Inativa (vazio = Ativa); " +
     "codigo_representada vazio = gerado (REP-0001…). CNPJ já cadastrado: só os campos preenchidos são atualizados. " +
-    "Pagamento da comissão: comissao_pagamento_tipo = No faturamento, No pagamento ou Outro (vazio = No faturamento na nova; " +
-    "mantém o atual na existente). Com Outro, preencha comissao_pagamento_referencia (faturamento ou pagamento) e " +
+    "Pagamento da comissão: comissao_pagamento_tipo = No faturamento, No recebimento ou Outro (vazio = No faturamento na nova; " +
+    "mantém o atual na existente). Com Outro, preencha comissao_pagamento_referencia (faturamento ou recebimento) e " +
     "comissao_pagamento_dias (inteiro de 1 a 365), ex.: Outro + faturamento + 30 = 30 dias após o faturamento. " +
     "Apague a linha de exemplo antes de importar.",
   linhaExemplo: {
