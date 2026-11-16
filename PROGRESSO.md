@@ -222,6 +222,15 @@ Toda fase termina com commit + tag no GitHub.
   - [x] Dashboard: recebida bruta, devoluções, líquido, a receber e em análise; relatório/exportação com Tipo; aba Devoluções com totais por período e representada
   - [x] Modelo /templates/modelo-devolucoes.xlsx (Devoluções, Instruções, Exemplos) + scripts/gerar-modelo-devolucoes.ts
   - [x] Critério verificado no banco (transação desfeita) + 14 testes; telas só em página temporária com dados simulados (exigem login)
+- [x] Ajustes pós-Fase 22 — Devoluções e página de Comissões
+  - [x] Cadastro manual de devolução: Forma de Pagamento só "Geração de Crédito" ou "Outros"; Prazo de Pagamento e Prazo (dias) removidos
+  - [x] Nova Data de Processamento: define quando a comissão negativa entra em Comissões (vazia = prevista; preenchida = recebida nessa data; recusada = cancelada); excluir a devolução exclui o estorno
+  - [x] Cadastro de devoluções por Excel movido para Clientes › Devoluções › Importar; processar/reabrir devoluções importadas também na página do cliente
+  - [x] Aba Devoluções de Comissões só informativa (manuais e importadas), com filtros de período, processamento, origem e representada
+  - [x] Cards "Comissões em Atraso (R$)" e "Abatimento de Comissão por devoluções (R$)" no bloco do período (R$ 0,00 quando não há)
+  - [x] Cards de comissão por representada (recebida, a receber, em atraso) acima dos filtros, seguindo o filtro da página
+  - [x] Tabela de lançamentos com altura limitada à tela, barra lateral sempre visível, cabeçalho e coluna do pedido fixos, fonte e linhas compactas
+  - [x] Verificado: banco (transação desfeita), 245 testes, build; tabela conferida no navegador com dados simulados (telas reais exigem login)
 
 ## Pendências (fazer após a tag fase-8)
 - [ ] Segurança: ativar leaked password protection no Supabase Auth (requer plano Pro; ao ativar, validar que o cadastro via admin.createUser também bloqueia senha vazada)
