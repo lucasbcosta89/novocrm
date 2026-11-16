@@ -1,5 +1,7 @@
 import type { ConfiguracaoImportacao, ProblemaImportacao, Representada, ResultadoValidacaoLinha } from "./tipos";
-import { CAMPOS_REPRESENTADA, type CampoRepresentada } from "./representada";
+import { CAMPOS_REPRESENTADA, MSG_DIAS_COMISSAO, type CampoRepresentada } from "./representada";
+
+const MSG_REFERENCIA_COMISSAO_PLANILHA = 'Com o tipo Outro, informe a referência: "faturamento" ou "pagamento"';
 import { soDigitos } from "./normalizadores";
 import { chaveImportacao } from "@/lib/importacao/motor";
 
@@ -14,6 +16,7 @@ export const COLUNAS_REPRESENTADA = [
   "codigo_representada", "razao_social", "nome_fantasia", "cnpj", "inscricao_estadual", "email_comercial", "telefone",
   "contato_nome", "contato_telefone", "cep", "endereco", "numero", "complemento", "bairro", "cidade", "uf",
   "comissao_percentual", "prazo_pagamento_dias", "tabela_preco", "status", "observacoes",
+  "comissao_pagamento_tipo", "comissao_pagamento_referencia", "comissao_pagamento_dias",
 ] as const satisfies readonly CampoRepresentada[];
 
 /**
@@ -37,6 +40,37 @@ const cnpjDaCelula = (v: string) => {
   return d.length >= 12 && d.length < 14 ? d.padStart(14, "0") : v;
 };
 
+/**
+ * Pagamento da comissão na linha (as células vazias não apagam nada):
+ *  - tipo vazio: referência/dias exigem o tipo "Outro" (sem ele, erro); nada é gravado (nova = No faturamento);
+ *  - "No faturamento"/"No pagamento": referência e dias são limpos no cadastro (preenchidos = ignorados, com alerta);
+ *  - "Outro": referência e dias obrigatórios.
+ */
+function regraPagamentoComissao(bruto: Record<string, string>, dados: Record<string, string | number | null>, erros: ProblemaImportacao[], alertas: ProblemaImportacao[]) {
+  const tipo = dados.comissao_pagamento_tipo;
+  const temRef = !!bruto.comissao_pagamento_referencia;
+  const temDias = !!bruto.comissao_pagamento_dias;
+  if (tipo === undefined) {
+    if (erros.some((e) => e.campo === "comissao_pagamento_tipo")) return;
+    if (temRef || temDias) {
+      erros.push({ campo: "comissao_pagamento_tipo", mensagem: 'Para informar referência/dias, preencha comissao_pagamento_tipo com "Outro"', valor_recebido: null });
+    }
+    return;
+  }
+  if (tipo !== "outro") {
+    if (temRef || temDias) {
+      alertas.push({ campo: "comissao_pagamento_tipo", mensagem: "Referência/dias só valem com o tipo Outro: serão ignorados", valor_recebido: bruto.comissao_pagamento_tipo ?? null });
+    }
+    // remove eventuais erros de referência/dias (são descartados) e limpa o que houver no cadastro
+    for (let i = erros.length - 1; i >= 0; i--) if (erros[i]!.campo === "comissao_pagamento_referencia" || erros[i]!.campo === "comissao_pagamento_dias") erros.splice(i, 1);
+    dados.comissao_pagamento_referencia = null;
+    dados.comissao_pagamento_dias = null;
+    return;
+  }
+  if (!temRef) erros.push({ campo: "comissao_pagamento_referencia", mensagem: MSG_REFERENCIA_COMISSAO_PLANILHA, valor_recebido: null });
+  if (!temDias) erros.push({ campo: "comissao_pagamento_dias", mensagem: MSG_DIAS_COMISSAO, valor_recebido: null });
+}
+
 function validarLinhaRepresentada(bruto: Record<string, string>, ctx: { linhasAnteriores: string[]; valoresExistentesNaBase: Map<string, unknown> }): ResultadoValidacaoLinha {
   const erros: ProblemaImportacao[] = [];
   const alertas: ProblemaImportacao[] = [];
@@ -50,6 +84,8 @@ function validarLinhaRepresentada(bruto: Record<string, string>, ctx: { linhasAn
     if (!r.success) erros.push({ campo, mensagem: r.error.issues[0]?.message ?? "Valor inválido", valor_recebido: recebido });
     else if (r.data != null) dados[campo] = r.data as string | number;
   }
+
+  regraPagamentoComissao(bruto, dados, erros, alertas);
 
   const cnpj = typeof dados.cnpj === "string" ? dados.cnpj : null;
   if (cnpj) {
@@ -113,6 +149,9 @@ export const importacaoRepresentadas: ConfiguracaoImportacao<Representada> = {
     "preencha aqui; se varia por produto, deixe vazio e informe as comissões no cadastro de produtos (a do produto prevalece). " +
     "CNPJ com ou sem máscara; status Ativa ou Inativa (vazio = Ativa); " +
     "codigo_representada vazio = gerado (REP-0001…). CNPJ já cadastrado: só os campos preenchidos são atualizados. " +
+    "Pagamento da comissão: comissao_pagamento_tipo = No faturamento, No pagamento ou Outro (vazio = No faturamento na nova; " +
+    "mantém o atual na existente). Com Outro, preencha comissao_pagamento_referencia (faturamento ou pagamento) e " +
+    "comissao_pagamento_dias (inteiro de 1 a 365), ex.: Outro + faturamento + 30 = 30 dias após o faturamento. " +
     "Apague a linha de exemplo antes de importar.",
   linhaExemplo: {
     codigo_representada: "", razao_social: "Exemplo Calçados Ltda", nome_fantasia: "Exemplo", cnpj: "11.222.333/0001-81",
@@ -120,5 +159,6 @@ export const importacaoRepresentadas: ConfiguracaoImportacao<Representada> = {
     contato_telefone: "(11) 99999-0000", cep: "01001-000", endereco: "Rua Exemplo", numero: "100", complemento: "Sala 1",
     bairro: "Centro", cidade: "São Paulo", uf: "SP", comissao_percentual: "5,5", prazo_pagamento_dias: "30",
     tabela_preco: "Tabela A", status: "Ativa", observacoes: "Linha de exemplo: apague antes de importar",
+    comissao_pagamento_tipo: "Outro", comissao_pagamento_referencia: "faturamento", comissao_pagamento_dias: "30",
   },
 };

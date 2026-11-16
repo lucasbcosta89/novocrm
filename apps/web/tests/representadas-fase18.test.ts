@@ -64,3 +64,46 @@ describe("pagamento da comissão (fase 18)", () => {
     expect(filtroRepresentadasSchema.parse({ ordem: "pagamento_comissao" }).ordem).toBe("pagamento_comissao");
   });
 });
+
+describe("pagamento da comissão na importação por planilha (fase 18)", async () => {
+  const { COLUNAS_REPRESENTADA, importacaoRepresentadas: config } = await import("@/lib/cadastros/importacao-representadas");
+  const { validarPlanilha } = await import("@/lib/importacao/motor");
+  const cab = [...COLUNAS_REPRESENTADA];
+  const base = { razao_social: "Alfa Ltda", cnpj: "11.222.333/0001-81", email_comercial: "a@a.com", cidade: "Goiânia", uf: "GO" };
+  const umaLinha = async (v: Record<string, string>) =>
+    (await validarPlanilha(config, cab, [{ numero_linha: 2, valores: cab.map((c) => ({ ...base, ...v } as Record<string, string>)[c] ?? "") }], new Map()))[0]!;
+
+  it("modelo traz as 3 colunas e a linha de exemplo preenchida", () => {
+    expect(cab.slice(-3)).toEqual(["comissao_pagamento_tipo", "comissao_pagamento_referencia", "comissao_pagamento_dias"]);
+    expect(config.linhaExemplo).toMatchObject({ comissao_pagamento_tipo: "Outro", comissao_pagamento_referencia: "faturamento", comissao_pagamento_dias: "30" });
+    expect(config.mensagemModelo).toContain("comissao_pagamento_tipo");
+  });
+
+  it("Outro + referência + dias (aceita os rótulos da tela)", async () => {
+    const r = await umaLinha({ comissao_pagamento_tipo: "Outro", comissao_pagamento_referencia: "Dias após pagamento", comissao_pagamento_dias: "45" });
+    expect(r.classificacao).toBe("valida");
+    expect(r.dados).toMatchObject({ comissao_pagamento_tipo: "outro", comissao_pagamento_referencia: "pagamento", comissao_pagamento_dias: 45 });
+  });
+
+  it("Outro exige referência e dias; dias fora de 1–365 é erro", async () => {
+    const r = await umaLinha({ comissao_pagamento_tipo: "outro" });
+    expect(r.erros.map((e) => e.campo).sort()).toEqual(["comissao_pagamento_dias", "comissao_pagamento_referencia"]);
+    const r2 = await umaLinha({ comissao_pagamento_tipo: "outro", comissao_pagamento_referencia: "faturamento", comissao_pagamento_dias: "12,5" });
+    expect(r2.erros).toEqual([{ campo: "comissao_pagamento_dias", mensagem: MSG_DIAS_COMISSAO, valor_recebido: "12,5" }]);
+  });
+
+  it("No faturamento/No pagamento limpam referência e dias (preenchidos = alerta e ignorados)", async () => {
+    const r = await umaLinha({ comissao_pagamento_tipo: "No pagamento", comissao_pagamento_dias: "999" });
+    expect(r.erros).toEqual([]);
+    expect(r.alertas.some((a) => a.campo === "comissao_pagamento_tipo")).toBe(true);
+    expect(r.dados).toMatchObject({ comissao_pagamento_tipo: "pagamento", comissao_pagamento_referencia: null, comissao_pagamento_dias: null });
+  });
+
+  it("tipo vazio: nada é gravado; referência/dias sem tipo é erro", async () => {
+    const r = await umaLinha({});
+    expect(r.classificacao).toBe("valida");
+    expect("comissao_pagamento_tipo" in r.dados).toBe(false);
+    const r2 = await umaLinha({ comissao_pagamento_dias: "30" });
+    expect(r2.erros.map((e) => e.campo)).toEqual(["comissao_pagamento_tipo"]);
+  });
+});

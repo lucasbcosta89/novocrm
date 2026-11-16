@@ -14,7 +14,7 @@ const ok = { razao_social: "Alfa Ltda", cnpj: "11.222.333/0001-81", email_comerc
 describe("representadas fase 4 — importação genérica", () => {
   it("modelo: cabeçalho exato na ordem da especificação", () => {
     expect(config.colunasEsperadas.join(" | ")).toBe(
-      "codigo_representada | razao_social | nome_fantasia | cnpj | inscricao_estadual | email_comercial | telefone | contato_nome | contato_telefone | cep | endereco | numero | complemento | bairro | cidade | uf | comissao_percentual | prazo_pagamento_dias | tabela_preco | status | observacoes",
+      "codigo_representada | razao_social | nome_fantasia | cnpj | inscricao_estadual | email_comercial | telefone | contato_nome | contato_telefone | cep | endereco | numero | complemento | bairro | cidade | uf | comissao_percentual | prazo_pagamento_dias | tabela_preco | status | observacoes | comissao_pagamento_tipo | comissao_pagamento_referencia | comissao_pagamento_dias",
     );
     expect(Object.keys(config.linhaExemplo)).toEqual(config.colunasEsperadas);
   });
@@ -27,7 +27,7 @@ describe("representadas fase 4 — importação genérica", () => {
     const r = await validarPlanilha(config, renomeado, [linha(2, ok), linha(3, { ...ok, cnpj: "45723174000110" })], new Map());
     expect(r.map((l) => l.classificacao)).toEqual(["invalida", "invalida"]);
     expect(r[0]!.erros[0]!.campo).toBe("email_comercial");
-    expect(problemasCabecalho(cab, [...cab, "extra"])[0]!.mensagem).toContain('coluna 22 ("extra") não existe no modelo');
+    expect(problemasCabecalho(cab, [...cab, "extra"])[0]!.mensagem).toContain('coluna 25 ("extra") não existe no modelo');
   });
 
   it("CNPJ repetido no arquivo: a duplicada é inválida; obrigatórios e formatos com mensagem por campo", async () => {

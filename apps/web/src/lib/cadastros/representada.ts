@@ -29,6 +29,11 @@ export function rotuloPagamentoComissao(tipo: string | null | undefined, referen
   return "No faturamento";
 }
 
+/** "No faturamento" / "Dias após o pagamento" / "OUTRO" → faturamento | pagamento | outro (rótulos da tela e da planilha). */
+const opcaoPagamento = (v: unknown) =>
+  String(v).normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase()
+    .replace(/^(no|na|dias apos( o| a)?)\s+/, "");
+
 export const CAMPOS_REPRESENTADA = {
   codigo_representada: z.preprocess(
     (v) => (vazio(v) ? null : String(v).trim().toUpperCase()),
@@ -77,11 +82,11 @@ export const CAMPOS_REPRESENTADA = {
   tabela_preco: textoOpcional(60, "Tabela de preço"),
   /** Pagamento da comissão (só cadastro): no faturamento, no pagamento ou "outro" (N dias após faturamento/pagamento). */
   comissao_pagamento_tipo: z.preprocess(
-    (v) => (vazio(v) ? "faturamento" : String(v).trim().toLowerCase()),
+    (v) => (vazio(v) ? "faturamento" : opcaoPagamento(v)),
     z.enum(TIPOS_PAGAMENTO_COMISSAO, "Pagamento da comissão inválido"),
   ),
   comissao_pagamento_referencia: z.preprocess(
-    (v) => (vazio(v) ? null : String(v).trim().toLowerCase()),
+    (v) => (vazio(v) ? null : opcaoPagamento(v)),
     z.enum(REFERENCIAS_PAGAMENTO_COMISSAO, MSG_REFERENCIA_COMISSAO).nullable(),
   ),
   comissao_pagamento_dias: z.preprocess(
