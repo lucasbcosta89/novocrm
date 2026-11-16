@@ -32,7 +32,8 @@ export function rotuloPagamentoComissao(tipo: string | null | undefined, referen
 /** "No faturamento" / "Dias após o pagamento" / "OUTRO" → faturamento | pagamento | outro (rótulos da tela e da planilha). */
 const opcaoPagamento = (v: unknown) =>
   String(v).normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim().toLowerCase()
-    .replace(/^(no|na|dias apos( o| a)?)\s+/, "");
+    .replace(/^(no|na|dias apos( o| a)?)\s+/, "")
+    .replace(/^recebimento$/, "pagamento"); // "Dias após recebimento" (rótulo da tela) = pagamento
 
 export const CAMPOS_REPRESENTADA = {
   codigo_representada: z.preprocess(

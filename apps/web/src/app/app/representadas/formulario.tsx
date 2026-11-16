@@ -159,7 +159,7 @@ export function FormularioRepresentada({ acao, iniciais, edicao = false, catalog
                   aria-describedby={erroDo("comissao_pagamento_referencia") ? "rep-comissao_pagamento_referencia-erro" : undefined}>
                   <option value="">Selecione…</option>
                   <option value="faturamento">Dias após faturamento</option>
-                  <option value="pagamento">Dias após pagamento</option>
+                  <option value="pagamento">Dias após recebimento</option>
                 </select>
                 {erroDo("comissao_pagamento_referencia") && (
                   <small id="rep-comissao_pagamento_referencia-erro" className="erro-campo">{erroDo("comissao_pagamento_referencia")}</small>

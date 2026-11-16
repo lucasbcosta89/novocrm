@@ -80,7 +80,7 @@ describe("pagamento da comissão na importação por planilha (fase 18)", async 
   });
 
   it("Outro + referência + dias (aceita os rótulos da tela)", async () => {
-    const r = await umaLinha({ comissao_pagamento_tipo: "Outro", comissao_pagamento_referencia: "Dias após pagamento", comissao_pagamento_dias: "45" });
+    const r = await umaLinha({ comissao_pagamento_tipo: "Outro", comissao_pagamento_referencia: "Dias após recebimento", comissao_pagamento_dias: "45" });
     expect(r.classificacao).toBe("valida");
     expect(r.dados).toMatchObject({ comissao_pagamento_tipo: "outro", comissao_pagamento_referencia: "pagamento", comissao_pagamento_dias: 45 });
   });
