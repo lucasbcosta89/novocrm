@@ -21,13 +21,7 @@ export const ROTULO_STATUS_PEDIDO: Record<string, string> = {
   entregue: "Entregue",
   cancelado: "Cancelado",
 };
-export const ROTULO_STATUS_COMISSAO: Record<string, string> = {
-  a_receber: "A receber",
-  recebida: "Recebida",
-  atrasada: "Atrasada",
-  cancelada: "Cancelada",
-  pendente_analise: "Pendente de análise",
-};
+/* Status de comissão: lib/comissoes/status.ts (mapa único — Fase 21). */
 /** Fase 17.1: de onde veio o percentual da comissão do item */
 export const ROTULO_ORIGEM_CALCULO: Record<string, string> = {
   representada: "da representada", catalogo: "do catálogo", manual: "manual", zero: "sem comissão definida",

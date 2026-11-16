@@ -1,144 +1,150 @@
 import Link from "next/link";
+import { AvisoPendentesAnalise } from "@/components/aviso-comissoes";
 import { Mensagens } from "@/components/form";
 import { Icone } from "@/components/icones";
-import { Status } from "@/components/status";
-import { formatarData, formatarMoeda, formatarPercentual } from "@/lib/formato";
-import { ROTULO_STATUS_COMISSAO } from "@/lib/rotulos";
-import { comParam } from "@/lib/url";
+import { assinaturaFiltro, contarFiltrosAtivos, lerFiltroComissoes, urlComissoes, type FiltroComissoes as Filtro } from "@/lib/comissoes/filtro";
+import { GRUPOS_STATUS, ROTULOS_GRUPO, rotuloMotivo, rotuloTotal, type GrupoStatus } from "@/lib/comissoes/status";
+import { formatarMoeda } from "@/lib/formato";
 import { carregar } from "@/server/acao";
-import { listarComissoes, resumirComissoes, type TotaisComissao } from "@/server/comissoes";
+import { listarClientes } from "@/server/clientes";
+import {
+  descreverEvento, historicoDasComissoes, listarComissoes, listarLotes, nomesDosAutores, pendentesDeAnalise, produtoDaComissao,
+} from "@/server/comissoes";
 import { listarRepresentadas } from "@/server/representadas";
-import { marcarComissaoAction } from "./actions";
+import { BotaoReabrirLote, FiltroComissoes, TabelaComissoes, type LinhaComissao } from "./componentes";
 
-const ICONE_STATUS: Record<string, "relogio" | "concluido" | "alerta" | "cancelado"> = { a_receber: "relogio", recebida: "concluido", atrasada: "alerta", cancelada: "cancelado" };
+type Busca = Promise<Record<string, string | string[] | undefined>>;
+const TOM: Record<GrupoStatus, string> = { recebido: "tom-ok", a_receber: "tom-azul", em_analise: "tom-analise" };
+const ICONE: Record<GrupoStatus, "concluido" | "relogio" | "alerta"> = { recebido: "concluido", a_receber: "relogio", em_analise: "alerta" };
 
-const somar = (lista: { totais: TotaisComissao }[]): TotaisComissao =>
-  lista.reduce(
-    (t, r) => ({
-      a_receber: t.a_receber + r.totais.a_receber,
-      recebida: t.recebida + r.totais.recebida,
-      atrasada: t.atrasada + r.totais.atrasada,
-    }),
-    { a_receber: 0, recebida: 0, atrasada: 0 },
+export default async function ComissoesPage({ searchParams }: { searchParams: Busca }) {
+  const sp = await searchParams;
+  const erro = typeof sp.erro === "string" ? sp.erro : undefined;
+  const ok = typeof sp.ok === "string" ? sp.ok : undefined;
+  const f = lerFiltroComissoes(sp);
+  const [res, pend, representadas, clientes, lotes, nomes] = await carregar((ctx) => Promise.all([
+    listarComissoes(ctx, sp), pendentesDeAnalise(ctx), listarRepresentadas(ctx), listarClientes(ctx),
+    f.visao === "lotes" ? listarLotes(ctx) : Promise.resolve([]), nomesDosAutores(ctx),
+  ]));
+  const historico = await carregar((ctx) => historicoDasComissoes(ctx, res.linhas.map((c) => c.id)));
+  const url = (mudar: Partial<Record<keyof Filtro, unknown>> = {}) => urlComissoes(f, mudar);
+  const ordem = (campo: "pedido" | "valor" | "previsao") => ({
+    href: url({ ord: campo, dir: f.ord === campo && f.dir === "asc" ? "desc" : "asc", pag: 1 }),
+    seta: f.ord === campo ? (f.dir === "asc" ? " ▲" : " ▼") : "",
+  });
+  const linhas: LinhaComissao[] = res.linhas.map((c) => ({
+    id: c.id, pedido: c.pedido ? { id: c.pedido.id, codigo: c.pedido.codigo_pedido } : null, cliente: c.pedido?.cliente?.nome ?? "—",
+    representada: c.representada, produto: produtoDaComissao(c), base: Number(c.pedido?.valor_total ?? 0), percentual: Number(c.percentual), valor: Number(c.valor),
+    previsao: c.data_prevista_recebimento, recebimento: c.data_recebimento, status: c.status, completude: c.completude, motivos: c.motivos_pendencia,
+    origem: c.origem_calculo, editada: c.data_recebimento_editada, lote: c.lote_aprovacao_id,
+    historico: (historico.get(c.id) ?? []).map((e) => descreverEvento(e, nomes)),
+  }));
+  const gruposSomados: GrupoStatus[] = f.visao === "analise" ? ["em_analise"] : f.g.length ? f.g : [...GRUPOS_STATUS];
+  const totalGeral = gruposSomados.reduce((t, g) => t + res.totais[g].valor, 0);
+  const exportar = (formato: string) => { const u = urlComissoes({ ...f, pag: 1 }, {}, "/api/comissoes/exportar"); return `${u}${u.includes("?") ? "&" : "?"}formato=${formato}`; };
+  const aba = (v: Filtro["visao"], rotulo: string) => (
+    <Link className={`aba${f.visao === v ? " ativa" : ""}`} aria-current={f.visao === v ? "page" : undefined} href={urlComissoes({ ...f, pag: 1, visao: v })}>{rotulo}</Link>
   );
-
-function Totais({ t }: { t: TotaisComissao }) {
-  return (
-    <dl className="kpis">
-      <div className="kpi"><span className="kpi-icone tom-azul"><Icone nome="relogio" tamanho={20} /></span><div><dt>A receber</dt><dd>{formatarMoeda(t.a_receber)}</dd></div></div>
-      <div className="kpi"><span className="kpi-icone tom-ok"><Icone nome="concluido" tamanho={20} /></span><div><dt>Recebida</dt><dd className="txt-ok">{formatarMoeda(t.recebida)}</dd></div></div>
-      <div className="kpi"><span className={`kpi-icone ${t.atrasada > 0 ? "tom-perigo" : "tom-neutro"}`}><Icone nome="alerta" tamanho={20} /></span><div><dt>Atrasada</dt><dd className={t.atrasada > 0 ? "atrasada" : undefined}>{formatarMoeda(t.atrasada)}</dd></div></div>
-    </dl>
-  );
-}
-
-export default async function ComissoesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ representada?: string; status?: string; erro?: string; ok?: string }>;
-}) {
-  const { representada, status, erro, ok } = await searchParams;
-  const [todas, representadas] = await carregar((ctx) => Promise.all([listarComissoes(ctx), listarRepresentadas(ctx)]));
-  const resumo = resumirComissoes(todas);
-  const lista = todas.filter(
-    (c) => (!representada || c.representada_id === representada) && (!status || c.status === status),
-  );
-  const atrasadas = todas.filter((c) => c.status === "atrasada");
-
-  let voltar = "/app/comissoes";
-  if (representada) voltar = comParam(voltar, "representada", representada);
-  if (status) voltar = comParam(voltar, "status", status);
 
   return (
     <>
       <h1 className="titulo-icone"><Icone nome="cifrao" tamanho={24} /> Comissões</h1>
       <Mensagens erro={erro} ok={ok} />
-      {atrasadas.length > 0 && (
-        <p className="aviso aviso-erro alerta">
-          <span className="circulo-icone"><Icone nome="alerta" tamanho={16} /></span> {atrasadas.length} comissão(ões) atrasada(s), total {formatarMoeda(atrasadas.reduce((s, c) => s + Number(c.valor), 0))}.{" "}
-          <Link href="/app/comissoes?status=atrasada">Ver atrasadas</Link>
-        </p>
+      <AvisoPendentesAnalise quantidade={pend.quantidade} valor={pend.valor} />
+
+      <nav className="abas" aria-label="Visões de comissões">
+        {aba("lista", "Lançamentos")}
+        {aba("analise", `Fila de análise${pend.quantidade ? ` (${pend.quantidade})` : ""}`)}
+        {aba("lotes", "Aprovadas em lote")}
+      </nav>
+
+      {f.visao === "lotes" ? (
+        <section className="card">
+          <h2 className="titulo-icone"><Icone nome="check" tamanho={20} /> Aprovações em lote</h2>
+          {lotes.length === 0 ? <div className="vazio">Nenhuma aprovação em lote.</div> : (
+            <div className="tabela-wrap">
+              <table className="tabela">
+                <thead><tr><th>Data</th><th>Autor</th><th className="num">Quantidade</th><th className="num">Valor total</th><th>Motivos presentes</th><th>Situação</th><th /></tr></thead>
+                <tbody>
+                  {lotes.map((l) => (
+                    <tr key={l.id}>
+                      <td data-rotulo="Data">{new Date(l.criado_em).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}</td>
+                      <td data-rotulo="Autor">{l.autor ? nomes.get(l.autor) ?? "usuário" : "—"}</td>
+                      <td className="num" data-rotulo="Quantidade">{l.quantidade}</td>
+                      <td className="num" data-rotulo="Valor total">{formatarMoeda(l.valor_total)}</td>
+                      <td data-rotulo="Motivos">{Object.entries(l.motivos).map(([m, n]) => `${rotuloMotivo(m)}: ${n}`).join(" · ") || "—"}</td>
+                      <td data-rotulo="Situação">{l.aprovadas_agora > 0 ? `${l.aprovadas_agora} ainda aprovada(s)` : l.reaberto_em ? "Reaberto" : "—"}</td>
+                      <td>
+                        <Link className="btn-link" href={urlComissoes({ ...f, visao: "lista", lote: true, pag: 1 })}>Ver</Link>{" "}
+                        <BotaoReabrirLote lote={l.id} quantidade={l.aprovadas_agora} valor={l.valor_total} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      ) : (
+        <>
+          <FiltroComissoes visao={f.visao} ativos={contarFiltrosAtivos(f)}
+            filtro={{ p: f.p, de: res.periodo.de, ate: res.periodo.ate, campo: f.campo, g: f.g, comp: f.comp ?? "", mot: f.mot ?? "", rep: f.rep, cli: f.cli, lote: f.lote, ed: f.ed }}
+            representadas={representadas.map((r) => ({ id: r.id, nome: r.nome }))} clientes={clientes.map((c) => ({ id: c.id, nome: c.nome }))} />
+
+          <section className="card">
+            <p className="subtitulo">{f.campo === "sem_previsao" ? "Sem previsão de recebimento" : res.periodo.rotulo}</p>
+            <dl className="kpis">
+              {GRUPOS_STATUS.filter((g) => f.visao !== "analise" || g === "em_analise").map((g) => (
+                <div className="kpi" key={g}>
+                  <span className={`kpi-icone ${TOM[g]}`}><Icone nome={ICONE[g]} tamanho={20} /></span>
+                  <div>
+                    <dt>{ROTULOS_GRUPO[g]}</dt>
+                    <dd className={g === "recebido" ? "txt-ok" : undefined}>{formatarMoeda(res.totais[g].valor)}</dd>
+                    <span className="item-sub">{res.totais[g].quantidade} lançamento(s)</span>
+                  </div>
+                </div>
+              ))}
+            </dl>
+            <p className="dica"><strong>{rotuloTotal(gruposSomados)}:</strong> {formatarMoeda(totalGeral)} · {res.total} lançamento(s) no filtro (canceladas fora dos totais)</p>
+            {res.emAnaliseFora > 0 && (
+              <p className="chip-filtro chip-analise">{res.emAnaliseFora} comissões em análise não incluídas nos totais.</p>
+            )}
+          </section>
+
+          <section className="card">
+            <div className="cabecalho">
+              <h2 className="titulo-icone"><Icone nome="recibo" tamanho={20} /> {f.visao === "analise" ? "Fila de análise" : "Lançamentos"}</h2>
+              {res.total > 0 && (
+                <div className="acoes-linha">
+                  <a className="btn-suave btn-peq" href={exportar("xlsx")} download><Icone nome="download" tamanho={16} /> Exportar XLSX</a>
+                  <a className="btn-suave btn-peq" href={exportar("csv")} download><Icone nome="download" tamanho={16} /> Exportar CSV</a>
+                </div>
+              )}
+            </div>
+            {f.visao === "analise" && <p className="dica">Comissões incompletas: nunca são liquidadas automaticamente. Corrija a origem do problema (a comissão sai da fila sozinha) ou analise e marque como recebida.</p>}
+            {res.total === 0 ? (
+              <div className="vazio">
+                Nenhuma comissão {contarFiltrosAtivos(f) ? "com esses filtros" : "neste período"}.{" "}
+                <Link href={f.visao === "lista" ? "/app/comissoes" : `/app/comissoes?visao=${f.visao}`}>Limpar filtros</Link>
+              </div>
+            ) : (
+              <>
+                <TabelaComissoes linhas={linhas} selecionaveis={res.selecionaveis} assinatura={assinaturaFiltro(f)} total={res.total}
+                  filtro={{ ...f, pag: undefined }} analise={f.visao === "analise"}
+                  ordens={{ pedido: ordem("pedido"), valor: ordem("valor"), previsao: ordem("previsao") }} />
+                {res.paginas > 1 && (
+                  <nav className="paginacao" aria-label="Páginas">
+                    {res.pagina > 1 && <Link href={url({ pag: res.pagina - 1 })}>← Anterior</Link>}
+                    <span>Página {res.pagina} de {res.paginas}</span>
+                    {res.pagina < res.paginas && <Link href={url({ pag: res.pagina + 1 })}>Próxima →</Link>}
+                  </nav>
+                )}
+                {res.limitado && <p className="dica">Mostrando os primeiros 10.000 lançamentos do filtro: refine o período.</p>}
+              </>
+            )}
+          </section>
+        </>
       )}
-
-      <section className="card">
-        <h2 className="titulo-icone"><Icone nome="grafico" tamanho={20} /> Resumo geral</h2>
-        <Totais t={somar(resumo)} />
-      </section>
-
-      {resumo.length > 0 && (
-        <div className="cards-resumo">
-          {resumo.map((r) => (
-            <section key={r.representada.id} className={`card ${r.totais.atrasada > 0 ? "card-alerta" : ""}`}>
-              <h3 className="titulo-icone"><Icone nome="predio" tamanho={18} /><Link href={`/app/comissoes?representada=${r.representada.id}`}>{r.representada.nome}</Link></h3>
-              <Totais t={r.totais} />
-            </section>
-          ))}
-        </div>
-      )}
-
-      <section className="card">
-        <h2 className="titulo-icone"><Icone nome="recibo" tamanho={20} /> Lançamentos</h2>
-        <form method="get" className="inline">
-          <label className="campo">
-            <span>Representada</span>
-            <select name="representada" defaultValue={representada ?? ""}>
-              <option value="">Todas</option>
-              {representadas.map((r) => <option key={r.id} value={r.id}>{r.nome}</option>)}
-            </select>
-          </label>
-          <label className="campo">
-            <span>Status</span>
-            <select name="status" defaultValue={status ?? ""}>
-              <option value="">Todos</option>
-              {Object.entries(ROTULO_STATUS_COMISSAO).map(([v, r]) => <option key={v} value={v}>{r}</option>)}
-            </select>
-          </label>
-          <button className="btn-secundario btn-peq" type="submit"><Icone nome="filtro" tamanho={16} /> Filtrar</button>
-        </form>
-
-        {lista.length === 0 ? (
-          <div className="vazio">Nenhuma comissão. Confirme um pedido para gerar comissões.</div>
-        ) : (
-          <div className="tabela-wrap">
-            <table className="tabela">
-              <thead>
-                <tr><th>Pedido</th><th>Cliente</th><th>Representada</th><th className="num">Valor pedido</th><th className="num">% (média)</th><th className="num">Comissão</th><th>Prevista</th><th>Status</th><th>Ações</th></tr>
-              </thead>
-              <tbody>
-                {lista.map((c) => (
-                  <tr key={c.id} className={c.status === "atrasada" ? "linha-alerta" : undefined}>
-                    <td>{c.pedido ? <Link href={`/app/pedidos/${c.pedido.id}`}>{c.pedido.codigo_pedido}</Link> : "—"}</td>
-                    <td>{c.pedido?.cliente?.nome ?? "—"}</td>
-                    <td>{c.representada?.nome ?? "—"}</td>
-                    <td className="num">{c.pedido ? formatarMoeda(c.pedido.valor_total) : "—"}</td>
-                    <td className="num">{formatarPercentual(c.percentual)}</td>
-                    <td className="num"><strong>{formatarMoeda(c.valor)}</strong></td>
-                    <td>{c.data_prevista ? formatarData(c.data_prevista) : "—"}</td>
-                    <td><Status classe={c.status} icone={ICONE_STATUS[c.status] ?? "circulo"} rotulo={ROTULO_STATUS_COMISSAO[c.status] ?? c.status} /></td>
-                    <td className="acoes-linha">
-                      {c.status !== "recebida" && c.status !== "cancelada" && (
-                        <form action={marcarComissaoAction.bind(null, c.id, "recebida", voltar)}>
-                          <button className="btn-suave btn-peq" type="submit"><Icone nome="check" tamanho={16} /> Marcar recebida</button>
-                        </form>
-                      )}
-                      {c.status === "a_receber" && (
-                        <form action={marcarComissaoAction.bind(null, c.id, "atrasada", voltar)}>
-                          <button className="btn-link perigo" type="submit">Marcar atrasada</button>
-                        </form>
-                      )}
-                      {(c.status === "recebida" || c.status === "atrasada") && (
-                        <form action={marcarComissaoAction.bind(null, c.id, "a_receber", voltar)}>
-                          <button className="btn-link" type="submit">Voltar a receber</button>
-                        </form>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
     </>
   );
 }

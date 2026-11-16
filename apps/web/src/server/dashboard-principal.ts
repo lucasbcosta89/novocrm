@@ -4,6 +4,8 @@ import {
   type DashboardQuery, type Janela, type Periodo,
 } from "@/lib/dashboard";
 import { emAberto } from "@/lib/funis";
+import { indicadoresComissao } from "@/lib/comissoes/regras";
+import { GRUPOS_STATUS, statusDosGrupos, statusNoGrupo } from "@/lib/comissoes/status";
 import type { Contexto } from "./contexto";
 import { AppError, erroBanco } from "./erros";
 
@@ -21,13 +23,15 @@ export type DashboardPrincipal = {
     de: string; ate: string; granularidade: Janela["granularidade"]; pontos: string[];
   };
   kpis: Record<
-    | "vendas_total" | "vendas_mes_atual" | "comissao_a_receber" | "comissao_recebida" | "comissao_atrasada" | "oportunidades_abertas" | "ticket_medio" | "taxa_conversao"
+    | "vendas_total" | "vendas_mes_atual" | "comissao_a_receber" | "comissao_recebida" | "comissao_em_analise" | "oportunidades_abertas" | "ticket_medio" | "taxa_conversao"
     // Fase 11: custos = despesas do período; bruto = comissões recebidas; líquido = bruto − custos
     | "custos_total" | "resultado_bruto" | "resultado_liquido",
     Kpi
   >;
   serie_vendas: { ponto: string; valor: number }[];
-  serie_comissoes: { ponto: string; a_receber: number; recebida: number; atrasada: number }[];
+  /** Fase 21 (M): quantidade de comissões em análise no período (o valor está em kpis.comissao_em_analise) */
+  comissao_em_analise_qtd: number;
+  serie_comissoes: { ponto: string; a_receber: number; recebida: number; em_analise: number }[];
   serie_custos: { ponto: string; valor: number }[];
   alertas: Record<"tarefas_vencidas" | "tarefas_a_vencer" | "comissoes_atrasadas" | "visitas_atrasadas" | "oportunidades_paradas", BlocoAlerta>;
   proximas_acoes: ProximaAcao[];
@@ -44,7 +48,10 @@ export type DashboardPrincipal = {
 type Nome = { nome: string } | null;
 type PedidoRow = { id: string; data: string; valor_total: number; cliente_id: string; representada_id: string; cliente: Nome; representada: Nome };
 type ItemRow = { quantidade: number; produto_id: string | null; produto: { nome: string; sku: string } | null };
-type ComissaoRow = { id: string; valor: number; status: string; data_prevista: string | null; pedido: { id: string; codigo_pedido: string; cliente: Nome } | null };
+type ComissaoRow = {
+  id: string; valor: number; status: string; data_prevista_recebimento: string | null; data_recebimento: string | null;
+  pedido: { id: string; codigo_pedido: string; cliente: Nome } | null;
+};
 type OpRow = {
   id: string; titulo: string; status: string; resultado: string | null; data_conclusao: string | null; criado_em: string;
   atualizado_em: string | null; arquivada: boolean; cliente_id: string | null; funil_id: string | null; cliente: Nome;
@@ -127,9 +134,9 @@ async function calcular(ctx: Contexto, q: DashboardQuery, rep: string | null) {
     .lt("pedido.data", isoUtc(atual.fim));
   let comissoesQ = supabase
     .from("comissoes")
-    .select("id, valor, status, data_prevista, pedido:pedidos(id, codigo_pedido, cliente:clientes(nome))")
-    .neq("status", "cancelada")
-    .or(`data_prevista.gte."${isoUtc(anterior.inicio)}",status.eq.atrasada`);
+    .select("id, valor, status, data_prevista_recebimento, data_recebimento, pedido:pedidos(id, codigo_pedido, cliente:clientes(nome))")
+    .in("status", statusDosGrupos(GRUPOS_STATUS)) // Fase 21: mapa único (cancelada fica fora)
+    .or(`data_prevista_recebimento.gte.${diaSP(anterior.inicio)},data_recebimento.gte.${diaSP(anterior.inicio)},and(status.in.(${statusDosGrupos(["a_receber"]).join(",")}),data_prevista_recebimento.lt.${hoje})`);
   let opsQ = supabase
     .from("oportunidades_desafios")
     .select("id, titulo, status, resultado, data_conclusao, criado_em, atualizado_em, arquivada, cliente_id, funil_id, cliente:clientes(nome)");
@@ -204,13 +211,13 @@ async function calcular(ctx: Contexto, q: DashboardQuery, rep: string | null) {
   const totalAnterior = soma(vendasAnterior);
   const ticket = (xs: PedidoRow[]) => (xs.length ? soma(xs) / xs.length : 0);
 
-  /* Comissões (por data_prevista no período; canceladas fora) */
-  const comissaoNa = (j: typeof atual, status: string) =>
-    comissoes.filter((c) => c.status === status && naJanela(c.data_prevista, j)).reduce((t, c) => t + Number(c.valor), 0);
+  /* Comissões (Fase 21, M): três indicadores DISTINTOS pelo mapa único de status — recebida (data de recebimento),
+     a receber e em análise (previsão). Em análise nunca soma em recebida nem em a receber. */
+  const indAtual = indicadoresComissao(comissoes, (d) => naJanela(d, atual));
+  const indAnterior = indicadoresComissao(comissoes, (d) => naJanela(d, anterior));
   const serieComissoes = atual.pontos.map((ponto) => {
-    const doPonto = comissoes.filter((c) => c.data_prevista && pontoDe(c.data_prevista, gran) === ponto);
-    const s = (st: string) => centavos(doPonto.filter((c) => c.status === st).reduce((t, c) => t + Number(c.valor), 0));
-    return { ponto, a_receber: s("a_receber"), recebida: s("recebida"), atrasada: s("atrasada") };
+    const i = indicadoresComissao(comissoes, (d) => !!d && pontoDe(d, gran) === ponto);
+    return { ponto, a_receber: i.a_receber, recebida: i.recebida, em_analise: i.em_analise.valor };
   });
 
   /* Oportunidades */
@@ -226,16 +233,16 @@ async function calcular(ctx: Contexto, q: DashboardQuery, rep: string | null) {
   const kpis: DashboardPrincipal["kpis"] = {
     vendas_total: k(totalAtual, totalAnterior),
     vendas_mes_atual: k(porMes.get(mesAtual) ?? 0, porMes.get(mesAnterior) ?? 0),
-    comissao_a_receber: k(comissaoNa(atual, "a_receber"), comissaoNa(anterior, "a_receber")),
-    comissao_recebida: k(comissaoNa(atual, "recebida"), comissaoNa(anterior, "recebida")),
-    comissao_atrasada: k(comissaoNa(atual, "atrasada"), comissaoNa(anterior, "atrasada")),
+    comissao_a_receber: k(indAtual.a_receber, indAnterior.a_receber),
+    comissao_recebida: k(indAtual.recebida, indAnterior.recebida),
+    comissao_em_analise: k(indAtual.em_analise.valor, indAnterior.em_analise.valor),
     // valor = em aberto agora; variação = abertas criadas no período vs no anterior
     oportunidades_abertas: { valor: abertas.length, variacao_pct: variacao(criadasEmAberto(atual), criadasEmAberto(anterior)) },
     ticket_medio: k(ticket(vendasAtual), ticket(vendasAnterior)),
     taxa_conversao: { valor: conversao(atual), variacao_pct: variacao(conversao(atual), conversao(anterior)) },
     custos_total: k(custosNa(atual), custosNa(anterior)),
-    resultado_bruto: k(comissaoNa(atual, "recebida"), comissaoNa(anterior, "recebida")),
-    resultado_liquido: k(comissaoNa(atual, "recebida") - custosNa(atual), comissaoNa(anterior, "recebida") - custosNa(anterior)),
+    resultado_bruto: k(indAtual.recebida, indAnterior.recebida),
+    resultado_liquido: k(indAtual.recebida - custosNa(atual), indAnterior.recebida - custosNa(anterior)),
   };
 
   /* Alertas (situação atual, não dependem do período) */
@@ -251,13 +258,14 @@ async function calcular(ctx: Contexto, q: DashboardQuery, rep: string | null) {
     ...acoes.filter((a) => a.prazo >= hoje && a.prazo <= em7).map(itemAcao),
     ...tarefas.filter((t) => t.data >= hoje && t.data <= em7).map(itemTarefa),
   ].sort(porData);
+  // Fase 21: 'atrasada' deixou de existir — vencida = A receber com previsão anterior a hoje
   const atrasadas = comissoes
-    .filter((c) => c.status === "atrasada")
-    .sort((a, b) => (a.data_prevista ?? "").localeCompare(b.data_prevista ?? ""))
+    .filter((c) => statusNoGrupo(c.status) === "a_receber" && !!c.data_prevista_recebimento && c.data_prevista_recebimento < hoje)
+    .sort((a, b) => (a.data_prevista_recebimento ?? "").localeCompare(b.data_prevista_recebimento ?? ""))
     .map((c): ItemAlerta => ({
-      id: c.id, tipo: "comissao", titulo: `Comissão ${c.pedido?.codigo_pedido ?? ""}`.trim(), data: c.data_prevista,
+      id: c.id, tipo: "comissao", titulo: `Comissão ${c.pedido?.codigo_pedido ?? ""}`.trim(), data: c.data_prevista_recebimento,
       detalhe: [c.pedido?.cliente?.nome, `R$ ${Number(c.valor).toFixed(2).replace(".", ",")}`].filter(Boolean).join(" · "),
-      rota_edicao: c.pedido ? `/app/pedidos/${c.pedido.id}` : "/app/comissoes?status=atrasada",
+      rota_edicao: c.pedido ? `/app/pedidos/${c.pedido.id}` : "/app/comissoes?g=a_receber&campo=previsao",
     }));
   const paradas = abertas
     .filter((o) => (o.atualizado_em ?? o.criado_em) < ha30)
@@ -291,6 +299,7 @@ async function calcular(ctx: Contexto, q: DashboardQuery, rep: string | null) {
     },
     kpis,
     serie_vendas: serie(atual.pontos, porPonto),
+    comissao_em_analise_qtd: indAtual.em_analise.quantidade,
     serie_comissoes: serieComissoes,
     serie_custos: serie(atual.pontos, custosPorPonto),
     alertas: {

@@ -14,13 +14,14 @@ import { ItensSemProduto } from "@/components/itens-sem-produto";
 import { resolverDescontoMaximo } from "@/lib/desconto";
 import { obterConfiguracaoPedidos } from "@/server/configuracao-pedidos";
 import { CampoDataFaturamento } from "@/components/data-faturamento";
+import { statusNoGrupo } from "@/lib/comissoes/status";
 import { obterRepresentada } from "@/server/representadas";
 
 /** Edição do pedido (rascunho ou confirmado): produtos, quantidades, preços, descontos, pagamento e prazo. */
 export default async function EditarPedidoPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Busca }) {
   const [{ id }, { erro }] = await Promise.all([params, searchParams]);
   const p = await carregar((ctx) => obterPedido(ctx, id));
-  const comissaoRecebida = p.comissao.some((c) => c.status === "recebida");
+  const comissaoRecebida = p.comissao.some((c) => statusNoGrupo(c.status) === "recebido");
   const bloqueio =
     p.status === "cancelado" ? "Pedido cancelado não pode ser editado." : comissaoRecebida ? "Comissão já recebida: este pedido não pode mais ser editado." : null;
 

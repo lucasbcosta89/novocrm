@@ -1,12 +1,5 @@
 import { rota } from "@/server/rota";
-import { listarComissoes, resumirComissoes } from "@/server/comissoes";
+import { listarComissoes } from "@/server/comissoes";
 
-/** ?representada_id=&status= → { resumo, comissoes } */
-export const GET = rota(async (ctx, { req }) => {
-  const sp = req.nextUrl.searchParams;
-  const comissoes = await listarComissoes(ctx, {
-    representada_id: sp.get("representada_id") ?? undefined,
-    status: sp.get("status") ?? undefined,
-  });
-  return { resumo: resumirComissoes(comissoes), comissoes };
-});
+/** Mesmos parâmetros da página (p, de, ate, campo, g, comp, mot, rep, cli, lote, ed, ord, dir, pag, visao) → lista + totais por grupo. */
+export const GET = rota(async (ctx, { req }) => listarComissoes(ctx, Object.fromEntries(req.nextUrl.searchParams)));

@@ -34,8 +34,8 @@ export function GraficoVendas({ dados }: { dados: { ponto: string; valor: number
   );
 }
 
-/** Barras empilhadas de comissões por dia ou mês (a receber / recebida / atrasada) + linha de custos (mesmo eixo). */
-export function GraficoComissoes({ dados }: { dados: { ponto: string; a_receber: number; recebida: number; atrasada: number; custos: number }[] }) {
+/** Barras empilhadas de comissões por dia ou mês (grupos do mapa único: recebida / a receber / em análise) + linha de custos. */
+export function GraficoComissoes({ dados }: { dados: { ponto: string; a_receber: number; recebida: number; em_analise: number; custos: number }[] }) {
   return (
     <div className="dash-grafico" role="img" aria-label={`Comissões e custos por ${porQue(dados)}: ${dados.map((d) => `${rotuloPonto(d.ponto)} recebida ${brl.format(d.recebida)}, custos ${brl.format(d.custos)}`).join("; ")}`}>
       <ResponsiveContainer width="100%" height={260}>
@@ -47,7 +47,7 @@ export function GraficoComissoes({ dados }: { dados: { ponto: string; a_receber:
           <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, color: "var(--muted)" }} />
           <Bar dataKey="recebida" name="Recebida" stackId="c" fill="var(--ok)" maxBarSize={44} />
           <Bar dataKey="a_receber" name="A receber" stackId="c" fill="#7C3AED" maxBarSize={44} />
-          <Bar dataKey="atrasada" name="Atrasada" stackId="c" fill="var(--danger)" radius={[6, 6, 0, 0]} maxBarSize={44} />
+          <Bar dataKey="em_analise" name="Em análise" stackId="c" fill="var(--analise)" radius={[6, 6, 0, 0]} maxBarSize={44} />
           <Line type="monotone" dataKey="custos" name="Custos" stroke="var(--atencao)" strokeWidth={2.5} dot={{ r: 3, fill: "var(--atencao)" }} activeDot={{ r: 5 }} />
         </ComposedChart>
       </ResponsiveContainer>

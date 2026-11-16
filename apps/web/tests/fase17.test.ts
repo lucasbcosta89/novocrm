@@ -27,7 +27,7 @@ const base = () => new Map<string, unknown>([
 ]);
 type Campos = Partial<Record<(typeof ROTULOS_PEDIDO)[number], string>>;
 /** Fase 20: modelo ANTIGO (sem a coluna opcional "Comissão (R$)") continua importando igual */
-const MODELO_ANTIGO = config.colunasEsperadas.filter((c) => c !== "Comissão (R$)");
+const MODELO_ANTIGO = config.colunasEsperadas.filter((c) => c !== "Comissão (R$)" && c !== "Data de Faturamento");
 const linha = (n: number, v: Campos): LinhaBruta => ({ numero_linha: n, valores: ROTULOS_PEDIDO.map((c) => v[c] ?? "") });
 const item = (num: string, data: string, doc: string, sku: string, qtd = "1", preco = "10"): Campos => ({
   "Número do Pedido": num, "Data do Pedido": data, "CNPJ/CPF do Cliente": doc, "SKU do Produto": sku, "Quantidade": qtd, "Preço Unitário": preco,

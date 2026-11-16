@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { marcarComissaoSchema, pedidoSchema, produtoSchema } from "@/lib/validacao";
-import { resumirComissoes, type Comissao } from "@/server/comissoes";
+import { acaoComissaoSchema, pedidoSchema, produtoSchema } from "@/lib/validacao";
+import { totalizar } from "@/server/comissoes";
 
 const R1 = "11111111-1111-4111-8111-111111111111";
 const R2 = "22222222-2222-4222-8222-222222222222";
@@ -19,36 +19,25 @@ describe("pedidoSchema", () => {
     expect(produtoSchema.parse({ sku: "A", nome: "Prod A", preco: 600 }).comissao).toBeUndefined();
     expect(produtoSchema.safeParse({ sku: "A", nome: "Prod A", preco: 600, comissao: 120 }).success).toBe(false);
   });
-  it("status manual de comissão não aceita cancelada", () => {
-    expect(marcarComissaoSchema.safeParse({ status: "cancelada" }).success).toBe(false);
-    expect(marcarComissaoSchema.parse({ status: "recebida" }).status).toBe("recebida");
+  it("ação manual de comissão não aceita cancelar (só via pedido)", () => {
+    expect(acaoComissaoSchema.safeParse({ acao: "cancelada" }).success).toBe(false);
+    expect(acaoComissaoSchema.parse({ acao: "recebida" }).acao).toBe("recebida");
   });
 });
 
-describe("resumirComissoes", () => {
-  const base = { percentual: 0, data_prevista: null, recebida_em: null, pedido: null };
-  const c = (id: string, rep: string, nome: string, valor: number, status: Comissao["status"]): Comissao =>
-    ({ ...base, id, representada_id: rep, representada: { id: rep, nome }, valor, status });
-
-  it("critério da fase: A 600×5% + B 400×10% = 70 na representada", () => {
+describe("totais de comissão (Fase 21: grupos do mapa único de status)", () => {
+  it("critério da fase 5: A 600×5% + B 400×10% = 70", () => {
     const itens = [{ subtotal: 600, comissao: 5 }, { subtotal: 400, comissao: 10 }];
     const total = itens.reduce((s, i) => s + Math.round(i.subtotal * i.comissao) / 100, 0);
     expect(total).toBe(70);
-    const [r] = resumirComissoes([c("1", R1, "Alfa", total, "a_receber")]);
-    expect(r).toMatchObject({ representada: { nome: "Alfa" }, totais: { a_receber: 70, recebida: 0, atrasada: 0 } });
+    expect(totalizar([{ status: "prevista", valor: total }]).a_receber).toEqual({ valor: 70, quantidade: 1 });
   });
-
-  it("agrupa por representada e ignora canceladas", () => {
-    const res = resumirComissoes([
-      c("1", R2, "Beta", 10.1, "a_receber"),
-      c("2", R2, "Beta", 20.2, "a_receber"),
-      c("3", R2, "Beta", 5, "atrasada"),
-      c("4", R1, "Alfa", 70, "recebida"),
-      c("5", R1, "Alfa", 99, "cancelada"),
+  it("soma por grupo e ignora canceladas", () => {
+    const t = totalizar([
+      { status: "prevista", valor: 10.1 }, { status: "reaberta", valor: 20.2 }, { status: "pendente_analise", valor: 5 },
+      { status: "recebida", valor: 70 }, { status: "cancelada", valor: 99 },
     ]);
-    expect(res.map((r) => r.representada.nome)).toEqual(["Alfa", "Beta"]);
-    expect(res[0]!.totais).toEqual({ a_receber: 0, recebida: 70, atrasada: 0 });
-    expect(res[1]!.totais).toEqual({ a_receber: 30.3, recebida: 0, atrasada: 5 });
+    expect(t).toEqual({ recebido: { valor: 70, quantidade: 1 }, a_receber: { valor: 30.3, quantidade: 2 }, em_analise: { valor: 5, quantidade: 1 } });
   });
 });
 

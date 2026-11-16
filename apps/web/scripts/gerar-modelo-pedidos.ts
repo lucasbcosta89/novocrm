@@ -24,6 +24,7 @@ const COLUNAS: Coluna[] = [
   { titulo: "Prazo (dias)", largura: 12, obrigatoria: false, formato: "Inteiro de 1 a 365", exemplo: "30", obs: "Vazio = à vista. Vale o da primeira linha de cada pedido.", numFmt: "0" },
   { titulo: "Observações", largura: 36, obrigatoria: false, formato: "Texto (até 500)", exemplo: "Entregar pela manhã", obs: "Observações do pedido (vale a da primeira linha de cada pedido)." },
   { titulo: "Comissão (R$)", largura: 15, obrigatoria: false, formato: "R$ #.##0,00 (opcional)", exemplo: "12,95", obs: "Comissão do item em reais. Maior que zero: vale este valor. Vazio ou zero: calculada pelo percentual do cadastro e enviada para análise na página de Comissões. Nunca somada ao valor do pedido. Com fórmula, salve no Excel antes de enviar.", numFmt: '"R$" #,##0.00' },
+  { titulo: "Data de Faturamento", largura: 16, obrigatoria: false, formato: "DD/MM/AAAA (opcional)", exemplo: "25/10/2026", obs: "Data em que a representada faturou o pedido (igual em todas as linhas do pedido). Base da previsão de recebimento da comissão: sem ela, a comissão fica pendente de análise na página de Comissões e não é liquidada automaticamente.", numFmt: "dd/mm/yyyy" },
 ];
 const FORMAS = ["Dinheiro", "Crédito", "Débito", "Bonificação", "Pix", "Outros"];
 
@@ -51,11 +52,11 @@ COLUNAS.forEach((c, i) => {
 // 5 exemplos: 2 linhas com o mesmo número (1 pedido); 2 sem número, mesmo cliente e data (1 pedido automático);
 // 1 sem número com outra data (outro pedido automático). Número vazio = célula realmente vazia.
 const exemplos: (string | number | Date | null)[][] = [
-  ["1001", data(20, 10, 2026), "11.222.333/0001-81", "SKU-001", "Camiseta básica", 10, 25.9, 0, 0, "Pix", 30, "Pedido do ERP", 12.95],
-  ["1001", data(20, 10, 2026), "11.222.333/0001-81", "SKU-002", "Calça jeans", 5, 89.9, 5, 0, null, null, null, 21.35],
-  [null, data(21, 10, 2026), "45.723.174/0001-10", "SKU-001", "Camiseta básica", 3, 25.9, 0, 10, "Crédito", null, null, 4.27],
-  [null, data(21, 10, 2026), "45.723.174/0001-10", "SKU-003", "Jaqueta", 2, 149.9, 10, 0, null, null, null, 13.49],
-  [null, data(22, 10, 2026), "45.723.174/0001-10", "SKU-002", "Calça jeans", 1, 89.9, 0, 0, "Pix", null, null, 4.5],
+  ["1001", data(20, 10, 2026), "11.222.333/0001-81", "SKU-001", "Camiseta básica", 10, 25.9, 0, 0, "Pix", 30, "Pedido do ERP", 12.95, data(25, 10, 2026)],
+  ["1001", data(20, 10, 2026), "11.222.333/0001-81", "SKU-002", "Calça jeans", 5, 89.9, 5, 0, null, null, null, 21.35, data(25, 10, 2026)],
+  [null, data(21, 10, 2026), "45.723.174/0001-10", "SKU-001", "Camiseta básica", 3, 25.9, 0, 10, "Crédito", null, null, 4.27, null],
+  [null, data(21, 10, 2026), "45.723.174/0001-10", "SKU-003", "Jaqueta", 2, 149.9, 10, 0, null, null, null, 13.49, null],
+  [null, data(22, 10, 2026), "45.723.174/0001-10", "SKU-002", "Calça jeans", 1, 89.9, 0, 0, "Pix", null, null, 4.5, data(23, 10, 2026)],
 ];
 exemplos.forEach((valores) => {
   const linha = ws.addRow(valores.map((v) => (v === null ? undefined : v)));
@@ -96,6 +97,7 @@ const passos = [
   "Pendências são resolvidas depois, na página do pedido (Cadastrar produto) ou no Catálogo da representada.",
   "O preço gravado é sempre o da planilha (pedido importado não passa pela verificação de preço e desconto).",
   "Comissão (R$) é opcional: maior que zero vale o valor da planilha; vazia ou zero é calculada pelo percentual do cadastro e enviada para análise na página de Comissões. Se a coluna tiver fórmula, salve a planilha no Excel antes de enviar.",
+  "Data de Faturamento é opcional, mas é a base da previsão de recebimento da comissão. Pedido completo (com faturamento, comissão definida e prazo de pagamento da comissão na representada) cuja previsão já passou na data do envio entra com a comissão como recebida; sem esses dados, a comissão vai para análise.",
   "Pedidos sem pendência entram confirmados (comissão lançada); com pendência entram como rascunho até resolver.",
 ];
 como.addRow(["", "Como funciona a importação de pedidos"]).font = { bold: true, size: 13 };

@@ -20,7 +20,7 @@ describe("fase 19 — precedência de comissão (D.1–D.5)", () => {
   });
   it("D.3 representada vazia (nula ou 0): vale o catálogo + alerta, sem zerar", () => {
     for (const vazio of [null, 0]) {
-      expect(resolverComissao({ comissao: 3 }, { comissao_percentual: vazio })).toEqual({ percentual: 3, origem: "catalogo", tipoAlerta: "comissao_catalogo_sem_representada", oferecerPropagacao: false, divergencia: false });
+      expect(resolverComissao({ comissao: 3 }, { comissao_percentual: vazio })).toEqual({ percentual: 3, origem: "catalogo", tipoAlerta: null, oferecerPropagacao: false, divergencia: false });
     }
   });
   it("D.4 nenhum: 0% + alerta comissao_nao_definida; D.5 sem produto: não resolve", () => {
@@ -55,7 +55,7 @@ describe("fase 19 — avisos durante o preenchimento (E)", () => {
     const nd = avisosDoItem({ ...base, comissaoCatalogo: null, comissaoRepresentada: null });
     expect(nd).toEqual([{ tipo: "comissao_nao_definida", nivel: "vermelho", mensagem: "Comissão não definida — este pedido ficará com comissão zero. Defina a comissão em Representadas ou no Catálogo." }]);
     const cs = avisosDoItem({ ...base, comissaoRepresentada: 0 });
-    expect(cs[0]!.mensagem).toBe("Comissão de 3% aplicada do Catálogo, mas a Representada não tem comissão definida. Padronize o cadastro da representada.");
+    expect(cs).toEqual([]); // Fase 21 (A.2): catálogo sem representada não gera mais aviso
     const pr = avisosDoItem({ ...base, comissaoCatalogo: null });
     expect(pr).toEqual([{ tipo: "propagacao", nivel: "neutro", mensagem: "Comissão de 5% aplicada da Representada. O Catálogo deste produto está sem comissão.", percentual: 5 }]);
     expect(tipos({})).toEqual([]); // D.1: sem aviso
@@ -63,7 +63,7 @@ describe("fase 19 — avisos durante o preenchimento (E)", () => {
   });
   it("G: pedido importado não avisa desconto, preço nem propagação — só comissão", () => {
     expect(tipos({ manual: false, desconto: 30, preco: 70, comissaoCatalogo: null })).toEqual([]);
-    expect(tipos({ manual: false, desconto: 30, comissaoRepresentada: null })).toEqual(["comissao_catalogo_sem_representada"]);
+    expect(tipos({ manual: false, desconto: 30, comissaoRepresentada: null })).toEqual([]); // Fase 21 (A.2): sem alerta
     expect(tipos({ manual: false, comissaoCatalogo: null, comissaoRepresentada: null })).toEqual(["comissao_nao_definida"]);
   });
 });

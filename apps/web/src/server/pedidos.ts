@@ -1,6 +1,7 @@
 import type { PostgrestError } from "@supabase/supabase-js";
 import { z } from "zod";
 import { edicaoPedidoSchema, idSchema, pedidoSchema } from "@/lib/validacao";
+import { statusNoGrupo } from "@/lib/comissoes/status";
 import type { Contexto } from "./contexto";
 import { AppError, erroBanco } from "./erros";
 
@@ -54,13 +55,13 @@ export type Pedido = {
   cliente: { id: string; nome: string } | null;
   representada: { id: string; nome: string } | null;
   itens: PedidoItem[];
-  comissao: { id: string; status: string; valor: number; percentual: number; data_prevista: string | null }[];
+  comissao: { id: string; status: string; valor: number; percentual: number; data_prevista_recebimento: string | null; data_recebimento: string | null; motivos_pendencia: string[] }[];
 };
 
 const CAMPOS = `id, numero, codigo_pedido, codigo_gerado, tem_pendencias, data, data_faturamento, status, valor_total, comissao_total, forma_pagamento, prazo_tipo, prazo_dias, origem, observacoes,
   cliente:clientes(id, nome), representada:representadas(id, nome:razao_social),
   itens:pedido_itens(id, produto_id, descricao, quantidade, preco_unitario, desconto_percentual, acrescimo_percentual, desconto_acima_max, subtotal, comissao_percentual, comissao_valor, comissao_origem, comissao_planilha_ausente, sku_planilha, pendencia, sku_informado, descricao_informada, linha_planilha, origem_calculo, produto:produtos(sku)),
-  comissao:comissoes(id, status, valor, percentual, data_prevista)`;
+  comissao:comissoes(id, status, valor, percentual, data_prevista_recebimento, data_recebimento, motivos_pendencia)`;
 
 export async function obterPedido({ supabase }: Contexto, id: string): Promise<Pedido> {
   const { data, error } = await supabase.from("pedidos").select(CAMPOS).eq("id", idSchema.parse(id)).single<Pedido>();
@@ -163,7 +164,7 @@ export async function excluirPedido({ supabase }: Contexto, id: string): Promise
   const pedidoId = idSchema.parse(id);
   const { data: com, error: e1 } = await supabase.from("comissoes").select("id, status").eq("pedido_id", pedidoId).returns<{ id: string; status: string }[]>();
   if (e1) throw erroBanco(e1);
-  if (com.some((c) => c.status === "recebida")) throw new AppError(400, "Comissão já recebida: este pedido não pode ser excluído", "regra");
+  if (com.some((c) => statusNoGrupo(c.status) === "recebido")) throw new AppError(400, "Comissão já recebida: este pedido não pode ser excluído", "regra");
   if (com.length) {
     const { error } = await supabase.from("comissoes").delete().eq("pedido_id", pedidoId);
     if (error) throw erroBanco(error);

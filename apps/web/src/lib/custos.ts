@@ -29,11 +29,15 @@ export type DespesaInput = z.infer<typeof despesaSchema>;
 /* ---------- Período ---------- */
 
 export const ATALHOS = ["este_mes", "mes_passado", "3m", "6m", "12m", "ano", "personalizado"] as const;
-export type Atalho = (typeof ATALHOS)[number];
+/** Fase 21 (P.1): presets extras do filtro temporal de Comissões (mesmo resolvedor de período). */
+export const ATALHOS_COMISSOES = ["7d", "30d", "90d", "este_mes", "ano", "ano_anterior", "personalizado"] as const;
+export type Atalho = (typeof ATALHOS)[number] | (typeof ATALHOS_COMISSOES)[number];
 export const ROTULO_ATALHO: Record<Atalho, string> = {
   este_mes: "Este mês", mes_passado: "Mês passado", "3m": "Últimos 3 meses", "6m": "Últimos 6 meses",
   "12m": "Últimos 12 meses", ano: "Este ano", personalizado: "Personalizado",
+  "7d": "Últimos 7 dias", "30d": "Últimos 30 dias", "90d": "Últimos 90 dias", ano_anterior: "Ano anterior",
 };
+const TODOS_ATALHOS: readonly string[] = [...ATALHOS, ...ATALHOS_COMISSOES];
 
 const DIA = 86_400_000;
 const somarDias = (iso: string, n: number) => new Date(Date.parse(`${iso}T12:00:00Z`) + n * DIA).toISOString().slice(0, 10);
@@ -49,7 +53,7 @@ const dataValida = (s: string | null | undefined): s is string => !!s && /^\d{4}
  * "personalizado" usa de/ate informados; se inválidos, cai em "este mês".
  */
 export function resolverPeriodo(atalho: string | null | undefined, de: string | null | undefined, ate: string | null | undefined, hoje: string) {
-  const a: Atalho = (ATALHOS as readonly string[]).includes(atalho ?? "") ? (atalho as Atalho) : "este_mes";
+  const a: Atalho = TODOS_ATALHOS.includes(atalho ?? "") ? (atalho as Atalho) : "este_mes";
   let r: { de: string; ate: string };
   switch (a) {
     case "mes_passado": r = { de: primeiroDoMes(hoje, -1), ate: somarDias(primeiroDoMes(hoje), -1) }; break;
@@ -57,6 +61,10 @@ export function resolverPeriodo(atalho: string | null | undefined, de: string | 
     case "6m": r = { de: primeiroDoMes(hoje, -5), ate: hoje }; break;
     case "12m": r = { de: primeiroDoMes(hoje, -11), ate: hoje }; break;
     case "ano": r = { de: `${hoje.slice(0, 4)}-01-01`, ate: hoje }; break;
+    case "7d": r = { de: somarDias(hoje, -6), ate: hoje }; break;
+    case "30d": r = { de: somarDias(hoje, -29), ate: hoje }; break;
+    case "90d": r = { de: somarDias(hoje, -89), ate: hoje }; break;
+    case "ano_anterior": { const ano = Number(hoje.slice(0, 4)) - 1; r = { de: `${ano}-01-01`, ate: `${ano}-12-31` }; break; }
     case "personalizado":
       if (dataValida(de) && dataValida(ate) && de <= ate) return { atalho: a, de, ate, rotulo: `${ddmmaaaa(de)} a ${ddmmaaaa(ate)}` };
       return resolverPeriodo("este_mes", null, null, hoje);

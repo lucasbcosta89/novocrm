@@ -1,8 +1,11 @@
 import "server-only";
 import type { Content } from "pdfmake/interfaces";
-import { formatarData, formatarDataHora, formatarDocumento, formatarMoeda, formatarPercentual } from "@/lib/formato";
+import { formatarData, formatarDataHora, formatarDia, formatarDocumento, formatarMoeda, formatarPercentual } from "@/lib/formato";
 import { cabecalho, COR, gerarPdf, indicadores, quebraPagina, secao, tabela, type Representante } from "@/lib/pdf";
-import { ROTULO_STATUS_COMISSAO, ROTULO_STATUS_PEDIDO } from "@/lib/rotulos";
+import { ROTULO_STATUS_PEDIDO } from "@/lib/rotulos";
+import {
+  GRUPOS_PADRAO_RELATORIO, GRUPOS_STATUS, ROTULOS_COMPLETUDE, ROTULOS_GRUPO, rotuloStatus, rotuloTotal, statusDosGrupos, statusNoGrupo, type GrupoStatus,
+} from "@/lib/comissoes/status";
 import { detectarTipoImagem } from "@/lib/imagem";
 import { idSchema } from "@/lib/validacao";
 import { lerArquivo } from "./armazenamento";
@@ -73,7 +76,7 @@ export async function dadosMensal(ctx: Contexto, representadaId: string, periodo
       .eq("representada_id", rep.id).in("status", ["confirmado", "entregue"]).gte("data", inicio).lt("data", fim).order("data")
       .returns<DadosMensal["pedidos"]>(),
     supabase.from("comissoes").select("valor, status, pedido:pedidos!inner(data)")
-      .eq("representada_id", rep.id).gte("pedido.data", inicio).lt("pedido.data", fim).neq("status", "cancelada")
+      .eq("representada_id", rep.id).gte("pedido.data", inicio).lt("pedido.data", fim).in("status", statusDosGrupos(GRUPOS_STATUS))
       .returns<{ valor: number; status: string }[]>(),
     supabase.from("cliente_representada").select("id", { count: "exact", head: true }).eq("representada_id", rep.id),
   ]);
@@ -100,23 +103,23 @@ export function positivacao(d: Pick<DadosMensal, "pedidos" | "carteira">) {
 function corpoMensal(d: DadosMensal): Content[] {
   const pos = positivacao(d);
   const totalPedidos = soma(d.pedidos.map((p) => p.valor_total));
-  const porStatus = (s: string) => soma(d.comissoes.filter((c) => c.status === s).map((c) => c.valor));
+  const porGrupo = (g: GrupoStatus) => soma(d.comissoes.filter((c) => statusNoGrupo(c.status) === g).map((c) => c.valor));
   return [
     indicadores([
       { rotulo: "Visitas", valor: String(d.visitas.length) },
       { rotulo: "Pedidos", valor: String(d.pedidos.length) },
       { rotulo: "Vendido", valor: formatarMoeda(totalPedidos) },
-      { rotulo: "Comissões", valor: formatarMoeda(soma(d.comissoes.map((c) => c.valor))) },
+      { rotulo: "Comissões (recebida + a receber)", valor: formatarMoeda(porGrupo("recebido") + porGrupo("a_receber")) },
       { rotulo: "Positivação", valor: `${String(pos.percentual).replace(".", ",")}% (${pos.positivados}/${pos.carteira})` },
     ]),
     secao("Comissões do período"),
     tabela(
       [
-        { titulo: "A receber", valor: (t: number[]) => formatarMoeda(t[0]!), alinhar: "right" },
-        { titulo: "Recebida", valor: (t) => formatarMoeda(t[1]!), alinhar: "right" },
-        { titulo: "Atrasada", valor: (t) => formatarMoeda(t[2]!), alinhar: "right" },
+        { titulo: ROTULOS_GRUPO.recebido, valor: (t: number[]) => formatarMoeda(t[0]!), alinhar: "right" },
+        { titulo: ROTULOS_GRUPO.a_receber, valor: (t) => formatarMoeda(t[1]!), alinhar: "right" },
+        { titulo: `${ROTULOS_GRUPO.em_analise} (fora dos totais)`, valor: (t) => formatarMoeda(t[2]!), alinhar: "right" },
       ],
-      [[porStatus("a_receber"), porStatus("recebida"), porStatus("atrasada")]],
+      [[porGrupo("recebido"), porGrupo("a_receber"), porGrupo("em_analise")]],
     ),
     secao("Pedidos"),
     tabela(
@@ -197,11 +200,17 @@ export function pdfMensalGeral(ds: DadosMensal[], periodo: string, representante
 export type DadosComissoes = {
   representada: Rep;
   periodo: string;
+  /** N.2: grupos de status incluídos (padrão: recebida + a receber; em análise fora) */
+  grupos: GrupoStatus[];
+  /** N.3: comissões em análise fora do filtro (chip fixo no relatório) */
+  em_analise_fora: number;
   comissoes: {
     percentual: number;
     valor: number;
     status: string;
-    data_prevista: string | null;
+    completude: string;
+    data_prevista_recebimento: string | null;
+    data_recebimento: string | null;
     pedido: { codigo_pedido: string; data: string; valor_total: number; cliente: { nome: string } | null };
   }[];
   /** Detalhe por produto: soma de pedido_itens.comissao_valor (snapshot da confirmação; nunca recalcula). */
@@ -228,14 +237,15 @@ function agruparProdutos(itens: ItemComissaoRow[]): ProdutoComissao[] {
 }
 
 /** Só comissões de pedidos do período. */
-export async function dadosComissoes(ctx: Contexto, representadaId: string, periodo: string): Promise<DadosComissoes> {
+export async function dadosComissoes(ctx: Contexto, representadaId: string, periodo: string, grupos: readonly GrupoStatus[] = GRUPOS_PADRAO_RELATORIO): Promise<DadosComissoes> {
   const rep = await representada(ctx, representadaId);
   const { inicio, fim } = limitesPeriodo(periodo);
   const [com, itens] = await Promise.all([
     ctx.supabase
       .from("comissoes")
-      .select("percentual, valor, status, data_prevista, pedido:pedidos!inner(codigo_pedido, data, valor_total, cliente:clientes(nome))")
+      .select("percentual, valor, status, completude, data_prevista_recebimento, data_recebimento, pedido:pedidos!inner(codigo_pedido, data, valor_total, cliente:clientes(nome))")
       .eq("representada_id", rep.id)
+      .in("status", statusDosGrupos(GRUPOS_STATUS))
       .gte("pedido.data", inicio)
       .lt("pedido.data", fim)
       .returns<DadosComissoes["comissoes"]>(),
@@ -250,23 +260,27 @@ export async function dadosComissoes(ctx: Contexto, representadaId: string, peri
   ]);
   if (com.error) throw erroBanco(com.error);
   if (itens.error) throw erroBanco(itens.error);
-  const comissoes = [...com.data].sort((a, b) => a.pedido.data.localeCompare(b.pedido.data));
-  return { representada: rep, periodo, comissoes, produtos: agruparProdutos(itens.data) };
+  const todas = [...com.data].sort((a, b) => a.pedido.data.localeCompare(b.pedido.data));
+  const incluidos = new Set<string>(grupos);
+  const comissoes = todas.filter((c) => incluidos.has(statusNoGrupo(c.status)));
+  const emAnaliseFora = incluidos.has("em_analise") ? 0 : todas.filter((c) => statusNoGrupo(c.status) === "em_analise").length;
+  return { representada: rep, periodo, grupos: [...grupos], em_analise_fora: emAnaliseFora, comissoes, produtos: agruparProdutos(itens.data) };
 }
 
-const validasComissoes = (d: DadosComissoes) => d.comissoes.filter((c) => c.status !== "cancelada");
+/** Comissões que entram nos totais (grupos do filtro; cancelada nunca entra). */
+const validasComissoes = (d: DadosComissoes) => d.comissoes.filter((c) => statusNoGrupo(c.status) !== "desconhecido");
+const avisoEmAnalise = (n: number): Content[] => (n > 0 ? [{ text: `${n} comissões em análise não incluídas nos totais.`, style: "vazio", margin: [0, 0, 0, 6] }] : []);
 
 /** Corpo do relatório de comissões de uma representada (estrutura da Fase 7). */
 function corpoComissoes(d: DadosComissoes): Content[] {
   const validas = validasComissoes(d);
-  const por = (s: string) => soma(validas.filter((c) => c.status === s).map((c) => c.valor));
+  const por = (g: GrupoStatus) => soma(validas.filter((c) => statusNoGrupo(c.status) === g).map((c) => c.valor));
   return [
     indicadores([
-      { rotulo: "Total", valor: formatarMoeda(soma(validas.map((c) => c.valor))) },
-      { rotulo: "A receber", valor: formatarMoeda(por("a_receber")) },
-      { rotulo: "Recebida", valor: formatarMoeda(por("recebida")) },
-      { rotulo: "Atrasada", valor: formatarMoeda(por("atrasada")) },
+      { rotulo: rotuloTotal(d.grupos), valor: formatarMoeda(soma(validas.map((c) => c.valor))) },
+      ...d.grupos.map((g) => ({ rotulo: ROTULOS_GRUPO[g], valor: formatarMoeda(por(g)) })),
     ]),
+    ...avisoEmAnalise(d.em_analise_fora),
     tabela(
       [
         { titulo: "Pedido", valor: (c: DadosComissoes["comissoes"][number]) => c.pedido.codigo_pedido, largura: "auto" },
@@ -275,11 +289,13 @@ function corpoComissoes(d: DadosComissoes): Content[] {
         { titulo: "Valor pedido", valor: (c) => formatarMoeda(c.pedido.valor_total), alinhar: "right", largura: "auto" },
         { titulo: "%", valor: (c) => formatarPercentual(c.percentual), alinhar: "right", largura: "auto" },
         { titulo: "Comissão", valor: (c) => formatarMoeda(c.valor), alinhar: "right", largura: "auto" },
-        { titulo: "Prevista", valor: (c) => (c.data_prevista ? formatarData(c.data_prevista) : "—"), largura: "auto" },
-        { titulo: "Status", valor: (c) => ROTULO_STATUS_COMISSAO[c.status] ?? c.status, largura: "auto" },
+        { titulo: "Previsão", valor: (c) => (c.data_prevista_recebimento ? formatarDia(c.data_prevista_recebimento) : "Sem previsão"), largura: "auto" },
+        { titulo: "Recebimento", valor: (c) => (c.data_recebimento ? formatarDia(c.data_recebimento) : "—"), largura: "auto" },
+        { titulo: "Status", valor: (c) => rotuloStatus(c.status), largura: "auto" },
+        { titulo: "Completude", valor: (c) => ROTULOS_COMPLETUDE[c.completude as "completa"] ?? c.completude, largura: "auto" },
       ],
       d.comissoes,
-      { vazio: "Nenhuma comissão no período.", totais: ["Total", "", "", "", "", formatarMoeda(soma(validas.map((c) => c.valor))), "", ""] },
+      { vazio: "Nenhuma comissão no período.", totais: [rotuloTotal(d.grupos), "", "", "", "", formatarMoeda(soma(validas.map((c) => c.valor))), "", "", "", ""] },
     ),
     secao("Detalhe por produto"),
     tabelaProdutos(d.produtos),
@@ -312,27 +328,21 @@ export function pdfComissoesGeral(ds: DadosComissoes[], periodo: string, represe
   const { rotulo } = limitesPeriodo(periodo);
   const conteudo: Content[] = [cabecalho(`Relatório de Comissões (Geral) — ${rotulo}`, `${ds.length} representada(s) · pedidos do período`)];
   for (const d of ds) conteudo.push(secaoRepresentada(d.representada), ...corpoComissoes(d));
-  const total = (d: DadosComissoes, s?: string) => soma(validasComissoes(d).filter((c) => !s || c.status === s).map((c) => c.valor));
+  const total = (d: DadosComissoes, g?: GrupoStatus) => soma(validasComissoes(d).filter((c) => !g || statusNoGrupo(c.status) === g).map((c) => c.valor));
+  const grupos = ds[0]?.grupos ?? [...GRUPOS_PADRAO_RELATORIO];
   conteudo.push(
     secao("Totais gerais"),
+    ...avisoEmAnalise(soma(ds.map((d) => d.em_analise_fora))),
     tabela(
       [
         { titulo: "Representada", valor: (d: DadosComissoes) => d.representada.nome },
-        { titulo: "A receber", valor: (d) => formatarMoeda(total(d, "a_receber")), alinhar: "right", largura: "auto" },
-        { titulo: "Recebida", valor: (d) => formatarMoeda(total(d, "recebida")), alinhar: "right", largura: "auto" },
-        { titulo: "Atrasada", valor: (d) => formatarMoeda(total(d, "atrasada")), alinhar: "right", largura: "auto" },
-        { titulo: "Total", valor: (d) => formatarMoeda(total(d)), alinhar: "right", largura: "auto" },
+        ...grupos.map((g) => ({ titulo: ROTULOS_GRUPO[g], valor: (d: DadosComissoes) => formatarMoeda(total(d, g)), alinhar: "right" as const, largura: "auto" as const })),
+        { titulo: rotuloTotal(grupos), valor: (d) => formatarMoeda(total(d)), alinhar: "right", largura: "auto" },
       ],
       ds,
       {
         vazio: "Nenhuma representada.",
-        totais: [
-          "Total geral",
-          formatarMoeda(soma(ds.map((d) => total(d, "a_receber")))),
-          formatarMoeda(soma(ds.map((d) => total(d, "recebida")))),
-          formatarMoeda(soma(ds.map((d) => total(d, "atrasada")))),
-          formatarMoeda(soma(ds.map((d) => total(d)))),
-        ],
+        totais: ["Total geral", ...grupos.map((g) => formatarMoeda(soma(ds.map((d) => total(d, g))))), formatarMoeda(soma(ds.map((d) => total(d))))],
       },
     ),
   );

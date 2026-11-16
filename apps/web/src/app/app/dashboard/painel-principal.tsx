@@ -12,6 +12,9 @@ import { GraficoComissoes, GraficoVendas } from "./graficos";
 
 const CHAVE_LOCAL = "plurima.dashboard.filtros";
 const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+/** M.4: período no rótulo dos cards de comissão. */
+const periodoCard = (m: DashboardPrincipal["meta"]) =>
+  m.periodo === "personalizado" ? `${m.de.slice(8, 10)}/${m.de.slice(5, 7)} a ${m.ate.slice(8, 10)}/${m.ate.slice(5, 7)}` : ROTULO_PERIODO[m.periodo].toLowerCase();
 const pct = (v: number) => `${v.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
 /** dd/MM (data AAAA-MM-DD ou ISO, fuso de Brasília). */
 const ddmm = (d: string) =>
@@ -171,10 +174,11 @@ export function PainelPrincipal({ representadas, dataExtenso }: { representadas:
           <>
             <CardKpi titulo="Vendas no mês" kpi={d.kpis.vendas_mes_atual} icone="tendencia" tom="tom-azul"
               href={representada !== "todas" ? `/app/representadas/${representada}/pedidos` : "/app/representadas"} />
-            <CardKpi titulo="Comissões a receber" kpi={d.kpis.comissao_a_receber} icone="relogio" tom="tom-violeta" href={`/app/comissoes?status=a_receber${filtroComissao}`} />
-            <CardKpi titulo="Comissões recebidas" kpi={d.kpis.comissao_recebida} icone="concluido" tom="tom-ok" href={`/app/comissoes?status=recebida${filtroComissao}`} />
-            <CardKpi titulo="Comissões em atraso" kpi={d.kpis.comissao_atrasada} icone="alerta" tom={d.kpis.comissao_atrasada.valor > 0 ? "tom-perigo" : "tom-neutro"}
-              href={`/app/comissoes?status=atrasada${filtroComissao}`} inverso />
+            {/* Fase 21 (M): três indicadores distintos, período no rótulo; em análise com cor própria e link para a fila */}
+            <CardKpi titulo={`Comissão recebida · ${periodoCard(d.meta)}`} kpi={d.kpis.comissao_recebida} icone="concluido" tom="tom-ok" href={`/app/comissoes?g=recebido&campo=recebimento${filtroComissao}`} />
+            <CardKpi titulo={`A receber · ${periodoCard(d.meta)}`} kpi={d.kpis.comissao_a_receber} icone="relogio" tom="tom-violeta" href={`/app/comissoes?g=a_receber${filtroComissao}`} />
+            <CardKpiBase titulo={`Em análise · ${periodoCard(d.meta)}`} valor={brl.format(d.kpis.comissao_em_analise.valor)} variacao={null}
+              nota={`${d.comissao_em_analise_qtd} ${d.comissao_em_analise_qtd === 1 ? "comissão" : "comissões"}`} icone="alerta" tom="tom-analise" href={`/app/comissoes?visao=analise${filtroComissao}`} />
             <CardKpi titulo="Oportunidades em aberto" kpi={d.kpis.oportunidades_abertas} icone="funil" tom="tom-ciano" href="/app/oportunidades" numero />
             <CardKpi titulo="Ticket médio" kpi={d.kpis.ticket_medio} icone="carrinho" tom="tom-rosa"
               href={representada !== "todas" ? `/app/representadas/${representada}/pedidos` : "/app/representadas"} />
@@ -199,7 +203,7 @@ export function PainelPrincipal({ representadas, dataExtenso }: { representadas:
         <div className="dash-card">
           <h2 className="titulo-icone"><Icone nome="cifrao" tamanho={20} /> Comissões x custos por {d?.meta.granularidade === "mes" ? "mês" : "dia"}</h2>
           {d ? (
-            d.serie_comissoes.some((s) => s.a_receber + s.recebida + s.atrasada > 0) || d.serie_custos.some((c) => c.valor > 0)
+            d.serie_comissoes.some((s) => s.a_receber + s.recebida + s.em_analise > 0) || d.serie_custos.some((c) => c.valor > 0)
               ? <GraficoComissoes dados={d.serie_comissoes.map((c, i) => ({ ...c, custos: d.serie_custos[i]?.valor ?? 0 }))} />
               : <Vazio texto="Nenhuma comissão prevista neste período." />
           ) : <div className="esqueleto esqueleto-grafico" />}
@@ -286,7 +290,7 @@ function CardKpi({ titulo, kpi, icone, tom, href, inverso = false, numero = fals
 
 const ALERTAS: { chave: keyof DashboardPrincipal["alertas"]; titulo: string; nivel: "vermelho" | "amarelo" | "azul"; icone: NomeIcone; href: (f: string) => string }[] = [
   { chave: "tarefas_vencidas", titulo: "Tarefas vencidas", nivel: "vermelho", icone: "alerta", href: () => "/app/calendario" },
-  { chave: "comissoes_atrasadas", titulo: "Comissões atrasadas", nivel: "vermelho", icone: "cifrao", href: (f) => `/app/comissoes?status=atrasada${f}` },
+  { chave: "comissoes_atrasadas", titulo: "Comissões a receber vencidas", nivel: "vermelho", icone: "cifrao", href: (f) => `/app/comissoes?g=a_receber${f}` },
   { chave: "visitas_atrasadas", titulo: "Visitas atrasadas", nivel: "vermelho", icone: "mapa", href: () => "/app/calendario" },
   { chave: "tarefas_a_vencer", titulo: "Vencem em 7 dias", nivel: "amarelo", icone: "relogio", href: () => "/app/calendario" },
   { chave: "oportunidades_paradas", titulo: "Oportunidades paradas (+30 dias)", nivel: "azul", icone: "funil", href: () => "/app/oportunidades/funis" },

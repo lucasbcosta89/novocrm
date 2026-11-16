@@ -4,7 +4,8 @@ import { Mensagens, type Busca } from "@/components/form";
 import { Icone } from "@/components/icones";
 import { StatusPedido } from "@/components/status";
 import { formatarData, formatarDataHora, formatarDocumento, formatarMoeda, formatarPercentual, formatarDia } from "@/lib/formato";
-import { ROTULO_FORMA_PAGAMENTO, ROTULO_ORIGEM_CALCULO, ROTULO_STATUS_COMISSAO } from "@/lib/rotulos";
+import { ROTULO_FORMA_PAGAMENTO, ROTULO_ORIGEM_CALCULO } from "@/lib/rotulos";
+import { rotuloMotivo, rotuloStatus, statusNoGrupo } from "@/lib/comissoes/status";
 import { carregar } from "@/server/acao";
 import { obterCliente } from "@/server/clientes";
 import { obterPedido } from "@/server/pedidos";
@@ -17,7 +18,7 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
   const p = await carregar((ctx) => obterPedido(ctx, id));
   const cliente = p.cliente ? await carregar((ctx) => obterCliente(ctx, p.cliente!.id)) : null;
   const comissao = p.comissao[0];
-  const editavel = p.status !== "cancelado" && comissao?.status !== "recebida";
+  const editavel = p.status !== "cancelado" && statusNoGrupo(comissao?.status) !== "recebido";
   const descontoAcima = p.itens.some((i) => i.desconto_acima_max);
   const pendentes = p.itens.filter((i) => i.pendencia);
 
@@ -67,15 +68,17 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
             <div>
               <dt>Comissão</dt>
               <dd>
-                <Link href="/app/comissoes">{ROTULO_STATUS_COMISSAO[comissao.status] ?? comissao.status}</Link>
-                {comissao.data_prevista && <> · prevista {formatarData(comissao.data_prevista)}</>}
+                <Link href={statusNoGrupo(comissao.status) === "em_analise" ? "/app/comissoes?visao=analise" : "/app/comissoes"}>{rotuloStatus(comissao.status)}</Link>
+                {comissao.data_prevista_recebimento && <> · previsão {formatarDia(comissao.data_prevista_recebimento)}</>}
+                {comissao.data_recebimento && <> · recebida em {formatarDia(comissao.data_recebimento)}</>}
+                {comissao.motivos_pendencia.length > 0 && <div className="dica">{comissao.motivos_pendencia.map(rotuloMotivo).join(" · ")}</div>}
               </dd>
             </div>
           )}
         </dl>
         {p.observacoes && <p className="anotacao">Obs. do cliente: {p.observacoes}</p>}
         {/* C.2: só a data de faturamento muda aqui (itens, valores e comissão ficam como estão) */}
-        <form action={definirDataFaturamentoAction.bind(null, p.id)} className="form-faturamento">
+        <form action={definirDataFaturamentoAction.bind(null, p.id)} className="form-faturamento" id="faturamento">
           <label className="campo">
             <span>Data de faturamento</span>
             <input type="date" name="data_faturamento" defaultValue={p.data_faturamento ?? ""} />

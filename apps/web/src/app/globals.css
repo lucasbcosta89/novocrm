@@ -1003,3 +1003,35 @@ tr[id^="item-"]:target > td { background: var(--accent-suave); }
 .campo-calculado { color: var(--muted); font-variant-numeric: tabular-nums; }
 .linha-total-comissao > th { font-weight: 500; color: var(--muted); }
 .form-faturamento { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* ---------- Fase 21: Comissões ---------- */
+:root { --analise: var(--atencao); }
+.tom-analise { background: var(--atencao-suave); color: var(--atencao-texto); }
+/* em análise: cor discreta (âmbar), distinta do vermelho das pendências de vínculo de pedido */
+.linha-analise > td { background: var(--atencao-suave); }
+.etiqueta-com-recebido { background: var(--ok-suave); color: var(--ok-texto); }
+.etiqueta-com-a_receber { background: var(--accent-suave); color: var(--accent-fg); }
+.etiqueta-com-em_analise { background: var(--atencao-suave); color: var(--atencao-texto); }
+.etiqueta-com-desconhecido { background: var(--borda-suave); color: var(--muted); }
+.aviso-analise { display: flex; gap: 10px; align-items: flex-start; color: var(--atencao-texto); border-color: var(--atencao); background: var(--atencao-suave); }
+.aviso-analise .acoes-aviso { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 4px; font-weight: 500; }
+.chip-filtro.chip-analise { display: inline-block; cursor: default; background: var(--atencao-suave); color: var(--atencao-texto); border-color: transparent; }
+.filtros-comissoes .check { align-self: end; padding-bottom: 8px; }
+.tabela-comissoes td { vertical-align: top; }
+.tabela-comissoes .motivos { margin: 4px 0 0; padding-left: 16px; font-size: .8rem; color: var(--atencao-texto); }
+.data-editavel { display: inline-flex; align-items: center; gap: 4px; }
+.data-editavel input[type="date"] { max-width: 150px; }
+.historico-pop, .menu-linha { position: relative; }
+.historico-pop > summary, .menu-linha > summary { cursor: pointer; list-style: none; }
+.historico-pop > summary::-webkit-details-marker, .menu-linha > summary::-webkit-details-marker { display: none; }
+.historico-conteudo, .menu-linha-itens {
+  position: absolute; right: 0; z-index: 20; min-width: 260px; max-width: min(420px, 85vw); padding: 10px 12px; border: 1px solid var(--border);
+  border-radius: 8px; background: var(--surface); box-shadow: 0 8px 24px rgba(0, 0, 0, .14); font-size: .85rem;
+}
+.historico-conteudo ul { margin: 0; padding-left: 16px; }
+.menu-linha-itens { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-width: 230px; }
+.barra-selecao {
+  position: sticky; bottom: 12px; z-index: 30; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 12px; padding: 10px 14px;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--surface); box-shadow: 0 8px 24px rgba(0, 0, 0, .14);
+}
+.barra-selecao .btn { margin-left: auto; }

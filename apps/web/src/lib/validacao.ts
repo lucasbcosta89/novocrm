@@ -193,8 +193,6 @@ export const tarefaUpdateSchema = z.object({
   concluida: z.boolean().optional(),
 });
 
-/** pendente_analise (Fase 20): comissão importada com valor vazio/zerado — nunca liquidada automaticamente */
-export const STATUS_COMISSAO = ["a_receber", "recebida", "atrasada", "cancelada", "pendente_analise"] as const;
 
 export const FORMAS_PAGAMENTO = ["dinheiro", "credito", "debito", "bonificacao", "pix", "outros"] as const;
 export const PRAZOS_PAGAMENTO = ["a_vista", "a_prazo"] as const;
@@ -318,9 +316,9 @@ export const precosSchema = z
   .min(1, "Nenhuma alteração")
   .max(2000);
 
-/** Status que o usuário pode definir manualmente (cancelada só via cancelamento do pedido). */
-export const marcarComissaoSchema = z.object({
-  status: z.enum(["a_receber", "recebida", "atrasada"], "Status inválido"),
+/** Fase 21: ações manuais da API de comissões (status vêm de lib/comissoes/status.ts; cancelada só via pedido). */
+export const acaoComissaoSchema = z.object({
+  acao: z.enum(["recebida", "analisar", "reabrir"], "Ação inválida"),
 });
 
 /** Nova oportunidade pela página global (kanban): representada obrigatória, produtos dela e ações do plano. */

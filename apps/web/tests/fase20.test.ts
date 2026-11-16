@@ -34,10 +34,11 @@ describe("fase 20 — comissão (R$) no formulário", () => {
 
 describe("fase 20 — coluna 'Comissão (R$)' na importação", () => {
   it("modelo novo tem a coluna opcional (última); o modelo antigo continua válido", () => {
-    expect(cab.at(-1)).toBe(COLUNA_COMISSAO);
+    expect(cab.at(-2)).toBe(COLUNA_COMISSAO); // Fase 21: "Data de Faturamento" é a última
     expect(config.colunasObrigatorias).not.toContain(COLUNA_COMISSAO);
     expect(problemasCabecalho(cab, cab.slice(0, -1), config.colunasOpcionais)).toEqual([]);
-    expect(problemasCabecalho(cab, cab.slice(0, -2), config.colunasOpcionais).length).toBeGreaterThan(0); // só a última pode faltar
+    expect(problemasCabecalho(cab, cab.slice(0, -2), config.colunasOpcionais)).toEqual([]);
+    expect(problemasCabecalho(cab, cab.slice(0, -3), config.colunasOpcionais).length).toBeGreaterThan(0); // só as opcionais do fim podem faltar
   });
   it("47,50 na planilha prevalece (linha válida)", async () => {
     const r = await uma({ numero_linha: 2, valores: valores("47,50") });
@@ -55,7 +56,7 @@ describe("fase 20 — coluna 'Comissão (R$)' na importação", () => {
     expect(negativa.classificacao).toBe("invalida");
   });
   it("modelo antigo (sem a coluna): sem alerta nem marca (comportamento anterior)", async () => {
-    const r = await uma({ numero_linha: 2, valores: valores("").slice(0, -1) }, cab.slice(0, -1));
+    const r = await uma({ numero_linha: 2, valores: valores("").slice(0, -2) }, cab.slice(0, -2));
     expect([r.classificacao, r.dados.comissao_ausente]).toEqual(["valida", undefined]);
   });
   it("fórmula sem valor em cache e fórmula que retorna zero: alerta por linha, tratadas como ausência", async () => {

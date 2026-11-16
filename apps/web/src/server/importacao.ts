@@ -108,8 +108,8 @@ const ADAPTADORES: Record<EntidadeImportacao, Adaptador> = {
     },
     async gravar(ctx, linhas, existentes) {
       const grupos = agruparPedidos(linhas.map((l) => ({ ...l, erros: [], alertas: [] })), existentes);
-      const lote = grupos.map(({ codigo, data, cliente_id, representada_id, forma_pagamento, prazo_dias, observacoes, itens }) => ({
-        codigo, data, cliente_id, representada_id, forma_pagamento, prazo_dias, observacoes, itens,
+      const lote = grupos.map(({ codigo, data, cliente_id, representada_id, forma_pagamento, prazo_dias, observacoes, data_faturamento, itens }) => ({
+        codigo, data, cliente_id, representada_id, forma_pagamento, prazo_dias, observacoes, data_faturamento, itens,
       }));
       const { data, error } = await ctx.supabase.rpc("importar_pedidos", { p_pedidos: lote });
       if (error) throw new AppError(409, `Nada foi gravado: o lote foi desfeito por inteiro (${error.message}). Corrija e envie de novo.`, "lote_desfeito");

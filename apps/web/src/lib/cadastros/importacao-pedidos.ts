@@ -29,7 +29,12 @@ export const COLUNAS_PEDIDO = {
   "Observações": "observacoes",
   /** Fase 20: opcional (modelos antigos sem a coluna continuam importando) */
   "Comissão (R$)": "comissao_valor",
+  /** Fase 21: opcional — base da previsão de recebimento e da completude da comissão (sem ela, a comissão vai para análise) */
+  "Data de Faturamento": "data_faturamento",
 } as const;
+
+/** Fase 21: data de faturamento do pedido (igual em todas as linhas do pedido). */
+export const COLUNA_FATURAMENTO = "Data de Faturamento";
 
 /** Fase 20: coluna de comissão do item. > 0 prevalece; vazia, zero ou fórmula sem valor = ausência. */
 export const COLUNA_COMISSAO = "Comissão (R$)";
@@ -116,6 +121,11 @@ function validarLinhaPedido(bruto: Record<string, string>, ctx: ContextoValidaca
     if (v("Observações").length > 500) erro("Observações", "Observações: máximo de 500 caracteres");
     else dados.observacoes = v("Observações");
   }
+  if (v(COLUNA_FATURAMENTO)) {
+    const d = parseData(v(COLUNA_FATURAMENTO));
+    if (!d) erro(COLUNA_FATURAMENTO, "Data de Faturamento inválida: use DD/MM/AAAA (ex.: 25/10/2026)");
+    else dados.data_faturamento = d;
+  }
   // Fase 20 (D/E): zero e vazio são a MESMA coisa (ausência); a linha é importada com alerta, a comissão é
   // calculada pelo cadastro e fica pendente de análise. Coluna ausente (modelo antigo) = comportamento anterior.
   if (!ctx.colunasAusentes?.includes(COLUNA_COMISSAO)) {
@@ -153,6 +163,8 @@ export type GrupoPedido = {
   forma_pagamento: string | null;
   prazo_dias: number | null;
   observacoes: string | null;
+  /** Fase 21: data de faturamento (AAAA-MM-DD) ou null */
+  data_faturamento: string | null;
   linhas: number[];
   itens: {
     produto_id: string | null; sku: string; descricao: string | null; quantidade: number; preco_unitario: number;
@@ -212,6 +224,8 @@ export function agruparPedidos(linhas: ResultadoValidacaoLinha[], existentes: Ma
       invalidar("as linhas deste número têm datas ou clientes diferentes");
       continue;
     }
+    const faturamentos = [...new Set(g.map((l) => l.dados.data_faturamento).filter(Boolean))];
+    if (faturamentos.length > 1) { invalidar("as linhas deste número têm datas de faturamento diferentes"); continue; }
 
     // representada = interseção das representadas de cada SKU encontrado
     const candidatos = g.map((l) => (existentes.get(chaveImportacao("sku", l.dados.sku)) as ProdutoExistente[] | undefined) ?? []);
@@ -246,6 +260,7 @@ export function agruparPedidos(linhas: ResultadoValidacaoLinha[], existentes: Ma
       codigo: (base.numero_pedido as string | undefined) ?? null, data: String(base.data), cliente_id: cliente.id, cliente: cliente.nome,
       representada_id: repId, representada: repNome, forma_pagamento: (base.forma_pagamento as string | undefined) ?? null,
       prazo_dias: (base.prazo_dias as number | undefined) ?? null, observacoes: (base.observacoes as string | undefined) ?? null,
+      data_faturamento: (faturamentos[0] as string | undefined) ?? null,
       linhas: g.map((l) => l.numero_linha), itens,
     });
   }
@@ -266,7 +281,7 @@ export const importacaoPedidos: ConfiguracaoImportacao<{ numero_pedido: string }
   entidade: "pedidos",
   colunasEsperadas: [...ROTULOS_PEDIDO],
   colunasObrigatorias: OBRIGATORIAS_PEDIDO,
-  colunasOpcionais: [COLUNA_COMISSAO],
+  colunasOpcionais: [COLUNA_COMISSAO, COLUNA_FATURAMENTO],
   resumoExtra: (linhas) => [{
     rotulo: "Comissão não informada ou zerada",
     valor: linhas.filter((l) => l.classificacao !== "invalida" && l.dados.comissao_ausente === 1).length,
@@ -297,7 +312,8 @@ export const importacaoPedidos: ConfiguracaoImportacao<{ numero_pedido: string }
       "Cada linha é um ITEM. Linhas com o mesmo Número do Pedido formam um pedido; com o número vazio, linhas seguidas do " +
       "mesmo cliente e da mesma data viram um pedido com número automático. O cliente precisa estar cadastrado (CNPJ/CPF); a " +
       "representada é identificada pelo SKU. Produto não encontrado no Catálogo não impede a gravação: vira pendência. " +
-      "Se a coluna de comissão tiver fórmula, salve a planilha no Excel antes de enviar. Células de comissão vazias ou com valor zero serão calculadas pelo cadastro e enviadas para análise na página de Comissões.",
+      "Se a coluna de comissão tiver fórmula, salve a planilha no Excel antes de enviar. Células de comissão vazias ou com valor zero serão calculadas pelo cadastro e enviadas para análise na página de Comissões. " +
+      "Data de Faturamento (opcional) é a base da previsão de recebimento: sem ela, a comissão fica em análise.",
     avisoComAlertas: "Os pedidos foram carregados com algumas falhas. Acesse a página dos pedidos e faça as alterações manualmente",
     botaoAviso: "Ir para os Pedidos",
   },

@@ -11,7 +11,8 @@ import { formatarMoeda, formatarPercentual } from "./formato";
  *  D.2 Catálogo vazio e representada definida → a da representada; `oferecerPropagacao` habilita a OFERTA visual de
  *      copiar a comissão para o catálogo. NADA é gravado no catálogo automaticamente: só por clique explícito.
  *  D.3 Representada vazia e catálogo definido → a do CATÁLOGO (o item não fica zerado) + alerta
- *      'comissao_catalogo_sem_representada' para forçar a padronização do cadastro. Pedido não é bloqueado.
+ *      'comissao_catalogo_sem_representada' (Fase 19). Fase 21 (A.2): esse alerta SAIU do motor — o tipo fica só como
+ *      histórico dos alertas já gravados.
  *  D.4 Nenhum dos dois → 0% + alerta 'comissao_nao_definida'. Pedido emitido normalmente.
  *  D.5 Item sem produto vinculado (pendência de vínculo) → não resolve nem alerta (devolve null).
  *
@@ -60,7 +61,8 @@ export function resolverComissao(
   const rep = representada.comissao_percentual;
   if (definida(rep) && definida(cat)) return { percentual: Number(rep), origem: "representada", tipoAlerta: null, oferecerPropagacao: false, divergencia: Number(rep) !== Number(cat) };
   if (definida(rep)) return { percentual: Number(rep), origem: "representada", tipoAlerta: null, oferecerPropagacao: true, divergencia: false };
-  if (definida(cat)) return { percentual: Number(cat), origem: "catalogo", tipoAlerta: "comissao_catalogo_sem_representada", oferecerPropagacao: false, divergencia: false };
+  // Fase 21 (A.2): representada vazia + catálogo definido usa o catálogo SEM alerta
+  if (definida(cat)) return { percentual: Number(cat), origem: "catalogo", tipoAlerta: null, oferecerPropagacao: false, divergencia: false };
   return { percentual: 0, origem: "zero", tipoAlerta: "comissao_nao_definida", oferecerPropagacao: false, divergencia: false };
 }
 

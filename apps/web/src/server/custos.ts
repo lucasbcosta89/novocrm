@@ -1,6 +1,7 @@
 import "server-only";
 import { despesaSchema, totalDistinto, type DespesaLinha } from "@/lib/custos";
 import { idSchema } from "@/lib/validacao";
+import { GROUP_RECEBIDO } from "@/lib/comissoes/status";
 import type { Contexto } from "./contexto";
 import { AppError, erroBanco } from "./erros";
 
@@ -44,15 +45,15 @@ export async function listarDespesas({ supabase }: Contexto, f: FiltroCustos): P
 
 /**
  * Resumo com os mesmos filtros: custos (cada despesa uma vez), resultado bruto (comissões
- * recebidas com data prevista no período — mesmo critério do dashboard) e líquido = bruto − custos.
+ * recebidas — GROUP_RECEBIDO — com data de recebimento no período; mesmo critério do dashboard) e líquido = bruto − custos.
  */
 export async function resumoCustos(ctx: Contexto, f: FiltroCustos, despesas: DespesaLinha[]) {
   let q = ctx.supabase
     .from("comissoes")
     .select("valor, pedido:pedidos!inner(cliente_id)")
-    .eq("status", "recebida")
-    .gte("data_prevista", `${f.de}T00:00:00-03:00`)
-    .lte("data_prevista", `${f.ate}T23:59:59.999-03:00`);
+    .in("status", [...GROUP_RECEBIDO])
+    .gte("data_recebimento", f.de)
+    .lte("data_recebimento", f.ate);
   if (f.representadas.length) q = q.in("representada_id", f.representadas);
   if (f.clientes.length) q = q.in("pedido.cliente_id", f.clientes);
   const { data, error } = await q.limit(5000).returns<{ valor: number }[]>();
