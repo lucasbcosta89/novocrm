@@ -1,4 +1,4 @@
-import type { ConfiguracaoImportacao, ProblemaImportacao, ResultadoValidacaoLinha } from "./tipos";
+import type { ConfiguracaoImportacao, ProblemaImportacao, ResultadoValidacaoLinha, ContextoValidacao } from "./tipos";
 import { parseData, parseNumero, parsePercentual } from "@/lib/import/valores";
 import { chaveImportacao } from "@/lib/importacao/motor";
 import { documentoClienteSchema, subtotalItem } from "@/lib/validacao";
@@ -27,7 +27,13 @@ export const COLUNAS_PEDIDO = {
   "Forma de Pagamento": "forma_pagamento",
   "Prazo (dias)": "prazo_dias",
   "Observações": "observacoes",
+  /** Fase 20: opcional (modelos antigos sem a coluna continuam importando) */
+  "Comissão (R$)": "comissao_valor",
 } as const;
+
+/** Fase 20: coluna de comissão do item. > 0 prevalece; vazia, zero ou fórmula sem valor = ausência. */
+export const COLUNA_COMISSAO = "Comissão (R$)";
+export const MSG_COMISSAO_AUSENTE = "Comissão (R$) não informada ou zerada: será calculada pelo cadastro (percentual) e enviada para análise na página de Comissões.";
 export const ROTULOS_PEDIDO = Object.keys(COLUNAS_PEDIDO) as (keyof typeof COLUNAS_PEDIDO)[];
 export const OBRIGATORIAS_PEDIDO = ["Data do Pedido", "CNPJ/CPF do Cliente", "SKU do Produto", "Quantidade", "Preço Unitário"];
 
@@ -43,8 +49,9 @@ export type ClienteExistente = { id: string; nome: string };
 export type ProdutoExistente = { produto_id: string; representada_id: string; representada: string; nome: string; preco: number | null };
 
 
-function validarLinhaPedido(bruto: Record<string, string>, ctx: { valoresExistentesNaBase: Map<string, unknown> }): ResultadoValidacaoLinha {
+function validarLinhaPedido(bruto: Record<string, string>, ctx: ContextoValidacao): ResultadoValidacaoLinha {
   const erros: ProblemaImportacao[] = [];
+  const alertas: ProblemaImportacao[] = [];
   const dados: Record<string, string | number | null> = {};
   const erro = (coluna: string, mensagem: string) => erros.push({ campo: coluna, mensagem, valor_recebido: bruto[coluna] || null });
   const v = (c: keyof typeof COLUNAS_PEDIDO) => (bruto[c] ?? "").trim();
@@ -109,7 +116,30 @@ function validarLinhaPedido(bruto: Record<string, string>, ctx: { valoresExisten
     if (v("Observações").length > 500) erro("Observações", "Observações: máximo de 500 caracteres");
     else dados.observacoes = v("Observações");
   }
-  return { numero_linha: 0, classificacao: "valida", dados, erros, alertas: [] };
+  // Fase 20 (D/E): zero e vazio são a MESMA coisa (ausência); a linha é importada com alerta, a comissão é
+  // calculada pelo cadastro e fica pendente de análise. Coluna ausente (modelo antigo) = comportamento anterior.
+  if (!ctx.colunasAusentes?.includes(COLUNA_COMISSAO)) {
+    const linha = ctx.numeroLinha ?? "?";
+    const formula = ctx.formulas?.[COLUNA_COMISSAO];
+    const c = v(COLUNA_COMISSAO);
+    const n = c ? parseNumero(c) : null;
+    const ausente = (mensagem: string) => {
+      dados.comissao_ausente = 1;
+      alertas.push({ campo: COLUNA_COMISSAO, mensagem, valor_recebido: c || null });
+    };
+    if (formula === "sem_valor") {
+      ausente(`Linha ${linha}, campo Comissão (R$): a célula contém fórmula sem valor calculado. Abra e salve o arquivo no Excel e reenvie, ou preencha o valor manualmente. A comissão será calculada pelo cadastro e enviada para análise.`);
+    } else if (formula === "zero") {
+      ausente(`Linha ${linha}, campo Comissão (R$): a fórmula retornou zero; o zero não é aceito. A comissão foi calculada pelo cadastro e enviada para análise na página de Comissões.`);
+    } else if (c && (n == null || n < 0 || n > 99_999_999)) {
+      erro(COLUNA_COMISSAO, "Comissão (R$) deve ser um número maior que 0 (vazio ou zero = calculada pelo cadastro)");
+    } else if (n != null && n > 0) {
+      dados.comissao_valor = Math.round(n * 100) / 100;
+    } else {
+      ausente(MSG_COMISSAO_AUSENTE);
+    }
+  }
+  return { numero_linha: 0, classificacao: "valida", dados, erros, alertas };
 }
 
 /** Pedido montado a partir das linhas (o que vai para a gravação). */
@@ -127,6 +157,8 @@ export type GrupoPedido = {
   itens: {
     produto_id: string | null; sku: string; descricao: string | null; quantidade: number; preco_unitario: number;
     desconto_percentual: number; acrescimo_percentual: number; pendencia: "produto_nao_cadastrado" | null;
+    /** Fase 20: valor da planilha (> 0, prevalece) ou null; comissao_ausente = célula vazia/zerada (vai para análise) */
+    comissao_valor: number | null; comissao_ausente: boolean;
   }[];
 };
 
@@ -205,6 +237,7 @@ export function agruparPedidos(linhas: ResultadoValidacaoLinha[], existentes: Ma
         produto_id: produto?.produto_id ?? null, sku: String(l.dados.sku), descricao: (l.dados.descricao as string | undefined) ?? produto?.nome ?? null,
         quantidade: Number(l.dados.quantidade), preco_unitario: preco, desconto_percentual: Number(l.dados.desconto_percentual ?? 0),
         acrescimo_percentual: Number(l.dados.acrescimo_percentual ?? 0), pendencia,
+        comissao_valor: l.dados.comissao_valor == null ? null : Number(l.dados.comissao_valor), comissao_ausente: l.dados.comissao_ausente === 1,
       };
     });
     prontos.push({
@@ -217,6 +250,13 @@ export function agruparPedidos(linhas: ResultadoValidacaoLinha[], existentes: Ma
   return prontos;
 }
 
+/** Prévia: de onde vem a comissão do pedido (nunca somada ao total). */
+const comissaoGrupo = (g: GrupoPedido) => {
+  const ausentes = g.itens.filter((i) => i.comissao_ausente).length;
+  if (ausentes) return `${ausentes} item(ns) pelo cadastro — análise`;
+  const planilha = g.itens.filter((i) => i.comissao_valor != null);
+  return planilha.length ? `${formatarMoeda(planilha.reduce((t, i) => t + (i.comissao_valor ?? 0), 0))} da planilha${planilha.length < g.itens.length ? " + cadastro" : ""}` : "Pelo cadastro";
+};
 const totalGrupo = (g: GrupoPedido) => g.itens.reduce((t, i) => t + subtotalItem(i.quantidade, i.preco_unitario, i.desconto_percentual, i.acrescimo_percentual), 0);
 const dataBR = (iso: string) => iso.split("-").reverse().join("/");
 
@@ -224,6 +264,11 @@ export const importacaoPedidos: ConfiguracaoImportacao<{ numero_pedido: string }
   entidade: "pedidos",
   colunasEsperadas: [...ROTULOS_PEDIDO],
   colunasObrigatorias: OBRIGATORIAS_PEDIDO,
+  colunasOpcionais: [COLUNA_COMISSAO],
+  resumoExtra: (linhas) => [{
+    rotulo: "Comissão não informada ou zerada",
+    valor: linhas.filter((l) => l.classificacao !== "invalida" && l.dados.comissao_ausente === 1).length,
+  }],
   chaveDedupe: "numero_pedido",
   maxLinhas: 5000,
   validarLinha: validarLinhaPedido,
@@ -232,9 +277,9 @@ export const importacaoPedidos: ConfiguracaoImportacao<{ numero_pedido: string }
     // recalcula sobre cópias para não duplicar alertas nas linhas da conferência
     const copia = linhas.filter((l) => l.classificacao !== "invalida").map((l) => ({ ...l, erros: [], alertas: [] }));
     return {
-      colunas: ["Pedido", "Data", "Cliente", "Representada", "Itens", "Total", "Pendências"],
+      colunas: ["Pedido", "Data", "Cliente", "Representada", "Itens", "Total", "Comissão", "Pendências"],
       linhas: agruparPedidos(copia, existentes).map((g) => [
-        g.codigo ?? "Automático (P…)", dataBR(g.data), g.cliente, g.representada, g.itens.length, formatarMoeda(totalGrupo(g)),
+        g.codigo ?? "Automático (P…)", dataBR(g.data), g.cliente, g.representada, g.itens.length, formatarMoeda(totalGrupo(g)), comissaoGrupo(g),
         g.itens.some((i) => i.pendencia === "produto_nao_cadastrado") ? "Produto não cadastrado" : "—",
       ]),
     };
@@ -249,7 +294,8 @@ export const importacaoPedidos: ConfiguracaoImportacao<{ numero_pedido: string }
     notaModelo:
       "Cada linha é um ITEM. Linhas com o mesmo Número do Pedido formam um pedido; com o número vazio, linhas seguidas do " +
       "mesmo cliente e da mesma data viram um pedido com número automático. O cliente precisa estar cadastrado (CNPJ/CPF); a " +
-      "representada é identificada pelo SKU. Produto não encontrado no Catálogo não impede a gravação: vira pendência.",
+      "representada é identificada pelo SKU. Produto não encontrado no Catálogo não impede a gravação: vira pendência. " +
+      "Se a coluna de comissão tiver fórmula, salve a planilha no Excel antes de enviar. Células de comissão vazias ou com valor zero serão calculadas pelo cadastro e enviadas para análise na página de Comissões.",
     avisoComAlertas: "Os pedidos foram carregados com algumas falhas. Acesse a página dos pedidos e faça as alterações manualmente",
     botaoAviso: "Ir para os Pedidos",
   },

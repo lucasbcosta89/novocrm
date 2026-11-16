@@ -168,6 +168,9 @@ export function ImportacaoPlanilha({ entidade, voltar }: { entidade: EntidadeImp
               <div className="kpi"><div><dt>Válidas</dt><dd className="txt-ok">{r.validas}</dd></div></div>
               <div className="kpi"><div><dt>Com alerta</dt><dd>{r.com_alerta}</dd></div></div>
               <div className="kpi"><div><dt>Inválidas</dt><dd className="atrasada">{r.invalidas}</dd></div></div>
+              {config.resumoExtra?.(fase.linhas).map((x) => (
+                <div className="kpi" key={x.rotulo}><div><dt>{x.rotulo}</dt><dd>{x.valor}</dd></div></div>
+              ))}
             </dl>
             {fase.erro && <p className="aviso aviso-erro" role="alert"><span className="circulo-icone"><Icone nome="alerta" tamanho={16} /></span>{fase.erro}</p>}
             {config.previa && (() => {

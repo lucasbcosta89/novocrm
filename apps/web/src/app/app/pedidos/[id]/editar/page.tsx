@@ -49,6 +49,7 @@ export default async function EditarPedidoPage({ params, searchParams }: { param
         preco_catalogo: precoTabela,
         comissao_catalogo: pr.comissao == null ? null : Number(pr.comissao),
         comissao_item: item ? Number(item.comissao_percentual) : null,
+        comissao_planilha: item && item.comissao_origem === "planilha" ? { valor: Number(item.comissao_valor), subtotal: Number(item.subtotal) } : null,
       };
     })
     .sort((a, b) => Number(b.quantidade > 0) - Number(a.quantidade > 0) || a.nome.localeCompare(b.nome));

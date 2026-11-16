@@ -17,12 +17,13 @@ const COLUNAS: Coluna[] = [
   { titulo: "SKU do Produto", largura: 16, obrigatoria: true, formato: "Texto (até 60)", exemplo: "SKU-001", obs: "SKU do Catálogo. Também identifica a representada do pedido. SKU não encontrado vira pendência (o item é gravado)." },
   { titulo: "Descrição do Produto", largura: 30, obrigatoria: false, formato: "Texto (até 200)", exemplo: "Camiseta básica", obs: "Usada quando o SKU ainda não está no Catálogo (e como nome sugerido ao cadastrá-lo)." },
   { titulo: "Quantidade", largura: 12, obrigatoria: true, formato: "Número inteiro ≥ 1", exemplo: "10", obs: "", numFmt: "0" },
-  { titulo: "Preço Unitário", largura: 15, obrigatoria: true, formato: "R$ #.##0,00", exemplo: "25,90", obs: "Vale SEMPRE o preço da planilha, mesmo diferente do Catálogo (diferença acima de 10% fica só sinalizada).", numFmt: '"R$" #,##0.00' },
+  { titulo: "Preço Unitário", largura: 15, obrigatoria: true, formato: "R$ #.##0,00", exemplo: "25,90", obs: "Vale SEMPRE o preço da planilha, mesmo diferente do Catálogo (pedido importado não passa pela verificação de preço e desconto).", numFmt: '"R$" #,##0.00' },
   { titulo: "Desconto (%)", largura: 13, obrigatoria: false, formato: "0 a 100, 2 casas", exemplo: "5,00", obs: "Desconto do item. Vazio = 0.", numFmt: "0.00" },
   { titulo: "Acréscimo (%)", largura: 13, obrigatoria: false, formato: "0 a 100, 2 casas", exemplo: "10,00", obs: "Venda acima do preço de tabela: % somado ao preço do item. Vazio = 0. Subtotal = qtd × preço × (1 + acréscimo%) × (1 − desconto%).", numFmt: "0.00" },
   { titulo: "Forma de Pagamento", largura: 20, obrigatoria: false, formato: "Lista", exemplo: "Pix", obs: "Dinheiro, Crédito, Débito, Bonificação, Pix ou Outros. Vale a da primeira linha de cada pedido." },
   { titulo: "Prazo (dias)", largura: 12, obrigatoria: false, formato: "Inteiro de 1 a 365", exemplo: "30", obs: "Vazio = à vista. Vale o da primeira linha de cada pedido.", numFmt: "0" },
   { titulo: "Observações", largura: 36, obrigatoria: false, formato: "Texto (até 500)", exemplo: "Entregar pela manhã", obs: "Observações do pedido (vale a da primeira linha de cada pedido)." },
+  { titulo: "Comissão (R$)", largura: 15, obrigatoria: false, formato: "R$ #.##0,00 (opcional)", exemplo: "12,95", obs: "Comissão do item em reais. Maior que zero: vale este valor. Vazio ou zero: calculada pelo percentual do cadastro e enviada para análise na página de Comissões. Nunca somada ao valor do pedido. Com fórmula, salve no Excel antes de enviar.", numFmt: '"R$" #,##0.00' },
 ];
 const FORMAS = ["Dinheiro", "Crédito", "Débito", "Bonificação", "Pix", "Outros"];
 
@@ -50,11 +51,11 @@ COLUNAS.forEach((c, i) => {
 // 5 exemplos: 2 linhas com o mesmo número (1 pedido); 2 sem número, mesmo cliente e data (1 pedido automático);
 // 1 sem número com outra data (outro pedido automático). Número vazio = célula realmente vazia.
 const exemplos: (string | number | Date | null)[][] = [
-  ["1001", data(20, 10, 2026), "11.222.333/0001-81", "SKU-001", "Camiseta básica", 10, 25.9, 0, 0, "Pix", 30, "Pedido do ERP"],
-  ["1001", data(20, 10, 2026), "11.222.333/0001-81", "SKU-002", "Calça jeans", 5, 89.9, 5, 0, null, null, null],
-  [null, data(21, 10, 2026), "45.723.174/0001-10", "SKU-001", "Camiseta básica", 3, 25.9, 0, 10, "Crédito", null, null],
-  [null, data(21, 10, 2026), "45.723.174/0001-10", "SKU-003", "Jaqueta", 2, 149.9, 10, 0, null, null, null],
-  [null, data(22, 10, 2026), "45.723.174/0001-10", "SKU-002", "Calça jeans", 1, 89.9, 0, 0, "Pix", null, null],
+  ["1001", data(20, 10, 2026), "11.222.333/0001-81", "SKU-001", "Camiseta básica", 10, 25.9, 0, 0, "Pix", 30, "Pedido do ERP", 12.95],
+  ["1001", data(20, 10, 2026), "11.222.333/0001-81", "SKU-002", "Calça jeans", 5, 89.9, 5, 0, null, null, null, 21.35],
+  [null, data(21, 10, 2026), "45.723.174/0001-10", "SKU-001", "Camiseta básica", 3, 25.9, 0, 10, "Crédito", null, null, 4.27],
+  [null, data(21, 10, 2026), "45.723.174/0001-10", "SKU-003", "Jaqueta", 2, 149.9, 10, 0, null, null, null, 13.49],
+  [null, data(22, 10, 2026), "45.723.174/0001-10", "SKU-002", "Calça jeans", 1, 89.9, 0, 0, "Pix", null, null, 4.5],
 ];
 exemplos.forEach((valores) => {
   const linha = ws.addRow(valores.map((v) => (v === null ? undefined : v)));
@@ -93,7 +94,8 @@ const passos = [
   "O cliente precisa estar cadastrado (busca pelo CNPJ/CPF); cliente não encontrado impede aquela linha e o pedido dela.",
   "Produto (SKU) não encontrado no Catálogo NÃO impede a gravação: o item entra com pendência e o pedido fica marcado em vermelho.",
   "Pendências são resolvidas depois, na página do pedido (Cadastrar produto) ou no Catálogo da representada.",
-  "O preço gravado é sempre o da planilha; diferença acima de 10% em relação ao Catálogo só fica sinalizada.",
+  "O preço gravado é sempre o da planilha (pedido importado não passa pela verificação de preço e desconto).",
+  "Comissão (R$) é opcional: maior que zero vale o valor da planilha; vazia ou zero é calculada pelo percentual do cadastro e enviada para análise na página de Comissões. Se a coluna tiver fórmula, salve a planilha no Excel antes de enviar.",
   "Pedidos sem pendência entram confirmados (comissão lançada); com pendência entram como rascunho até resolver.",
 ];
 como.addRow(["", "Como funciona a importação de pedidos"]).font = { bold: true, size: 13 };

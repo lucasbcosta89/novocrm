@@ -135,6 +135,14 @@ input[type="checkbox"], input[type="radio"] { accent-color: var(--accent); }
   pointer-events: none; opacity: 0; visibility: hidden; transition: opacity 120ms ease, visibility 120ms; z-index: 20;
 }
 .com-dica:hover::after, .com-dica:focus-visible::after { opacity: 1; visibility: visible; }
+/* texto longo (quebra linha) e abre também por foco de toque (tap foca o elemento com tabindex) */
+.com-dica.dica-longa::after { white-space: normal; width: min(320px, 80vw); text-align: left; line-height: 1.4; }
+.com-dica.dica-longa:focus::after { opacity: 1; visibility: visible; }
+.com-dica.dica-longa { display: inline-flex; align-items: center; gap: 4px; cursor: help; }
+.com-dica.dica-longa:focus-visible { outline: none; box-shadow: var(--foco); border-radius: 4px; }
+/* no cabeçalho de tabela (área com rolagem) abre para baixo, alinhado à direita, para não ser cortado */
+th .com-dica.dica-longa::after { bottom: auto; top: calc(100% + 6px); left: auto; right: 0; transform: none; }
+.tabela-wrap:has(th .dica-longa:is(:hover, :focus)) { padding-bottom: 96px; }
 
 /* ===== Card de KPI ===== */
 .kpis { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; margin: 0; }
@@ -992,4 +1000,6 @@ tr[id^="item-"]:target > td { background: var(--accent-suave); }
 .selo-alerta.aviso-amarelo { background: var(--atencao-suave); color: var(--atencao-texto); }
 .selo-alerta.aviso-laranja { background: var(--laranja-suave); color: var(--laranja-texto); }
 .selo-alerta.aviso-vermelho { background: var(--danger-suave); color: var(--danger-texto); }
+.campo-calculado { color: var(--muted); font-variant-numeric: tabular-nums; }
+.linha-total-comissao > th { font-weight: 500; color: var(--muted); }
 .form-faturamento { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }

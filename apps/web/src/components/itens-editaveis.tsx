@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { atualizarPrecoCatalogoAction, propagarComissaoAction } from "@/app/app/pedidos/alertas-actions";
 import { Icone } from "@/components/icones";
-import { avisosDoItem, resolverComissao, type AvisoItem } from "@/lib/comissao";
+import { avisosDoItem, comissaoItem, DICA_COMISSAO, resolverComissao, type AvisoItem } from "@/lib/comissao";
 import { formatarMoeda, formatarPercentual } from "@/lib/formato";
 import { subtotalItem } from "@/lib/validacao";
 
@@ -27,6 +27,8 @@ export type LinhaEdicao = {
   comissao_catalogo?: number | null;
   /** Fase 19 (avisos): % já gravado no item (edição) */
   comissao_item?: number | null;
+  /** Fase 20: valor informado na planilha (importação) e o subtotal em que valia — mantido enquanto o subtotal não mudar */
+  comissao_planilha?: { valor: number; subtotal: number } | null;
   /** dica abaixo do preço (ex.: "preço do cliente") */
   dica_preco?: string;
 };
@@ -86,6 +88,11 @@ export function ItensEditaveis({ linhas, documento = "pedido", comAcrescimo = fa
   const visivel = (l: LinhaEdicao) => !termo || num(valores[l.produto_id]!.quantidade) > 0 || normalizar(`${l.sku} ${l.nome}`).includes(termo);
   const comLimite = linhas.some((l) => l.max != null);
   const colunas = 7 + (comAcrescimo ? 1 : 0) + (avisos ? 1 : 0);
+  const rotuloComissao = (
+    <span className="com-dica dica-longa" data-dica={DICA_COMISSAO} tabIndex={0} aria-label={`Comissão (R$). ${DICA_COMISSAO}`}>
+      Comissão (R$) <Icone nome="info" tamanho={14} />
+    </span>
+  );
 
   const precoCat = (l: LinhaEdicao) => catalogo[l.produto_id]?.preco ?? l.preco_catalogo ?? null;
   const comissaoCat = (l: LinhaEdicao) => catalogo[l.produto_id]?.comissao ?? l.comissao_catalogo ?? null;
@@ -172,8 +179,8 @@ export function ItensEditaveis({ linhas, documento = "pedido", comAcrescimo = fa
           <thead>
             <tr>
               <th>SKU</th><th>Produto</th><th className="num">Qtd.</th><th className="num">Preço un. (R$)</th>
-              <th className="num">Desconto (%)</th>{comAcrescimo && <th className="num">Acréscimo (%)</th>}<th className="num">Desc. máx.</th>
-              {avisos && <th className="num">Comissão</th>}<th className="num">Subtotal</th>
+              <th className="num">Desconto (%)</th>{comAcrescimo && <th className="num">Acréscimo (%)</th>}
+              {avisos && <th className="num">{rotuloComissao}</th>}<th className="num">Desc. máx.</th><th className="num">Subtotal</th>
             </tr>
           </thead>
           <tbody>
@@ -183,7 +190,13 @@ export function ItensEditaveis({ linhas, documento = "pedido", comAcrescimo = fa
               const acima = ativo && num(v.desconto) > l.desconto_max;
               const excede = l.max != null && num(v.quantidade) > l.max;
               const lista = ativo ? avisosDe(l) : [];
-              const com = avisos ? (l.comissao_item ?? resolverComissao({ comissao: comissaoCat(l) }, { comissao_percentual: avisos.comissaoRepresentada })?.percentual ?? 0) : 0;
+              const pct = avisos ? (l.comissao_item ?? resolverComissao({ comissao: comissaoCat(l) }, { comissao_percentual: avisos.comissaoRepresentada })?.percentual ?? 0) : 0;
+              // valor avaliado com debounce de 300 ms (sem chamada ao servidor por tecla)
+              const va = avaliados[l.produto_id] ?? v;
+              const subAvaliado = num(va.quantidade) > 0 ? sub(va) : 0;
+              const valorComissao = l.comissao_planilha && Math.abs(l.comissao_planilha.subtotal - subAvaliado) < 0.005
+                ? l.comissao_planilha.valor
+                : comissaoItem(subAvaliado, Number(pct));
               return [
                 <tr key={l.produto_id} id={`item-${l.produto_id}`} className={ativo ? "alterada" : undefined} hidden={!visivel(l)}>
                   <td><code>{l.sku}</code></td>
@@ -215,8 +228,13 @@ export function ItensEditaveis({ linhas, documento = "pedido", comAcrescimo = fa
                         aria-label={`Acréscimo em % de ${l.nome}`} onChange={(e) => mudar(l.produto_id, "acrescimo", e.target.value)} />
                     </td>
                   )}
+                  {avisos && (
+                    <td className="num campo-calculado" aria-label={`Comissão de ${l.nome}`}>
+                      {ativo ? formatarMoeda(valorComissao) : "—"}
+                      {ativo && <div className="dica">{formatarPercentual(Number(pct))}</div>}
+                    </td>
+                  )}
                   <td className="num">{formatarPercentual(l.desconto_max)}</td>
-                  {avisos && <td className="num">{formatarPercentual(Number(com))}</td>}
                   <td className="num">{ativo ? formatarMoeda(sub(v)) : "—"}</td>
                 </tr>,
                 lista.length > 0 && (
@@ -238,7 +256,7 @@ export function ItensEditaveis({ linhas, documento = "pedido", comAcrescimo = fa
       <p className="dica">
         Quantidade 0 retira o produto {documento === "pedido" ? "do pedido" : `da ${documento}`}. Subtotal = qtd × preço × {comAcrescimo && "(1 + acréscimo%) × "}(1 − desconto%).
         {comLimite && " A quantidade não pode passar da vendida no pedido de origem (descontado o que já foi devolvido)."}
-        {avisos && " Os avisos não impedem salvar: o pedido é emitido e as divergências vão para o quadro da página Pedidos."}
+        {avisos && " Comissão (R$) = subtotal × percentual (calculada; não entra no total do pedido). Os avisos não impedem salvar: o pedido é emitido e as divergências vão para o quadro da página Pedidos."}
       </p>
     </>
   );

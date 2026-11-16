@@ -11,13 +11,22 @@ import type {
 export const MAX_LINHAS = 5000;
 
 /** Linha crua do arquivo: número real na planilha (contando o cabeçalho) e células por posição. */
-export type LinhaBruta = { numero_linha: number; valores: string[] };
+export type LinhaBruta = {
+  numero_linha: number;
+  valores: string[];
+  /** células com fórmula (por posição): sem valor em cache ou resultado zero. Nunca o texto da fórmula. */
+  formulas?: { coluna: number; tipo: "sem_valor" | "zero" }[];
+};
 
 /**
  * O cabeçalho é contrato: nomes EXATOS, na ordem do modelo. Coluna ausente, renomeada, fora de ordem ou a
  * mais vira um problema (sem adivinhar por similaridade).
  */
-export function problemasCabecalho(esperadas: readonly string[], recebido: readonly string[]): ProblemaImportacao[] {
+export function problemasCabecalho(esperadas: readonly string[], recebido: readonly string[], opcionais: readonly string[] = []): ProblemaImportacao[] {
+  // colunas opcionais do FIM do modelo podem faltar (modelo antigo): compara só até onde o arquivo vai
+  const minimo = esperadas.length - opcionais.length;
+  const semOpcionais = recebido.length >= minimo && recebido.length < esperadas.length && esperadas.slice(recebido.length).every((c) => opcionais.includes(c));
+  if (semOpcionais) esperadas = esperadas.slice(0, recebido.length);
   const problemas: ProblemaImportacao[] = [];
   const total = Math.max(esperadas.length, recebido.length);
   for (let i = 0; i < total; i++) {
@@ -53,8 +62,9 @@ export async function validarPlanilha<T>(
   valoresExistentesNaBase: Map<string, unknown>,
   aoProgresso?: (feitas: number, total: number) => void,
 ): Promise<ResultadoValidacaoLinha[]> {
-  const doCabecalho = problemasCabecalho(config.colunasEsperadas, cabecalho);
-  const contexto: ContextoValidacao = { linhasAnteriores: [], valoresExistentesNaBase };
+  const doCabecalho = problemasCabecalho(config.colunasEsperadas, cabecalho, config.colunasOpcionais);
+  const colunasAusentes = (config.colunasOpcionais ?? []).filter((c) => !cabecalho.map((h) => h.trim()).includes(c));
+  const contexto: ContextoValidacao = { linhasAnteriores: [], valoresExistentesNaBase, colunasAusentes };
   const unicas = [String(config.chaveDedupe), ...(config.chavesUnicas ?? [])];
   const saida: ResultadoValidacaoLinha[] = [];
 
@@ -69,6 +79,8 @@ export async function validarPlanilha<T>(
       const faltando: ProblemaImportacao[] = config.colunasObrigatorias
         .filter((c) => !bruto[c])
         .map((c) => ({ campo: c, mensagem: config.mensagens.obrigatorio?.replace("{campo}", c) ?? `Campo obrigatório "${c}" vazio`, valor_recebido: null }));
+      contexto.numeroLinha = l.numero_linha;
+      contexto.formulas = Object.fromEntries((l.formulas ?? []).flatMap((f) => (config.colunasEsperadas[f.coluna] ? [[config.colunasEsperadas[f.coluna]!, f.tipo]] : [])));
       const r = config.validarLinha(bruto, contexto);
       const erros = [...faltando, ...r.erros.filter((e) => !faltando.some((f) => f.campo === e.campo))];
       saida.push({ ...r, numero_linha: l.numero_linha, erros, classificacao: classificar(erros, r.alertas) });

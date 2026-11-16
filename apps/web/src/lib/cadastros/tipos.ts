@@ -76,12 +76,20 @@ export interface RelatorioImportacao {
 export interface ContextoValidacao {
   linhasAnteriores: string[];        // para detectar duplicidade dentro do arquivo
   valoresExistentesNaBase: Map<string, unknown>; // para deduplicação contra a base
+  /** número da linha em validação (para mensagens "Linha N, campo …") */
+  numeroLinha?: number;
+  /** células com FÓRMULA nesta linha, por coluna: sem valor em cache, ou cujo resultado é zero (o texto da fórmula nunca é lido) */
+  formulas?: Record<string, "sem_valor" | "zero">;
+  /** colunas opcionais do fim do modelo que o arquivo não trouxe (modelo antigo) */
+  colunasAusentes?: string[];
 }
 
 export interface ConfiguracaoImportacao<T> {
   entidade: string;
   colunasEsperadas: string[];        // cabeçalho é contrato
   colunasObrigatorias: string[];
+  /** colunas do FIM do modelo que podem faltar no arquivo (modelos antigos continuam válidos) */
+  colunasOpcionais?: string[];
   chaveDedupe: keyof T;
   maxLinhas: number;
   validarLinha: (bruto: Record<string, string>, contexto: ContextoValidacao) => ResultadoValidacaoLinha;
@@ -105,4 +113,6 @@ export interface ConfiguracaoImportacao<T> {
   previa?: (linhas: ResultadoValidacaoLinha[], valoresExistentesNaBase: Map<string, unknown>) => { colunas: string[]; linhas: (string | number)[][] };
   /** Modelo .xlsx pronto (formatado) em public/; sem ele, o modelo é gerado a partir de colunasEsperadas. */
   modeloUrl?: string;
+  /** contagens extras da conferência, mostradas ANTES de confirmar (ex.: linhas com comissão não informada) */
+  resumoExtra?: (linhas: ResultadoValidacaoLinha[]) => { rotulo: string; valor: number }[];
 }

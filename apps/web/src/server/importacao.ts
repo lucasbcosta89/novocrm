@@ -161,7 +161,11 @@ const envioSchema = z.object({
   iniciado_em: z.iso.datetime().optional(),
   cabecalho: z.array(z.string().max(200)).max(200),
   linhas: z
-    .array(z.object({ numero_linha: z.number().int().min(2), valores: z.array(z.string().max(2000)).max(200) }))
+    .array(z.object({
+      numero_linha: z.number().int().min(2),
+      valores: z.array(z.string().max(2000)).max(200),
+      formulas: z.array(z.object({ coluna: z.number().int().min(0).max(199), tipo: z.enum(["sem_valor", "zero"]) })).max(200).optional(),
+    }))
     .min(1, "A planilha não tem linhas")
     .max(MAX_LINHAS, `Limite de ${MAX_LINHAS.toLocaleString("pt-BR")} linhas por importação`),
 });

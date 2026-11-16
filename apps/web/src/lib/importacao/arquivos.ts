@@ -47,10 +47,25 @@ export async function lerPlanilha(arquivo: File, maxLinhas = MAX_LINHAS): Promis
   const matriz = XLSX.utils.sheet_to_json<unknown[]>(aba, { header: 1, raw: true, defval: "", blankrows: true });
   const cabecalho = (matriz[0] ?? []).map(textoCelula);
   while (cabecalho.length && !cabecalho[cabecalho.length - 1]) cabecalho.pop(); // colunas vazias à direita
+  // Fórmulas: vale SEMPRE o valor em cache gravado pelo Excel (raw), nunca a fórmula; ela não é avaliada nem lida.
+  // Só a PRESENÇA de fórmula é verificada, para avisar quando não há valor em cache (arquivo gerado por script e
+  // nunca salvo no Excel) ou quando o resultado é zero.
+  const formulas = new Map<number, { coluna: number; tipo: "sem_valor" | "zero" }[]>();
+  for (const [endereco, cel] of Object.entries(aba)) {
+    if (endereco.startsWith("!") || !cel || typeof cel !== "object" || !("f" in cel)) continue;
+    const c = cel as { v?: unknown };
+    const tipo = c.v == null || c.v === "" ? "sem_valor" : c.v === 0 ? "zero" : null;
+    if (!tipo) continue;
+    const { r, c: coluna } = XLSX.utils.decode_cell(endereco);
+    if (r === 0) continue;
+    formulas.set(r + 1, [...(formulas.get(r + 1) ?? []), { coluna, tipo }]);
+  }
   const linhas: LinhaBruta[] = [];
   matriz.slice(1).forEach((celulas, i) => {
     const valores = celulas.map(textoCelula);
-    if (valores.some((v) => v !== "")) linhas.push({ numero_linha: i + 2, valores });
+    const f = formulas.get(i + 2);
+    // linha só com fórmula (ex.: fórmula arrastada para linhas vazias) continua sendo ignorada
+    if (valores.some((v) => v !== "")) linhas.push({ numero_linha: i + 2, valores, ...(f ? { formulas: f } : {}) });
   });
   if (linhas.length === 0) throw new Error("A planilha não tem linhas preenchidas (comece na linha 2, abaixo do cabeçalho).");
   if (linhas.length > maxLinhas) {

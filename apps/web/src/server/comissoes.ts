@@ -45,7 +45,9 @@ export function resumirComissoes(comissoes: Comissao[]): ResumoComissoes {
       totais: { a_receber: 0, recebida: 0, atrasada: 0 },
       quantidade: 0,
     };
-    item.totais[c.status] = arred(item.totais[c.status] + Number(c.valor));
+    // pendente de análise (Fase 20) entra no "a receber" do resumo: ainda é valor a receber, só aguarda conferência
+    const s = c.status === "pendente_analise" ? "a_receber" : c.status;
+    item.totais[s] = arred(item.totais[s] + Number(c.valor));
     item.quantidade++;
     mapa.set(c.representada_id, item);
   }

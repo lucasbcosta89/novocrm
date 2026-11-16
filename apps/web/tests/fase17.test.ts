@@ -26,6 +26,8 @@ const base = () => new Map<string, unknown>([
   [chaveImportacao("codigo_pedido", "9999"), true],
 ]);
 type Campos = Partial<Record<(typeof ROTULOS_PEDIDO)[number], string>>;
+/** Fase 20: modelo ANTIGO (sem a coluna opcional "Comissão (R$)") continua importando igual */
+const MODELO_ANTIGO = config.colunasEsperadas.filter((c) => c !== "Comissão (R$)");
 const linha = (n: number, v: Campos): LinhaBruta => ({ numero_linha: n, valores: ROTULOS_PEDIDO.map((c) => v[c] ?? "") });
 const item = (num: string, data: string, doc: string, sku: string, qtd = "1", preco = "10"): Campos => ({
   "Número do Pedido": num, "Data do Pedido": data, "CNPJ/CPF do Cliente": doc, "SKU do Produto": sku, "Quantidade": qtd, "Preço Unitário": preco,
@@ -48,7 +50,7 @@ describe("fase 17 — importação de pedidos", () => {
   });
 
   it("agrupa: mesmo número = 1 pedido; vazio + mesmo cliente/data consecutivos = 1 automático; data diferente = outro", async () => {
-    const linhas = await validarPlanilha(config, config.colunasEsperadas, [
+    const linhas = await validarPlanilha(config, MODELO_ANTIGO, [
       linha(2, item("1001", "20/10/2026", CNPJ_A, "S1")),
       linha(3, item("1001", "20/10/2026", CNPJ_A, "S2", "2", "20")),
       linha(4, item("", "21/10/2026", CNPJ_B, "S1")),
@@ -62,11 +64,11 @@ describe("fase 17 — importação de pedidos", () => {
       [null, "2026-10-21", "Loja B", "Alfa", [4, 5]],
       [null, "2026-10-22", "Loja B", "Alfa", [6]],
     ]);
-    expect(config.previa!(linhas, base()).linhas[0]).toEqual(["1001", "20/10/2026", "Loja A", "Alfa", 2, formatarMoeda(50), "—"]);
+    expect(config.previa!(linhas, base()).linhas[0]).toEqual(["1001", "20/10/2026", "Loja A", "Alfa", 2, formatarMoeda(50), "Pelo cadastro", "—"]);
   });
 
   it("SKU inexistente: item entra com pendência (alerta, não erro); preço diferente do Catálogo: sem pendência nem alerta (Fase 19: importado não verifica preço); preço da planilha prevalece", async () => {
-    const linhas = await validarPlanilha(config, config.colunasEsperadas, [
+    const linhas = await validarPlanilha(config, MODELO_ANTIGO, [
       linha(2, item("", "20/10/2026", CNPJ_A, "S1", "1", "10")),
       linha(3, item("", "20/10/2026", CNPJ_A, "NOVO", "3", "4,50")),
       linha(4, item("", "20/10/2026", CNPJ_A, "S2", "1", "30")),
@@ -82,7 +84,7 @@ describe("fase 17 — importação de pedidos", () => {
   });
 
   it("cliente não cadastrado, número já existente e linha com erro invalidam o pedido inteiro (nunca grava pela metade)", async () => {
-    const linhas = await validarPlanilha(config, config.colunasEsperadas, [
+    const linhas = await validarPlanilha(config, MODELO_ANTIGO, [
       linha(2, item("1001", "20/10/2026", CNPJ_A, "S1")),
       linha(3, item("1001", "20/10/2026", CNPJ_A, "S2", "0")),
       linha(4, item("", "20/10/2026", "52998224725", "S1")),
@@ -98,7 +100,7 @@ describe("fase 17 — importação de pedidos", () => {
   });
 
   it("representada pelo SKU: sem SKU no Catálogo, representadas diferentes ou SKU ambíguo invalidam; ambíguo com desempate resolve", async () => {
-    const validar = (linhas: LinhaBruta[]) => validarPlanilha(config, config.colunasEsperadas, linhas, base());
+    const validar = (linhas: LinhaBruta[]) => validarPlanilha(config, MODELO_ANTIGO, linhas, base());
     const [nenhum] = await validar([linha(2, item("", "20/10/2026", CNPJ_A, "X1"))]);
     expect(nenhum!.erros[0]!.mensagem).toContain("nenhum SKU está no Catálogo");
     const mistos = await validar([linha(2, item("7", "20/10/2026", CNPJ_A, "S1")), linha(3, item("7", "20/10/2026", CNPJ_A, "B1"))]);
@@ -138,7 +140,7 @@ describe("acréscimo por item (venda acima do preço de tabela)", () => {
   it("planilha de pedidos: coluna 'Acréscimo (%)' opcional, validada e levada ao item", async () => {
     expect(ROTULOS_PEDIDO).toContain("Acréscimo (%)");
     expect(config.colunasObrigatorias).not.toContain("Acréscimo (%)");
-    const linhas = await validarPlanilha(config, config.colunasEsperadas, [
+    const linhas = await validarPlanilha(config, MODELO_ANTIGO, [
       linha(2, { ...item("", "20/10/2026", CNPJ_A, "S1", "2", "10"), "Acréscimo (%)": "10" }),
       linha(3, { ...item("", "21/10/2026", CNPJ_A, "S1", "1", "10"), "Acréscimo (%)": "150" }),
     ], base());

@@ -193,7 +193,8 @@ export const tarefaUpdateSchema = z.object({
   concluida: z.boolean().optional(),
 });
 
-export const STATUS_COMISSAO = ["a_receber", "recebida", "atrasada", "cancelada"] as const;
+/** pendente_analise (Fase 20): comissão importada com valor vazio/zerado — nunca liquidada automaticamente */
+export const STATUS_COMISSAO = ["a_receber", "recebida", "atrasada", "cancelada", "pendente_analise"] as const;
 
 export const FORMAS_PAGAMENTO = ["dinheiro", "credito", "debito", "bonificacao", "pix", "outros"] as const;
 export const PRAZOS_PAGAMENTO = ["a_vista", "a_prazo"] as const;

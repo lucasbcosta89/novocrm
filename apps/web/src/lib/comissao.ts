@@ -64,6 +64,18 @@ export function resolverComissao(
   return { percentual: 0, origem: "zero", tipoAlerta: "comissao_nao_definida", oferecerPropagacao: false, divergencia: false };
 }
 
+/* ---------- Fase 20: Comissão (R$) do item ---------- */
+
+/** C.1 — texto exato do tooltip da coluna "Comissão (R$)". */
+export const DICA_COMISSAO =
+  "A comissão é calculada automaticamente pelo percentual do produto ou da representada. Se houver divergência de valor, você pode alterar a comissão após o lançamento do pedido na página de Comissões.";
+
+/**
+ * Fase 20 — comissão do item em R$ (somente leitura): subtotal × percentual, 2 casas — o MESMO cálculo que o banco
+ * grava em pedido_itens.comissao_valor na emissão (o subtotal já considera desconto e acréscimo). Nunca entra no total.
+ */
+export const comissaoItem = (subtotal: number, percentual: number) => Math.round(subtotal * percentual) / 100;
+
 /* ---------- Avisos durante o preenchimento (estado do formulário; nada é gravado) ---------- */
 
 export type NivelAviso = "amarelo" | "laranja" | "vermelho" | "neutro";

@@ -26,6 +26,7 @@ export const ROTULO_STATUS_COMISSAO: Record<string, string> = {
   recebida: "Recebida",
   atrasada: "Atrasada",
   cancelada: "Cancelada",
+  pendente_analise: "Pendente de análise",
 };
 export const ROTULO_FORMA_PAGAMENTO: Record<string, string> = {
   dinheiro: "Dinheiro",
