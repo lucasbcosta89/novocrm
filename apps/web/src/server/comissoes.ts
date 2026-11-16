@@ -110,7 +110,37 @@ export type ResultadoComissoes = {
   /** N.3: comissões em análise fora do filtro de grupo atual */
   emAnaliseFora: number;
   limitado: boolean;
+  /** A receber com previsão anterior a hoje (R$; 0 quando não há) */
+  atraso: number;
+  /** soma, em valor absoluto, dos estornos de devolução recebidos no filtro (R$; 0 quando não há) */
+  abatimento: number;
+  /** cards do cabeçalho: comissão por representada no filtro */
+  porRepresentada: { id: string; nome: string; recebida: number; a_receber: number; atraso: number; em_analise: number }[];
 };
+
+/** Atraso, abatimento por devoluções e resumo por representada (grupos do mapa único; cancelada fora). */
+export function resumirComissoes(comissoes: Pick<Comissao, "status" | "valor" | "tipo" | "data_prevista_recebimento" | "representada">[], hoje: string) {
+  let atraso = 0, abatimento = 0;
+  const reps = new Map<string, ResultadoComissoes["porRepresentada"][number]>();
+  for (const c of comissoes) {
+    const g = statusNoGrupo(c.status);
+    if (g === "desconhecido") continue;
+    const vencida = g === "a_receber" && !!c.data_prevista_recebimento && c.data_prevista_recebimento < hoje;
+    if (vencida) atraso += Number(c.valor);
+    if (g === "recebido" && c.tipo === "estorno") abatimento += Math.abs(Number(c.valor));
+    const k = c.representada?.id ?? "—";
+    const r = reps.get(k) ?? { id: k, nome: c.representada?.nome ?? "—", recebida: 0, a_receber: 0, atraso: 0, em_analise: 0 };
+    if (g === "recebido") r.recebida += Number(c.valor);
+    else if (g === "a_receber") r.a_receber += Number(c.valor);
+    else r.em_analise += Number(c.valor);
+    if (vencida) r.atraso += Number(c.valor);
+    reps.set(k, r);
+  }
+  const porRepresentada = [...reps.values()]
+    .map((r) => ({ ...r, recebida: arred(r.recebida), a_receber: arred(r.a_receber), atraso: arred(r.atraso), em_analise: arred(r.em_analise) }))
+    .sort((a, b) => a.nome.localeCompare(b.nome));
+  return { atraso: arred(atraso), abatimento: arred(abatimento), porRepresentada };
+}
 
 function ordenar(linhas: Comissao[], f: FiltroComissoes): Comissao[] {
   const s = f.dir === "asc" ? 1 : -1;
@@ -136,6 +166,7 @@ export async function listarComissoes(ctx: Contexto, entrada: unknown): Promise<
   }
   return {
     filtro: f, periodo, linhas: todas.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA), total: todas.length, pagina, paginas,
+    ...resumirComissoes(todas, hojeSP()),
     totais: totalizar(todas), selecionaveis: todas.filter((c) => selecionavelEmLote(c.status, c.tipo)).map((c) => c.id), emAnaliseFora,
     limitado: todas.length >= LIMITE,
   };

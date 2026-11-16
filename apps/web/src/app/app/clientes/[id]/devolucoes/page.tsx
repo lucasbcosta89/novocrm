@@ -10,6 +10,7 @@ import { carregar } from "@/server/acao";
 import { listarDevolucoes } from "@/server/devolucoes";
 import { excluirDevolucaoAction } from "./actions";
 import { podeImportar } from "@/server/importacao";
+import { ProcessarDevolucoes, ReabrirDevolucao } from "@/app/app/comissoes/componentes";
 
 const dataValida = (v?: string) => (v && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null);
 const qtd = (n: number) => n.toLocaleString("pt-BR", { maximumFractionDigits: 3 });
@@ -32,7 +33,7 @@ export default async function ClienteDevolucoes({ params, searchParams }: {
         <div className="cabecalho">
           <h2 className="titulo-icone"><Icone nome="historico" tamanho={20} /> Devoluções</h2>
           <span className="acoes-linha">
-            {importar && <Link className="btn-secundario btn-peq" href="/app/comissoes/devolucoes/importar"><Icone nome="arquivo" tamanho={16} /> Cadastrar Devoluções com Excel</Link>}
+            {importar && <Link className="btn-secundario btn-peq" href={`${base}/importar`}><Icone nome="arquivo" tamanho={16} /> Cadastrar Devoluções com Excel</Link>}
             <Link className="btn btn-peq" href={`${base}/nova`}><Icone nome="mais" tamanho={16} /> Registrar Devolução</Link>
           </span>
         </div>
@@ -77,7 +78,12 @@ export default async function ClienteDevolucoes({ params, searchParams }: {
                     <td data-rotulo="Processamento">{d.data_processamento ? formatarData(`${d.data_processamento}T12:00:00Z`) : <span className="dica">pendente</span>}</td>
                     <td className="num" data-rotulo="Comissão estornada">{d.comissao_id ? `−${formatarMoeda(Number(d.comissao_estornada))}` : "—"}</td>
                     <td className="col-acoes" data-rotulo="Ações">
-                      {d.chave_unica ? <Link className="btn-link" href="/app/comissoes?visao=devolucoes">Processar em Comissões</Link> : (
+                      {d.chave_unica ? (
+                        <span className="acoes-linha">
+                          {d.comissao_id && !d.data_processamento && <ProcessarDevolucoes ids={[d.id]} classe="btn-link" />}
+                          {d.comissao_id && d.data_processamento && <ReabrirDevolucao id={d.id} />}
+                        </span>
+                      ) : (
                       <span className="acoes-icones">
                         <span className="com-dica" data-dica="Editar devolução">
                           <Link className="botao-icone botao-acao" href={`${base}/${d.id}/editar`} aria-label={`Editar devolução ${d.numero}`}>

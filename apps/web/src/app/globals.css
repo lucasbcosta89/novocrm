@@ -1038,3 +1038,28 @@ tr[id^="item-"]:target > td { background: var(--accent-suave); }
 
 /* Fase 22: estorno (comissão negativa) — sem cor com significado próprio; só o sinal e o peso */
 .valor-estorno { color: var(--muted); }
+
+/* ---------- Comissões: tabela de lançamentos com altura limitada ----------
+   A tabela rola dentro do próprio quadro (vertical e horizontal): a base e a barra de rolagem lateral ficam sempre à
+   vista, sem precisar rolar a página. Cabeçalho e coluna do pedido ficam fixos durante a rolagem. */
+.tabela-rolagem { max-height: max(320px, calc(100dvh - 210px)); overflow: auto; overscroll-behavior: contain; }
+.tabela-rolagem thead th { position: sticky; top: 0; z-index: 3; }
+.tabela-compacta th { font-size: .76rem; padding: 8px 10px; }
+.tabela-compacta td { font-size: .85rem; padding: 7px 10px; line-height: 1.35; white-space: nowrap; }
+.tabela-compacta td .dica, .tabela-compacta td .motivos { white-space: normal; font-size: .76rem; }
+/* textos longos numa linha só, com reticências (o texto completo aparece ao passar o mouse) */
+.tabela-compacta td[data-rotulo="Produto"], .tabela-compacta td[data-rotulo="Cliente"], .tabela-compacta td[data-rotulo="Representada"] { max-width: 210px; overflow: hidden; text-overflow: ellipsis; }
+.tabela-compacta td[data-rotulo="Tipo"], .tabela-compacta td[data-rotulo="Status"], .tabela-compacta td[data-rotulo="SKU / itens"] { white-space: normal; min-width: 120px; max-width: 220px; }
+.tabela-compacta .data-editavel input[type="date"] { font-size: .82rem; padding: 3px 6px; max-width: 136px; }
+.tabela-comissoes.tabela-compacta th:first-child, .tabela-comissoes.tabela-compacta td:first-child { position: sticky; left: 0; z-index: 2; width: 34px; background: var(--surface); }
+.tabela-comissoes.tabela-compacta td:nth-child(2), .tabela-comissoes.tabela-compacta th:nth-child(2) { position: sticky; left: 34px; z-index: 2; background: var(--surface); box-shadow: 1px 0 0 var(--borda-suave); }
+.tabela-comissoes.tabela-compacta thead th:first-child, .tabela-comissoes.tabela-compacta thead th:nth-child(2) { z-index: 4; background: var(--bg); }
+.tabela-comissoes.tabela-compacta tr.linha-analise > td:first-child, .tabela-comissoes.tabela-compacta tr.linha-analise > td:nth-child(2) { background: var(--atencao-suave); }
+.cards-representadas { margin-bottom: 4px; }
+.kpis-compactos .kpi dd { font-size: 1.05rem; }
+.tabela-compacta .motivos { list-style: none; padding: 0; margin: 2px 0 0; }
+.tabela-compacta .motivos li { display: inline; }
+.tabela-compacta .motivos li + li::before { content: " · "; }
+.tabela-compacta td[data-rotulo="Status"] { min-width: 170px; max-width: 260px; }
+.tabela-compacta .menu-linha > summary { padding: 2px 6px; min-height: 0; line-height: 1.3; }
+.tabela-compacta .data-editavel input[type="date"] { height: 28px; }

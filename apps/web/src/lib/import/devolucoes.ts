@@ -219,8 +219,8 @@ export const importacaoDevolucoes: ConfiguracaoImportacao<{ chave_unica: string 
       "Cada linha é a devolução de UM item de um pedido já lançado (Código do Pedido + SKU). A comissão a estornar vazia ou zerada é " +
       "calculada pelo percentual gravado no item do pedido original. Cada devolução gera uma comissão NEGATIVA (estorno) que só reduz o " +
       "recebido quando a devolução é processada. Reenviar a mesma planilha não duplica nada. Planilhas com fórmula: salve no Excel antes de enviar.",
-    avisoComAlertas: "As devoluções foram carregadas com alguns avisos. Confira na página de Comissões › Devoluções.",
-    botaoAviso: "Ir para as Devoluções",
+    avisoComAlertas: "As devoluções foram carregadas com alguns avisos. Confira na lista de devoluções do cliente.",
+    botaoAviso: "Voltar para as Devoluções",
   },
   mensagemModelo:
     "Use somente o modelo fornecido, sem mudar o cabeçalho. Obrigatórios: Código do Pedido, SKU, Quantidade Devolvida e Data da Devolução.",

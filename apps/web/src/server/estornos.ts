@@ -14,13 +14,18 @@ import { AppError, erroBanco } from "./erros";
 export type DevolucaoImportada = {
   id: string; numero: string; status: "pendente" | "processada"; data: string; data_processamento: string | null;
   codigo_pedido_informado: string | null; sku_informado: string | null; descricao_informada: string | null;
-  quantidade: number; valor_total: number; comissao_estornada: number; percentual_aplicado: number | null; motivo: string; comissao_id: string | null;
+  quantidade: number | null; valor_total: number; comissao_estornada: number; percentual_aplicado: number | null; motivo: string; comissao_id: string | null;
+  /** preenchida = importada por Excel; vazia = cadastro manual */
+  chave_unica: string | null;
+  /** devolução manual: quantidade de itens */
+  itens_qtd?: number;
+  itens?: { quantidade: number }[];
   representada: { id: string; nome: string } | null; cliente: { id: string; nome: string } | null; pedido: { id: string; codigo_pedido: string } | null;
 };
 
 const CAMPOS = `id, numero, status, data, data_processamento, codigo_pedido_informado, sku_informado, descricao_informada, quantidade, valor_total,
-  comissao_estornada, percentual_aplicado, motivo, comissao_id, representada:representadas(id, nome:razao_social), cliente:clientes(id, nome),
-  pedido:pedidos(id, codigo_pedido)`;
+  comissao_estornada, percentual_aplicado, motivo, comissao_id, chave_unica, representada:representadas(id, nome:razao_social), cliente:clientes(id, nome),
+  pedido:pedidos(id, codigo_pedido), itens:devolucao_itens(quantidade)`;
 
 export const filtroDevolucoesSchema = z.object({
   p: z.string().optional().catch(undefined),
@@ -28,7 +33,10 @@ export const filtroDevolucoesSchema = z.object({
   ate: z.string().optional().catch(undefined),
   /** campo do período: processamento (A.2, padrão) ou devolução */
   campo: z.enum(["processamento", "devolucao"]).catch("processamento").default("processamento"),
+  /** pendente = sem Data de Processamento; processada = com data */
   st: z.enum(["pendente", "processada"]).optional().catch(undefined),
+  /** origem: cadastro manual ou importada por Excel */
+  orig: z.enum(["manual", "excel"]).optional().catch(undefined),
   rep: z.preprocess((v) => (v == null || v === "" ? [] : Array.isArray(v) ? v : String(v).split(",")), z.array(z.string().uuid()).catch([])),
 });
 
@@ -50,15 +58,23 @@ export type ResultadoDevolucoes = {
 export async function listarDevolucoesImportadas({ supabase }: Contexto, entrada: Record<string, unknown>): Promise<ResultadoDevolucoes> {
   const f = filtroDevolucoesSchema.parse(Object.fromEntries(Object.entries(entrada).map(([k, v]) => [k, k === "rep" ? v : um(v)])));
   const periodo = resolverPeriodo(f.p ?? "este_mes", f.de, f.ate, hojeSP());
-  let q = supabase.from("devolucoes").select(CAMPOS).not("chave_unica", "is", null);
-  if (f.st) q = q.eq("status", f.st);
+  // todas as devoluções com estorno de comissão (manuais e importadas); recusadas ficam de fora
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- filtros encadeados estouram a inferência de tipos do supabase-js
+  let q: any = supabase.from("devolucoes").select(CAMPOS).not("comissao_id", "is", null).neq("status", "recusada");
+  if (f.st === "pendente") q = q.is("data_processamento", null);
+  if (f.st === "processada") q = q.not("data_processamento", "is", null);
+  if (f.orig === "manual") q = q.is("chave_unica", null);
+  if (f.orig === "excel") q = q.not("chave_unica", "is", null);
   if (f.rep.length) q = q.in("representada_id", f.rep);
   q = f.campo === "devolucao"
     ? q.gte("data", periodo.de).lte("data", periodo.ate)
     : q.or(`and(data_processamento.gte.${periodo.de},data_processamento.lte.${periodo.ate}),and(data_processamento.is.null,data.gte.${periodo.de},data.lte.${periodo.ate})`);
   const { data, error } = await q.order("data", { ascending: false }).limit(10_000) as { data: DevolucaoImportada[] | null; error: PostgrestError | null };
   if (error) throw erroBanco(error);
-  const linhas = (data ?? []).map((d) => ({ ...d, quantidade: Number(d.quantidade), valor_total: Number(d.valor_total), comissao_estornada: Number(d.comissao_estornada) }));
+  const linhas = (data ?? []).map((d) => ({
+    ...d, valor_total: Number(d.valor_total), comissao_estornada: Number(d.comissao_estornada), itens_qtd: d.itens?.length ?? 0,
+    quantidade: d.chave_unica ? Number(d.quantidade) : (d.itens ?? []).reduce((t, i) => t + Number(i.quantidade), 0),
+  }));
   const porRep = new Map<string, ResultadoDevolucoes["porRepresentada"][number]>();
   for (const d of linhas) {
     const k = d.representada?.id ?? "—";
@@ -70,7 +86,7 @@ export async function listarDevolucoesImportadas({ supabase }: Contexto, entrada
     linhas, periodo,
     totais: {
       quantidade: linhas.length, valor_total: cent(linhas.reduce((t, d) => t + d.valor_total, 0)), comissao_estornada: cent(linhas.reduce((t, d) => t + d.comissao_estornada, 0)),
-      pendentes: linhas.filter((d) => d.status === "pendente").length, processadas: linhas.filter((d) => d.status === "processada").length,
+      pendentes: linhas.filter((d) => !d.data_processamento).length, processadas: linhas.filter((d) => !!d.data_processamento).length,
     },
     porRepresentada: [...porRep.values()].sort((a, b) => a.nome.localeCompare(b.nome)),
   };

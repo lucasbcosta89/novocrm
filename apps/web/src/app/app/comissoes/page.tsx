@@ -11,9 +11,8 @@ import {
   descreverEvento, historicoDasComissoes, listarComissoes, listarLotes, nomesDosAutores, pendentesDeAnalise, produtoDaComissao,
 } from "@/server/comissoes";
 import { listarRepresentadas } from "@/server/representadas";
-import { BotaoReabrirLote, FiltroComissoes, ProcessarDevolucoes, ReabrirDevolucao, SelecaoDevolucoes, TabelaComissoes, type LinhaComissao } from "./componentes";
+import { BotaoReabrirLote, FiltroComissoes, TabelaComissoes, type LinhaComissao } from "./componentes";
 import { listarDevolucoesImportadas } from "@/server/estornos";
-import { podeImportar } from "@/server/importacao";
 
 type Busca = Promise<Record<string, string | string[] | undefined>>;
 const TOM: Record<GrupoStatus, string> = { recebido: "tom-ok", a_receber: "tom-azul", em_analise: "tom-analise" };
@@ -24,10 +23,10 @@ export default async function ComissoesPage({ searchParams }: { searchParams: Bu
   const erro = typeof sp.erro === "string" ? sp.erro : undefined;
   const ok = typeof sp.ok === "string" ? sp.ok : undefined;
   const f = lerFiltroComissoes(sp);
-  const [res, pend, representadas, clientes, lotes, nomes, devs, importar] = await carregar((ctx) => Promise.all([
+  const [res, pend, representadas, clientes, lotes, nomes, devs] = await carregar((ctx) => Promise.all([
     listarComissoes(ctx, sp), pendentesDeAnalise(ctx), listarRepresentadas(ctx), listarClientes(ctx),
     f.visao === "lotes" ? listarLotes(ctx) : Promise.resolve([]), nomesDosAutores(ctx),
-    f.visao === "devolucoes" ? listarDevolucoesImportadas(ctx, sp) : Promise.resolve(null), podeImportar(ctx),
+    f.visao === "devolucoes" ? listarDevolucoesImportadas(ctx, sp) : Promise.resolve(null),
   ]));
   const historico = await carregar((ctx) => historicoDasComissoes(ctx, res.linhas.map((c) => c.id)));
   const url = (mudar: Partial<Record<keyof Filtro, unknown>> = {}) => urlComissoes(f, mudar);
@@ -53,10 +52,7 @@ export default async function ComissoesPage({ searchParams }: { searchParams: Bu
 
   return (
     <>
-      <div className="cabecalho-pagina">
-        <h1 className="titulo-icone"><Icone nome="cifrao" tamanho={24} /> Comissões</h1>
-        {importar && <Link className="btn-secundario" href="/app/comissoes/devolucoes/importar"><Icone nome="arquivo" tamanho={16} /> Cadastrar Devoluções com Excel</Link>}
-      </div>
+      <h1 className="titulo-icone"><Icone nome="cifrao" tamanho={24} /> Comissões</h1>
       <Mensagens erro={erro} ok={ok} />
       <AvisoPendentesAnalise quantidade={pend.quantidade} valor={pend.valor} />
 
@@ -82,14 +78,24 @@ export default async function ComissoesPage({ searchParams }: { searchParams: Bu
                 <option value="devolucao">Data da Devolução</option>
               </select>
             </label>
-            <label className="campo"><span>Situação</span>
+            <label className="campo"><span>Processamento</span>
               <select name="st" defaultValue={typeof sp.st === "string" ? sp.st : ""}>
-                <option value="">Todas</option><option value="pendente">Pendentes</option><option value="processada">Processadas</option>
+                <option value="">Todas</option><option value="pendente">Sem Data de Processamento</option><option value="processada">Processadas</option>
+              </select>
+            </label>
+            <label className="campo"><span>Origem</span>
+              <select name="orig" defaultValue={typeof sp.orig === "string" ? sp.orig : ""}>
+                <option value="">Todas</option><option value="manual">Cadastro manual</option><option value="excel">Importada por Excel</option>
+              </select>
+            </label>
+            <label className="campo"><span>Representada</span>
+              <select name="rep" defaultValue={typeof sp.rep === "string" ? sp.rep : ""}>
+                <option value="">Todas</option>
+                {representadas.map((r) => <option key={r.id} value={r.id}>{r.nome}</option>)}
               </select>
             </label>
             <div className="acoes-linha">
               <button className="btn-secundario btn-peq" type="submit"><Icone nome="filtro" tamanho={16} /> Aplicar</button>
-              {importar && <Link className="btn-suave btn-peq" href="/app/comissoes/devolucoes/importar"><Icone nome="arquivo" tamanho={16} /> Cadastrar devoluções com Excel</Link>}
               {devs.linhas.length > 0 && <a className="btn-suave btn-peq" download href={`/api/comissoes/devolucoes/exportar?${new URLSearchParams(Object.entries(sp).flatMap(([k, v]) => (typeof v === "string" ? [[k, v]] : []))).toString()}`}><Icone nome="download" tamanho={16} /> Exportar XLSX</a>}
             </div>
           </form>
@@ -111,36 +117,32 @@ export default async function ComissoesPage({ searchParams }: { searchParams: Bu
             )}
           </section>
           <section className="card">
-            <h2 className="titulo-icone"><Icone nome="recibo" tamanho={20} /> Devoluções importadas</h2>
+            <h2 className="titulo-icone"><Icone nome="recibo" tamanho={20} /> Devoluções</h2>
+            <p className="dica">Visão de análise. Para cadastrar, importar por Excel ou informar a Data de Processamento, use a página do cliente › Devoluções.</p>
             {devs.linhas.length === 0 ? <div className="vazio">Nenhuma devolução neste período.</div> : (
               <>
-                <div className="tabela-wrap">
-                  <table className="tabela">
-                    <thead><tr><th /><th>Nº</th><th>Pedido</th><th>SKU</th><th className="num">Qtd.</th><th className="num">Valor</th><th className="num">Comissão estornada</th><th>Situação</th><th>Devolução</th><th>Processamento</th><th>Ações</th></tr></thead>
+                <div className="tabela-wrap tabela-rolagem">
+                  <table className="tabela tabela-compacta">
+                    <thead><tr><th>Nº</th><th>Cliente</th><th>Pedido</th><th>Representada</th><th>SKU / itens</th><th className="num">Qtd.</th><th className="num">Valor</th><th className="num">Comissão estornada</th><th>Origem</th><th>Devolução</th><th>Processamento</th></tr></thead>
                     <tbody>
                       {devs.linhas.map((d) => (
                         <tr key={d.id}>
-                          <td>{d.status === "pendente" && d.comissao_id && <input type="checkbox" data-devolucao={d.id} aria-label={`Selecionar ${d.numero}`} />}</td>
                           <td data-rotulo="Nº">{d.numero}</td>
+                          <td data-rotulo="Cliente">{d.cliente ? <Link href={`/app/clientes/${d.cliente.id}/devolucoes`}>{d.cliente.nome}</Link> : "—"}</td>
                           <td data-rotulo="Pedido">{d.pedido ? <Link href={`/app/pedidos/${d.pedido.id}`}>{d.pedido.codigo_pedido}</Link> : d.codigo_pedido_informado ?? "—"}</td>
-                          <td data-rotulo="SKU">{d.sku_informado ?? "—"}{d.descricao_informada && <div className="dica">{d.descricao_informada}</div>}</td>
-                          <td className="num" data-rotulo="Qtd.">{Number(d.quantidade).toLocaleString("pt-BR")}</td>
+                          <td data-rotulo="Representada">{d.representada?.nome ?? "—"}</td>
+                          <td data-rotulo="SKU / itens">{d.sku_informado ?? (d.itens_qtd ? `${d.itens_qtd} item(ns)` : "—")}{d.descricao_informada && <div className="dica">{d.descricao_informada}</div>}</td>
+                          <td className="num" data-rotulo="Qtd.">{Number(d.quantidade ?? 0).toLocaleString("pt-BR")}</td>
                           <td className="num" data-rotulo="Valor">{formatarMoeda(d.valor_total)}</td>
                           <td className="num" data-rotulo="Comissão estornada"><span className="valor-estorno">−{formatarMoeda(d.comissao_estornada)}</span></td>
-                          <td data-rotulo="Situação">{d.status === "processada" ? "Processada" : "Pendente"}</td>
+                          <td data-rotulo="Origem">{d.chave_unica ? "Excel" : "Manual"}</td>
                           <td data-rotulo="Devolução">{d.data.split("-").reverse().join("/")}</td>
-                          <td data-rotulo="Processamento">{d.data_processamento ? d.data_processamento.split("-").reverse().join("/") : "—"}</td>
-                          <td data-rotulo="Ações">
-                            {d.comissao_id && d.status === "pendente" && <ProcessarDevolucoes ids={[d.id]} classe="btn-link" />}
-                            {d.comissao_id && d.status === "processada" && <ReabrirDevolucao id={d.id} />}
-                          </td>
+                          <td data-rotulo="Processamento">{d.data_processamento ? d.data_processamento.split("-").reverse().join("/") : <span className="dica">pendente</span>}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-                <SelecaoDevolucoes assinatura={JSON.stringify([sp.p ?? "", sp.campo ?? "", sp.st ?? ""])}
-                  pendentes={devs.linhas.filter((d) => d.status === "pendente" && d.comissao_id).map((d) => d.id)} />
               </>
             )}
           </section>
@@ -174,6 +176,20 @@ export default async function ComissoesPage({ searchParams }: { searchParams: Bu
         </section>
       ) : (
         <>
+          {res.porRepresentada.length > 0 && (
+            <div className="cards-resumo cards-representadas">
+              {res.porRepresentada.map((r) => (
+                <section key={r.id} className={`card ${r.atraso > 0 ? "card-alerta" : ""}`}>
+                  <h3 className="titulo-icone"><Icone nome="predio" tamanho={18} /><Link href={urlComissoes({ ...f, rep: [r.id], pag: 1 })}>{r.nome}</Link></h3>
+                  <dl className="kpis kpis-compactos">
+                    <div className="kpi"><div><dt>Recebida</dt><dd className="txt-ok">{formatarMoeda(r.recebida)}</dd></div></div>
+                    <div className="kpi"><div><dt>A receber</dt><dd>{formatarMoeda(r.a_receber)}</dd></div></div>
+                    <div className="kpi"><div><dt>Em atraso</dt><dd className={r.atraso > 0 ? "atrasada" : undefined}>{formatarMoeda(r.atraso)}</dd></div></div>
+                  </dl>
+                </section>
+              ))}
+            </div>
+          )}
           <FiltroComissoes visao={f.visao} ativos={contarFiltrosAtivos(f)}
             filtro={{ p: f.p, de: res.periodo.de, ate: res.periodo.ate, campo: f.campo, g: f.g, comp: f.comp ?? "", mot: f.mot ?? "", rep: f.rep, cli: f.cli, lote: f.lote, ed: f.ed, tipo: f.tipo ?? "" }}
             representadas={representadas.map((r) => ({ id: r.id, nome: r.nome }))} clientes={clientes.map((c) => ({ id: c.id, nome: c.nome }))} />
@@ -191,6 +207,14 @@ export default async function ComissoesPage({ searchParams }: { searchParams: Bu
                   </div>
                 </div>
               ))}
+              <div className="kpi">
+                <span className={`kpi-icone ${res.atraso > 0 ? "tom-perigo" : "tom-neutro"}`}><Icone nome="alerta" tamanho={20} /></span>
+                <div><dt>Comissões em Atraso (R$)</dt><dd className={res.atraso > 0 ? "atrasada" : undefined}>{formatarMoeda(res.atraso)}</dd><span className="item-sub">a receber com previsão vencida</span></div>
+              </div>
+              <div className="kpi">
+                <span className="kpi-icone tom-neutro"><Icone nome="recibo" tamanho={20} /></span>
+                <div><dt>Abatimento de Comissão por devoluções (R$)</dt><dd>{formatarMoeda(res.abatimento)}</dd><span className="item-sub">estornos processados</span></div>
+              </div>
             </dl>
             <p className="dica"><strong>{rotuloTotal(gruposSomados)}:</strong> {formatarMoeda(totalGeral)} · {res.total} lançamento(s) no filtro (canceladas fora dos totais)</p>
             {res.emAnaliseFora > 0 && (

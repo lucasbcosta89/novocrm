@@ -203,8 +203,9 @@ export function TabelaComissoes({ linhas, selecionaveis, assinatura, filtro, ana
           {" "}(recebidas, reabertas e canceladas não são selecionáveis)
         </p>
       )}
-      <div className="tabela-wrap">
-        <table className="tabela tabela-comissoes">
+      {/* altura limitada: a barra de rolagem horizontal fica sempre visível sem rolar a página */}
+      <div className="tabela-wrap tabela-rolagem">
+        <table className="tabela tabela-comissoes tabela-compacta">
           <thead>
             <tr>
               <th><input type="checkbox" aria-label="Selecionar as comissões desta página" checked={paginaToda} disabled={!daPagina.length}
@@ -222,9 +223,9 @@ export function TabelaComissoes({ linhas, selecionaveis, assinatura, filtro, ana
                 <tr key={l.id} className={grupo === "em_analise" ? "linha-analise" : undefined}>
                   <td>{selecionaveisSet.has(l.id) && <input type="checkbox" checked={sel.has(l.id)} onChange={() => alternar(l.id)} aria-label={`Selecionar ${l.pedido?.codigo ?? "comissão"}`} />}</td>
                   <td data-rotulo="Pedido">{l.pedido ? <Link href={`/app/pedidos/${l.pedido.id}`}>{l.pedido.codigo}</Link> : "—"}</td>
-                  <td data-rotulo="Cliente">{l.cliente}</td>
-                  <td data-rotulo="Representada">{l.representada?.nome ?? "—"}</td>
-                  <td data-rotulo="Produto">{l.produto}</td>
+                  <td data-rotulo="Cliente" title={l.cliente}>{l.cliente}</td>
+                  <td data-rotulo="Representada" title={l.representada?.nome}>{l.representada?.nome ?? "—"}</td>
+                  <td data-rotulo="Produto" title={l.produto}>{l.produto}</td>
                   <td className="num" data-rotulo="Valor base">{formatarMoeda(l.base)}</td>
                   <td className="num" data-rotulo="%">{formatarPercentual(l.percentual)}</td>
                   <td className="num" data-rotulo="Comissão"><strong className={l.valor < 0 ? "valor-estorno" : undefined}>{formatarMoeda(l.valor)}</strong></td>
