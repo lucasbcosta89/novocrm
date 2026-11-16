@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Icone } from "@/components/icones";
+import { BotaoReverOnboarding } from "@/components/onboarding";
 import { ETAPAS, GUIA_SUBTITULO, GUIA_TITULO, PERGUNTAS_FREQUENTES, rotuloProntidao, VERIFICACOES } from "@/lib/guia/conteudo";
 import { carregar } from "@/server/acao";
 import { obterDiagnosticoGuia } from "./actions";
@@ -84,6 +85,11 @@ export default async function ComoUsarPage() {
               ))}
             </dl>
           </section>
+
+          <footer className="card guia-rodape">
+            <p className="dica">Quer ver de novo o tour da plataforma? O progresso salvo não é apagado.</p>
+            <BotaoReverOnboarding />
+          </footer>
         </div>
       </div>
     </>

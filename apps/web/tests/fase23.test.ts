@@ -2,6 +2,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { ETAPAS, PERGUNTAS_FREQUENTES, VERIFICACOES } from "@/lib/guia/conteudo";
+import { MODELOS_PLANILHA, palavrasDoPasso, PASSOS_ONBOARDING } from "@/lib/guia/onboarding";
 import { diagnosticoGuia } from "@/server/guia";
 import type { Contexto } from "@/server/contexto";
 
@@ -34,5 +35,21 @@ describe("fase 23.1 — página Como usar", () => {
     expect(r.verificacoes).toHaveLength(5);
     expect(r.verificacoes.every((v) => !v.ok)).toBe(true);
     expect(r.percentual).toBe(0);
+  });
+});
+
+describe("fase 23.2 — passo a passo do primeiro login", () => {
+  it("7 passos, nenhum acima de 80 palavras", () => {
+    expect(PASSOS_ONBOARDING).toHaveLength(7);
+    for (const p of PASSOS_ONBOARDING) expect(palavrasDoPasso(p)).toBeLessThanOrEqual(80);
+  });
+  it("passos 2 a 7 levam a rotas reais; o 1 não tem link", () => {
+    expect(PASSOS_ONBOARDING[0]!.href).toBeUndefined();
+    const hrefs = PASSOS_ONBOARDING.slice(1).map((p) => p.href!);
+    expect(hrefs.filter((h) => !rotaExiste(h))).toEqual([]);
+  });
+  it("passo 5 oferece os dois modelos, e os arquivos existem", () => {
+    expect(PASSOS_ONBOARDING[4]!.downloads).toEqual(MODELOS_PLANILHA);
+    for (const m of MODELOS_PLANILHA) expect(existsSync(join(__dirname, "..", "public", ...m.href.split("/").filter(Boolean)))).toBe(true);
   });
 });
