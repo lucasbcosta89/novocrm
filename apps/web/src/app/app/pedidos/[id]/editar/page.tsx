@@ -10,6 +10,9 @@ import { obterPedido } from "@/server/pedidos";
 import { listarProdutos } from "@/server/produtos";
 import { editarPedidoAction } from "../../actions";
 import { ItensEditaveis, type LinhaEdicao } from "@/components/itens-editaveis";
+import { ItensSemProduto } from "@/components/itens-sem-produto";
+import { resolverDescontoMaximo } from "@/lib/desconto";
+import { obterConfiguracaoPedidos } from "@/server/configuracao-pedidos";
 import { CampoDataFaturamento } from "@/components/data-faturamento";
 import { obterRepresentada } from "@/server/representadas";
 
@@ -21,9 +24,14 @@ export default async function EditarPedidoPage({ params, searchParams }: { param
   const bloqueio =
     p.status === "cancelado" ? "Pedido cancelado não pode ser editado." : comissaoRecebida ? "Comissão já recebida: este pedido não pode mais ser editado." : null;
 
-  const [produtos, precos, rep] = p.representada
-    ? await carregar((ctx) => Promise.all([listarProdutos(ctx, p.representada!.id), listarTabelaPrecos(ctx, p.representada!.id), obterRepresentada(ctx, p.representada!.id)]))
-    : [[], [], null];
+  const [produtos, precos, rep, config] = p.representada
+    ? await carregar((ctx) => Promise.all([listarProdutos(ctx, p.representada!.id), listarTabelaPrecos(ctx, p.representada!.id), obterRepresentada(ctx, p.representada!.id), obterConfiguracaoPedidos(ctx)]))
+    : [[], [], null, null];
+  // 17.1: itens sem produto (pendência de vínculo) continuam editáveis e são preservados ao salvar
+  const semProduto = p.itens.filter((i) => !i.produto_id).map((i) => ({
+    id: i.id, descricao: i.descricao_informada ?? i.descricao ?? "", sku: i.sku_informado ?? i.sku_planilha ?? "",
+    quantidade: Number(i.quantidade), preco: Number(i.preco_unitario), desconto: Number(i.desconto_percentual), acrescimo: Number(i.acrescimo_percentual),
+  }));
 
   // Preço/desconto máximo do cliente sobrepõe o padrão (mesma regra do banco).
   const precoCliente = new Map(precos.filter((t) => t.cliente?.id === p.cliente?.id && t.produto).map((t) => [t.produto!.id, t] as const));
@@ -45,7 +53,7 @@ export default async function EditarPedidoPage({ params, searchParams }: { param
         preco: item ? Number(item.preco_unitario) : precoTabela,
         desconto: item ? Number(item.desconto_percentual) : 0,
         acrescimo: item ? Number(item.acrescimo_percentual) : 0,
-        desconto_max: Number(tabela?.desconto_max ?? pr.desconto_max ?? 0),
+        desconto_max: resolverDescontoMaximo({ desconto_max: tabela?.desconto_max ?? pr.desconto_max }, rep, config),
         preco_catalogo: precoTabela,
         comissao_catalogo: pr.comissao == null ? null : Number(pr.comissao),
         comissao_item: item ? Number(item.comissao_percentual) : null,
@@ -86,6 +94,9 @@ export default async function EditarPedidoPage({ params, searchParams }: { param
               comissaoRepresentada: rep.comissao_percentual == null ? null : Number(rep.comissao_percentual),
               produtosSemComissao: produtos.filter((pr) => !(Number(pr.comissao ?? 0) > 0)).length,
             } : undefined} />
+          <ItensSemProduto iniciais={semProduto} manual={p.origem !== "importacao"}
+            comissaoRepresentada={rep?.comissao_percentual == null ? null : Number(rep.comissao_percentual)}
+            descontoMax={resolverDescontoMaximo(null, rep, config)} />
           <h2 className="titulo-icone"><Icone nome="cartao" tamanho={20} /> Pagamento</h2>
           <div className="grade">
             <PagamentoPedido forma={p.forma_pagamento} prazoTipo={p.prazo_tipo} prazoDias={p.prazo_dias} />

@@ -4,11 +4,11 @@ import { redirect, unstable_rethrow } from "next/navigation";
 import { validarRepresentada, type CampoRepresentada } from "@/lib/cadastros/representada";
 import { comParam } from "@/lib/url";
 import { idSchema } from "@/lib/validacao";
-import { vincularPendentesAoProduto, vincularProdutoPendentes } from "@/server/pedidos";
+import { mensagemVinculo, vincularPendentesAoProduto, vincularProdutoPendentes } from "@/server/pedidos";
 import { executarAcao } from "@/server/acao";
 import { obterContexto } from "@/server/contexto";
 import { normalizarErro } from "@/server/erros";
-import { atualizarPrecos, atualizarProduto, criarProduto, excluirProduto, salvarImagemProduto } from "@/server/produtos";
+import { alterarAtivoProduto, atualizarPrecos, atualizarProduto, criarProduto, excluirProduto, salvarImagemProduto } from "@/server/produtos";
 import { excluirDocumentoRepresentada, salvarDocumentosRepresentada } from "@/server/documentos-representada";
 import { atualizarPonto, criarPonto, excluirPonto } from "@/server/pontos-faturamento";
 import { recalcularAlertasPendentes } from "@/server/alertas-pedido";
@@ -129,12 +129,14 @@ export async function excluirRepresentadaAction(id: string) {
  */
 export async function criarProdutoAction(representadaId: string, fd: FormData) {
   const voltarPedido = idSchema.safeParse(fd.get("voltar_pedido")).data;
+  // itens sem SKU (lançados na plataforma) vinculados pelo id
+  const itens = String(fd.get("itens") ?? "").split(",").filter((x) => idSchema.safeParse(x).success).slice(0, 50);
   let mensagem = "Produto adicionado";
   await executarAcao(
     async (ctx) => {
-      const p = await criarProduto(ctx, representadaId, dados(fd));
-      const vinculados = await vincularPendentesAoProduto(ctx, p.id);
-      if (vinculados) mensagem = `Produto adicionado e vinculado a ${vinculados} item(ns) de pedido pendente(s)`;
+      const { itens: _i, voltar_pedido: _v, ...campos } = dados(fd);
+      const p = await criarProduto(ctx, representadaId, campos);
+      mensagem = mensagemVinculo(await vincularPendentesAoProduto(ctx, p.id, itens), "Produto adicionado");
       return p;
     },
     {
@@ -148,7 +150,10 @@ export async function criarProdutoAction(representadaId: string, fd: FormData) {
 export async function vincularProdutoPendentesAction(representadaId: string, sku: string) {
   let mensagem = "";
   await executarAcao(
-    async (ctx) => { const n = await vincularProdutoPendentes(ctx, representadaId, sku); mensagem = `${n} item(ns) de pedido vinculado(s) ao SKU ${sku}`; },
+    async (ctx) => {
+      const r = await vincularProdutoPendentes(ctx, representadaId, sku);
+      mensagem = `${r.vinculados} item(ns) de pedido vinculado(s) ao SKU ${sku}` + (r.preservados ? ` (${r.preservados} com comissão recebida ou manual: valor preservado)` : "");
+    },
     { ok: () => comParam(`${BASE}/${representadaId}/catalogo`, "ok", mensagem), erro: `${BASE}/${representadaId}/catalogo` },
   );
 }
@@ -164,6 +169,15 @@ export async function atualizarProdutoAction(representadaId: string, produtoId: 
     ok: `${BASE}/${representadaId}/catalogo`,
     erro: `${BASE}/${representadaId}/catalogo`,
     mensagem: "Produto salvo",
+  });
+}
+
+/** G: desativar (preferido) / reativar. Desativado some do seletor de novos pedidos; o histórico fica íntegro. */
+export async function alterarAtivoProdutoAction(representadaId: string, produtoId: string, ativo: boolean) {
+  await executarAcao((ctx) => alterarAtivoProduto(ctx, produtoId, ativo), {
+    ok: `${BASE}/${representadaId}/catalogo#produtos`,
+    erro: `${BASE}/${representadaId}/catalogo#produtos`,
+    mensagem: ativo ? "Produto reativado" : "Produto desativado: não aparece em novos pedidos",
   });
 }
 

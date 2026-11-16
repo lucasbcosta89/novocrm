@@ -212,6 +212,22 @@ export const dataFaturamentoSchema = z.preprocess(
     .optional(),
 ).transform((d) => d ?? null);
 
+/**
+ * Fase 17.1 (C.3) — item SEM produto cadastrado: descrição obrigatória (até 200), SKU opcional (até 60) e preço
+ * informado. Vira pendência de vínculo no pedido (mesma regra da importação) e NÃO bloqueia a emissão.
+ */
+export const itemSemProdutoSchema = z.object({
+  produto_id: z.null(),
+  /** edição: id do item já gravado (mantém o % e o valor de comissão gravados) */
+  item_id: idSchema.nullable().optional(),
+  descricao_informada: z.string("Informe a descrição do item").trim().min(1, "Informe a descrição do item").max(200, "Descrição do item: máximo de 200 caracteres"),
+  sku_informado: z.preprocess(vazioParaNull, z.string().trim().max(60, "SKU do item: máximo de 60 caracteres").nullable().optional()),
+  quantidade: numero(0.001, 1_000_000, "Quantidade inválida"),
+  preco_unitario: numero(0, 99_999_999, "Preço inválido"),
+  desconto_percentual: numero(0, 100, "Desconto deve estar entre 0% e 100%").default(0),
+  acrescimo_percentual: numero(0, 100, "Acréscimo deve estar entre 0% e 100%").default(0),
+});
+
 export const pedidoSchema = z
   .object({
     representada_id: idSchema,
@@ -229,14 +245,17 @@ export const pedidoSchema = z
     data_faturamento: dataFaturamentoSchema,
     itens: z
       .array(
-        z.object({
-          produto_id: idSchema,
-          quantidade: numero(0.001, 1_000_000, "Quantidade inválida"),
-          /** % sobre o item (limitado ao desconto máximo da tabela de preços, checado no banco). */
-          desconto_percentual: numero(0, 100, "Desconto deve estar entre 0% e 100%").default(0),
-          /** % acima do preço de tabela (venda acima da tabela) */
-          acrescimo_percentual: numero(0, 100, "Acréscimo deve estar entre 0% e 100%").default(0),
-        }),
+        z.union([
+          z.object({
+            produto_id: idSchema,
+            quantidade: numero(0.001, 1_000_000, "Quantidade inválida"),
+            /** % sobre o item (desconto máximo em cascata — lib/desconto.ts — checado no banco). */
+            desconto_percentual: numero(0, 100, "Desconto deve estar entre 0% e 100%").default(0),
+            /** % acima do preço de tabela (venda acima da tabela) */
+            acrescimo_percentual: numero(0, 100, "Acréscimo deve estar entre 0% e 100%").default(0),
+          }),
+          itemSemProdutoSchema,
+        ]),
       )
       .min(1, "Adicione ao menos um item")
       .max(500),
@@ -276,7 +295,7 @@ export const edicaoPedidoSchema = z
       (v) => (v === "" || v == null ? null : Number(v)),
       z.number("Prazo inválido").int("Prazo deve ser em dias inteiros").min(1, "Prazo mínimo de 1 dia").max(365, "Prazo máximo de 365 dias").nullable().optional(),
     ),
-    itens: itensComPrecoSchema,
+    itens: z.array(z.union([itensComPrecoSchema.element, itemSemProdutoSchema])).min(1, "Adicione ao menos um item").max(500),
     /** Só altera pedidos com código externo (codigo_gerado = false); ignorado no banco para código gerado. */
     codigo_pedido: codigoPedido,
     data_faturamento: dataFaturamentoSchema,

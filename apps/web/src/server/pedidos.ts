@@ -22,9 +22,16 @@ export type PedidoItem = {
   /** Fase 20: importação com a comissão vazia/zerada (enviada para análise) */
   comissao_planilha_ausente: boolean;
   produto: { sku: string } | null;
-  /** Fase 17: SKU como veio da planilha e pendência de VÍNCULO (produto não cadastrado); divergências viram alertas (Fase 19) */
+  /** Fase 17: SKU como veio da planilha (legado; a 17.1 copia para sku_informado) */
   sku_planilha: string | null;
+  /** Fase 17.1: pendência de VÍNCULO — SEMPRE que o item não tem produto (importado ou lançado na plataforma) */
   pendencia: "produto_nao_cadastrado" | null;
+  /** Fase 17.1: snapshot do item informado (permite o item existir sem produto) */
+  sku_informado: string | null;
+  descricao_informada: string | null;
+  linha_planilha: number | null;
+  /** Fase 17.1: origem do PERCENTUAL de comissão (null = item anterior à 17.1) */
+  origem_calculo: "representada" | "catalogo" | "manual" | "zero" | null;
 };
 
 export type Pedido = {
@@ -52,7 +59,7 @@ export type Pedido = {
 
 const CAMPOS = `id, numero, codigo_pedido, codigo_gerado, tem_pendencias, data, data_faturamento, status, valor_total, comissao_total, forma_pagamento, prazo_tipo, prazo_dias, origem, observacoes,
   cliente:clientes(id, nome), representada:representadas(id, nome:razao_social),
-  itens:pedido_itens(id, produto_id, descricao, quantidade, preco_unitario, desconto_percentual, acrescimo_percentual, desconto_acima_max, subtotal, comissao_percentual, comissao_valor, comissao_origem, comissao_planilha_ausente, sku_planilha, pendencia, produto:produtos(sku)),
+  itens:pedido_itens(id, produto_id, descricao, quantidade, preco_unitario, desconto_percentual, acrescimo_percentual, desconto_acima_max, subtotal, comissao_percentual, comissao_valor, comissao_origem, comissao_planilha_ausente, sku_planilha, pendencia, sku_informado, descricao_informada, linha_planilha, origem_calculo, produto:produtos(sku)),
   comissao:comissoes(id, status, valor, percentual, data_prevista)`;
 
 export async function obterPedido({ supabase }: Contexto, id: string): Promise<Pedido> {
@@ -168,15 +175,33 @@ export async function excluirPedido({ supabase }: Contexto, id: string): Promise
 
 /* ---------- Pendências de pedidos importados (Fase 17) ---------- */
 
-/** Liga ao produto os itens pendentes com o mesmo SKU nos pedidos da mesma representada (preço do item não muda). */
-export async function vincularPendentesAoProduto({ supabase }: Contexto, produtoId: string): Promise<number> {
-  const { data, error } = await supabase.rpc("vincular_produto_pendente", { p_produto_id: idSchema.parse(produtoId) });
+export type ResultadoVinculo = { vinculados: number; recalculados: number; preservados: number };
+
+/**
+ * Liga ao produto os itens pendentes com o mesmo SKU informado (e os itens indicados em `itens`, para itens sem
+ * SKU) nos pedidos da mesma representada; o preço do item não muda. Fase 17.1 (E): a comissão de cada item vinculado
+ * é recalculada UMA vez (função SQL recalcular_comissao_item_vinculado — o único ponto autorizado); comissão já
+ * recebida ou manual é PRESERVADA (só a pendência sai). Idempotente: vincular de novo não altera nada.
+ */
+export async function vincularPendentesAoProduto({ supabase }: Contexto, produtoId: string, itens: string[] = []): Promise<ResultadoVinculo> {
+  const { data, error } = await supabase.rpc("vincular_produto_pendente", {
+    p_produto_id: idSchema.parse(produtoId), p_itens: itens.length ? z.array(idSchema).max(500).parse(itens) : null,
+  });
   if (error) throw erroBanco(error);
-  return Number(data ?? 0);
+  const r = (data ?? {}) as Partial<ResultadoVinculo>;
+  return { vinculados: Number(r.vinculados ?? 0), recalculados: Number(r.recalculados ?? 0), preservados: Number(r.preservados ?? 0) };
+}
+
+/** Mensagem do vínculo (informa quando o valor da comissão foi preservado). */
+export function mensagemVinculo(r: ResultadoVinculo, prefixo: string): string {
+  if (!r.vinculados) return prefixo;
+  let m = `${prefixo} e vinculado a ${r.vinculados} item(ns) de pedido pendente(s)`;
+  if (r.preservados) m += ` (${r.preservados} com comissão recebida ou manual: valor preservado, só a pendência foi limpa)`;
+  return m;
 }
 
 /** "Vincular produto" do alerta do Catálogo: acha o produto (representada + SKU) e vincula os itens pendentes. */
-export async function vincularProdutoPendentes(ctx: Contexto, representadaId: string, sku: unknown): Promise<number> {
+export async function vincularProdutoPendentes(ctx: Contexto, representadaId: string, sku: unknown): Promise<ResultadoVinculo> {
   const s = z.string().trim().min(1).max(60).parse(sku);
   const { data, error } = await ctx.supabase
     .from("produtos").select("id").eq("representada_id", idSchema.parse(representadaId)).eq("sku", s).maybeSingle<{ id: string }>();
@@ -185,34 +210,42 @@ export async function vincularProdutoPendentes(ctx: Contexto, representadaId: st
   return vincularPendentesAoProduto(ctx, data.id);
 }
 
-export type PendenciaCatalogo = { sku: string; descricao: string | null; preco: number; itens: number; pedidos: number; produto: { id: string; nome: string } | null };
+/** sku vazio = item lançado sem SKU (agrupado pela descrição); `ids` = itens do grupo (vínculo explícito). */
+export type PendenciaCatalogo = {
+  sku: string; descricao: string | null; preco: number; itens: number; pedidos: number; ids: string[];
+  produto: { id: string; nome: string } | null;
+};
 
 /**
- * Itens de pedidos desta representada sem produto vinculado (pendência "produto não cadastrado"), agrupados por SKU.
- * produto preenchido = o SKU já existe no Catálogo, só falta vincular (caso 2); null = SKU a cadastrar (caso 1).
+ * Itens de pedidos desta representada sem produto vinculado (pendência "produto não cadastrado" — importados OU
+ * lançados na plataforma), agrupados por SKU informado; sem SKU, pela descrição informada.
+ * produto preenchido = o SKU já existe no Catálogo, só falta vincular (caso 2); null = a cadastrar (caso 1).
  */
 export async function pendenciasDoCatalogo({ supabase }: Contexto, representadaId: string): Promise<PendenciaCatalogo[]> {
   const rep = idSchema.parse(representadaId);
   const { data, error } = await supabase
     .from("pedido_itens")
-    .select("sku_planilha, descricao, preco_unitario, pedido_id, pedido:pedidos!inner(representada_id)")
+    .select("id, sku_informado, descricao_informada, descricao, preco_unitario, pedido_id, pedido:pedidos!inner(representada_id)")
     .eq("pendencia", "produto_nao_cadastrado").is("produto_id", null).eq("pedido.representada_id", rep)
-    .returns<{ sku_planilha: string | null; descricao: string | null; preco_unitario: number; pedido_id: string }[]>();
+    .returns<{ id: string; sku_informado: string | null; descricao_informada: string | null; descricao: string | null; preco_unitario: number; pedido_id: string }[]>();
   if (error) throw erroBanco(error);
-  const porSku = new Map<string, { descricao: string | null; preco: number; itens: number; pedidos: Set<string> }>();
+  const grupos = new Map<string, { sku: string; descricao: string | null; preco: number; ids: string[]; pedidos: Set<string> }>();
   for (const i of data) {
-    if (!i.sku_planilha) continue;
-    const g = porSku.get(i.sku_planilha) ?? { descricao: i.descricao, preco: Number(i.preco_unitario), itens: 0, pedidos: new Set<string>() };
-    g.itens += 1;
+    const descricao = i.descricao_informada ?? i.descricao;
+    const chave = i.sku_informado ? `sku:${i.sku_informado}` : `desc:${(descricao ?? "").trim().toLowerCase()}`;
+    const g = grupos.get(chave) ?? { sku: i.sku_informado ?? "", descricao, preco: Number(i.preco_unitario), ids: [], pedidos: new Set<string>() };
+    g.ids.push(i.id);
     g.pedidos.add(i.pedido_id);
-    porSku.set(i.sku_planilha, g);
+    grupos.set(chave, g);
   }
-  if (!porSku.size) return [];
-  const { data: prods, error: e2 } = await supabase
-    .from("produtos").select("id, sku, nome").eq("representada_id", rep).in("sku", [...porSku.keys()])
-    .returns<{ id: string; sku: string; nome: string }[]>();
+  if (!grupos.size) return [];
+  const skus = [...grupos.values()].map((g) => g.sku).filter(Boolean);
+  const { data: prods, error: e2 } = skus.length
+    ? await supabase.from("produtos").select("id, sku, nome").eq("representada_id", rep).in("sku", skus).returns<{ id: string; sku: string; nome: string }[]>()
+    : { data: [] as { id: string; sku: string; nome: string }[], error: null };
   if (e2) throw erroBanco(e2);
   const existentes = new Map(prods.map((p) => [p.sku, { id: p.id, nome: p.nome }]));
-  return [...porSku].map(([sku, g]) => ({ sku, descricao: g.descricao, preco: g.preco, itens: g.itens, pedidos: g.pedidos.size, produto: existentes.get(sku) ?? null }))
-    .sort((a, b) => a.sku.localeCompare(b.sku));
+  return [...grupos.values()]
+    .map((g) => ({ sku: g.sku, descricao: g.descricao, preco: g.preco, itens: g.ids.length, pedidos: g.pedidos.size, ids: g.ids, produto: g.sku ? existentes.get(g.sku) ?? null : null }))
+    .sort((a, b) => (a.sku || "~" + (a.descricao ?? "")).localeCompare(b.sku || "~" + (b.descricao ?? "")));
 }

@@ -27,7 +27,7 @@ export type Representada = Omit<RegistroRepresentada, "cnpj" | "email_comercial"
 
 const CAMPOS =
   "id, codigo_representada, razao_social, nome:razao_social, nome_fantasia, cnpj, inscricao_estadual, email_comercial, telefone, " +
-  "contato_nome, contato_telefone, cep, endereco, numero, complemento, bairro, cidade, uf, comissao_percentual, prazo_pagamento_dias, " +
+  "contato_nome, contato_telefone, cep, endereco, numero, complemento, bairro, cidade, uf, comissao_percentual, desconto_max, prazo_pagamento_dias, " +
   "comissao_pagamento_tipo, comissao_pagamento_referencia, comissao_pagamento_dias, " +
   "tabela_preco, status, observacoes, criado_em, atualizado_em, excluido_em, slug, catalogo_publico, criar_pedido_publico";
 

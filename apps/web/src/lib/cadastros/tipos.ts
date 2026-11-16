@@ -24,6 +24,8 @@ export interface Representada {
   cidade: string;
   uf: string;
   comissao_percentual: number | null; // comissão fixa (se houver); prevalece sobre a do produto (Fase 19)
+  /** Fase 17.1: desconto máximo (%) da representada; vazio = usa o padrão do usuário */
+  desconto_max: number | null;
   prazo_pagamento_dias: number | null;
   /** pagamento da comissão (só cadastro): referência e dias só quando tipo = "outro" */
   comissao_pagamento_tipo: "faturamento" | "pagamento" | "outro";

@@ -22,6 +22,20 @@ function itensDoForm(fd: FormData) {
   return itens;
 }
 
+/**
+ * Fase 17.1 — itens SEM produto (componente ItensSemProduto): sp_<k>_desc (obrigatória), sp_<k>_sku, sp_<k>_qtd,
+ * sp_<k>_preco, sp_<k>_descpct, sp_<k>_acr e sp_<k>_id (edição). A validação final é do Zod/banco.
+ */
+function itensSemProdutoDoForm(fd: FormData) {
+  const chaves = new Set<string>();
+  for (const k of fd.keys()) { const m = /^sp_(\w+)_desc$/.exec(k); if (m) chaves.add(m[1]!); }
+  const v = (k: string, campo: string) => { const x = fd.get(`sp_${k}_${campo}`); return typeof x === "string" ? x : ""; };
+  return [...chaves].map((k) => ({
+    produto_id: null, item_id: v(k, "id") || null, descricao_informada: v(k, "desc"), sku_informado: v(k, "sku"),
+    quantidade: v(k, "qtd"), preco_unitario: v(k, "preco"), desconto_percentual: v(k, "descpct") || "0", acrescimo_percentual: v(k, "acr") || "0",
+  }));
+}
+
 export async function criarPedidoAction(fd: FormData) {
   const representada_id = String(fd.get("representada_id") ?? "");
   const cliente_id = String(fd.get("cliente_id") ?? "");
@@ -38,7 +52,7 @@ export async function criarPedidoAction(fd: FormData) {
         gerar_codigo: fd.get("gerar_codigo") === "1",
         codigo_pedido: fd.get("codigo_pedido"),
         data_faturamento: fd.get("data_faturamento"),
-        itens: itensDoForm(fd),
+        itens: [...itensDoForm(fd), ...itensSemProdutoDoForm(fd)],
       }),
     {
       ok: (p) => `${BASE}/${p.id}`,
@@ -50,7 +64,10 @@ export async function criarPedidoAction(fd: FormData) {
 
 /** Edição: além de qtd_/desc_, cada item traz preco_<produtoId>. */
 export async function editarPedidoAction(id: string, fd: FormData) {
-  const itens = itensDoForm(fd).map((i) => ({ ...i, preco_unitario: String(fd.get(`preco_${i.produto_id}`) ?? "") }));
+  const itens = [
+    ...itensDoForm(fd).map((i) => ({ ...i, preco_unitario: String(fd.get(`preco_${i.produto_id}`) ?? "") })),
+    ...itensSemProdutoDoForm(fd),
+  ];
   await executarAcao(
     (ctx) =>
       editarPedido(ctx, id, {

@@ -28,6 +28,10 @@ export const ROTULO_STATUS_COMISSAO: Record<string, string> = {
   cancelada: "Cancelada",
   pendente_analise: "Pendente de análise",
 };
+/** Fase 17.1: de onde veio o percentual da comissão do item */
+export const ROTULO_ORIGEM_CALCULO: Record<string, string> = {
+  representada: "da representada", catalogo: "do catálogo", manual: "manual", zero: "sem comissão definida",
+};
 export const ROTULO_FORMA_PAGAMENTO: Record<string, string> = {
   dinheiro: "Dinheiro",
   credito: "Crédito",

@@ -3,13 +3,14 @@ import { Mensagens, type Busca } from "@/components/form";
 import { formatarDataHora } from "@/lib/formato";
 import { carregar } from "@/server/acao";
 import { obterPerfil } from "@/server/perfil";
+import { obterConfiguracaoPedidos } from "@/server/configuracao-pedidos";
 import { obterUso } from "@/server/quota";
 import { BotaoUpgrade } from "@/components/upgrade";
-import { revelarDocumentosAction, salvarPerfilAction } from "./actions";
+import { revelarDocumentosAction, salvarDescontoPadraoAction, salvarPerfilAction } from "./actions";
 import { Icone } from "@/components/icones";
 
 export default async function PerfilPage({ searchParams }: { searchParams: Busca }) {
-  const [{ ok, erro }, [perfil, uso]] = await Promise.all([searchParams, carregar((ctx) => Promise.all([obterPerfil(ctx), obterUso(ctx)]))]);
+  const [{ ok, erro }, [perfil, uso, config]] = await Promise.all([searchParams, carregar((ctx) => Promise.all([obterPerfil(ctx), obterUso(ctx), obterConfiguracaoPedidos(ctx)]))]);
   const pdf = uso.recursos.pdf_mes;
   const pct = pdf.limite ? Math.min(100, Math.round((pdf.usado / pdf.limite) * 100)) : 0;
   const aceite = (em: string | null, versao: string | null) => (em ? `${formatarDataHora(em)} · versão ${versao ?? "—"}` : "Não registrado");
@@ -30,6 +31,18 @@ export default async function PerfilPage({ searchParams }: { searchParams: Busca
       <section className="card">
         <h2 className="titulo-icone"><Icone nome="identidade" tamanho={20} /> Dados cadastrais</h2>
         <FormDadosUsuario acao={salvarPerfilAction} modo="edicao" iniciais={perfil} revelar={revelarDocumentosAction} />
+      </section>
+
+      <section className="card" id="pedidos">
+        <h2 className="titulo-icone"><Icone nome="carrinho" tamanho={20} /> Pedidos</h2>
+        <form action={salvarDescontoPadraoAction} className="form-faturamento">
+          <label className="campo">
+            <span>Desconto máximo padrão (%)</span>
+            <input name="desconto_max_padrao" type="number" min="0" max="100" step="0.01" required defaultValue={config.desconto_max_padrao} />
+          </label>
+          <button className="btn-secundario btn-peq" type="submit"><Icone nome="check" tamanho={16} /> Salvar</button>
+        </form>
+        <p className="dica">Usado quando nem o produto (tabela de preços) nem a representada têm desconto máximo definido. Ordem: produto → representada → este padrão.</p>
       </section>
 
       <section className="card">

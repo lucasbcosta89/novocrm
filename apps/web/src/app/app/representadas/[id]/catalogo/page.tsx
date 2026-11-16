@@ -11,53 +11,57 @@ import { pendenciasDoCatalogo } from "@/server/pedidos";
 import { listarProdutos } from "@/server/produtos";
 import { obterUso } from "@/server/quota";
 import { obterRepresentada } from "@/server/representadas";
-import { atualizarProdutoAction, criarProdutoAction, excluirProdutoAction, imagemProdutoAction, vincularProdutoPendentesAction } from "../../actions";
+import { alterarAtivoProdutoAction, atualizarProdutoAction, criarProdutoAction, excluirProdutoAction, imagemProdutoAction, vincularProdutoPendentesAction } from "../../actions";
+import { usoDosProdutos } from "@/server/produtos";
 import { Icone } from "@/components/icones";
 import { ModalImportarProdutos } from "./_components/ModalImportarProdutos";
 
 /** Catálogo: produtos + Gerar Catálogo (PDF) e Enviar por WhatsApp (Fase 7c). */
-type Busca = Promise<{ erro?: string; ok?: string; sku?: string; nome?: string; preco?: string; voltar_pedido?: string }>;
+type Busca = Promise<{ erro?: string; ok?: string; sku?: string; nome?: string; preco?: string; voltar_pedido?: string; itens?: string }>;
 
 export default async function RepresentadaCatalogo({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Busca }) {
   const [{ id }, sp] = await Promise.all([params, searchParams]);
   const { erro, ok } = sp;
-  const [r, produtos, vinculados, uso, pendencias] = await carregar((ctx) =>
+  const [r, produtos, vinculados, uso, pendencias, usoProdutos] = await carregar((ctx) =>
     Promise.all([
       obterRepresentada(ctx, id),
       listarProdutos(ctx, id),
       listarClientesDaRepresentada(ctx, id),
       obterUso(ctx),
       pendenciasDoCatalogo(ctx, id),
+      usoDosProdutos(ctx, id),
     ]),
   );
   // "Cadastrar produto" (pedido importado ou alerta abaixo): formulário pré-preenchido pela query string
   const pre = { sku: sp.sku?.slice(0, 60) ?? "", nome: sp.nome?.slice(0, 160) ?? "", preco: sp.preco && Number(sp.preco) >= 0 ? sp.preco : "" };
   const voltarPedido = sp.voltar_pedido && /^[0-9a-f-]{36}$/i.test(sp.voltar_pedido) ? sp.voltar_pedido : null;
+  // itens sem SKU (lançados na plataforma) são vinculados pelo id ao cadastrar o produto
+  const itensVincular = (sp.itens ?? "").split(",").filter((x) => /^[0-9a-f-]{36}$/i.test(x)).slice(0, 50);
   const aCadastrar = pendencias.filter((x) => !x.produto);
   const aVincular = pendencias.filter((x) => x.produto);
-  const linkCadastrar = (x: { sku: string; descricao: string | null; preco: number }) =>
-    `?${new URLSearchParams({ sku: x.sku, nome: x.descricao ?? "", preco: String(x.preco) })}#novo-produto`;
+  const linkCadastrar = (x: { sku: string; descricao: string | null; preco: number; ids: string[] }) =>
+    `?${new URLSearchParams({ sku: x.sku, nome: x.descricao ?? "", preco: String(x.preco), ...(x.sku ? {} : { itens: x.ids.slice(0, 50).join(",") }) })}#novo-produto`;
 
   return (
     <>
       <Mensagens erro={erro} ok={ok} />
-      {/* Pendências de pedidos importados: aparece só enquanto houver alguma e some ao resolver a última */}
+      {/* Pendências de vínculo (pedidos importados OU lançados na plataforma — Fase 17.1): some ao resolver a última */}
       {pendencias.length > 0 && (
         <section className="card">
           {aCadastrar.length > 0 && (
             <>
               <p className="aviso aviso-alerta importar-aviso">
                 <span className="circulo-icone"><Icone nome="alerta" tamanho={16} /></span>
-                <span>{aCadastrar.reduce((t, x) => t + x.itens, 0)} item(ns) de pedidos importados têm produtos que não estão no Catálogo. Cadastre-os para vincular aos pedidos.</span>
+                <span>{aCadastrar.reduce((t, x) => t + x.itens, 0)} item(ns) de pedidos (importados ou lançados sem produto) não estão no Catálogo. Cadastre-os para vincular aos pedidos.</span>
               </p>
               <div className="tabela-wrap">
                 <table className="tabela">
-                  <thead><tr><th>SKU</th><th>Descrição da planilha</th><th className="num">Itens afetados</th><th>Ação</th></tr></thead>
+                  <thead><tr><th>SKU</th><th>Descrição informada</th><th className="num">Itens afetados</th><th>Ação</th></tr></thead>
                   <tbody>
                     {aCadastrar.map((x) => (
-                      <tr key={x.sku}>
-                        <td data-rotulo="SKU"><code>{x.sku}</code></td>
-                        <td data-rotulo="Descrição da planilha">{x.descricao ?? "—"}</td>
+                      <tr key={x.sku || x.ids[0]}>
+                        <td data-rotulo="SKU">{x.sku ? <code>{x.sku}</code> : <span className="dica">sem SKU</span>}</td>
+                        <td data-rotulo="Descrição informada">{x.descricao ?? "—"}</td>
                         <td className="num" data-rotulo="Itens afetados">{x.itens} em {x.pedidos} pedido(s)</td>
                         <td data-rotulo="Ação"><Link className="btn-suave btn-peq" href={linkCadastrar(x)}><Icone nome="mais" tamanho={14} /> Cadastrar produto</Link></td>
                       </tr>
@@ -170,9 +174,28 @@ export default async function RepresentadaCatalogo({ params, searchParams }: { p
                           </label>
                           <button className="btn-suave btn-peq" type="submit">Enviar imagem</button>
                         </form>
-                        <form action={excluirProdutoAction.bind(null, r.id, p.id)}>
-                          <button className="btn-perigo" type="submit">Excluir produto</button>
-                        </form>
+                        {(() => {
+                          // G: preferir DESATIVAR; excluir só sem uso (pedidos, oportunidades, devoluções)
+                          const u = usoProdutos.get(p.id) ?? { pedidos: 0, oportunidades: 0, devolucoes: 0 };
+                          const emUso = u.pedidos + u.oportunidades + u.devolucoes > 0;
+                          return (
+                            <div className="acoes-linha">
+                              <form action={alterarAtivoProdutoAction.bind(null, r.id, p.id, !p.ativo)}>
+                                <BotaoConfirmar className="btn-secundario btn-peq" texto={p.ativo ? "Desativar" : "Reativar"}
+                                  pergunta={p.ativo
+                                    ? `Desativar "${p.nome}"? Ele está em ${u.pedidos} pedido(s). Sai do seletor de novos pedidos, mas continua visível e íntegro nos pedidos já lançados.`
+                                    : `Reativar "${p.nome}"? Ele volta a aparecer no seletor de novos pedidos.`} />
+                              </form>
+                              {emUso ? (
+                                <p className="dica">{u.pedidos > 0 ? `Este produto está em ${u.pedidos} pedidos. Desative-o em vez de excluir.` : "Produto usado em oportunidades ou devoluções: desative-o em vez de excluir."}</p>
+                              ) : (
+                                <form action={excluirProdutoAction.bind(null, r.id, p.id)}>
+                                  <BotaoConfirmar className="btn-perigo" texto="Excluir produto" pergunta={`Excluir "${p.nome}" definitivamente? Ele não é usado em nenhum pedido.`} />
+                                </form>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </details>
                     </td>
                   </tr>
@@ -183,11 +206,12 @@ export default async function RepresentadaCatalogo({ params, searchParams }: { p
         )}
 
         <h3 className="titulo-icone" id="novo-produto"><Icone nome="mais" tamanho={18} /> Novo produto</h3>
-        {(pre.sku || voltarPedido) && (
-          <p className="dica">Pré-preenchido a partir do pedido importado; ao salvar, os itens pendentes com este SKU são vinculados ao produto{voltarPedido && " e você volta para o pedido"}.</p>
+        {(pre.sku || voltarPedido || itensVincular.length > 0) && (
+          <p className="dica">Pré-preenchido a partir do item pendente; ao salvar, os itens pendentes com este SKU{itensVincular.length > 0 && " (e o item sem SKU de origem)"} são vinculados ao produto e a comissão deles é recalculada uma vez{voltarPedido && "; você volta para o pedido"}.</p>
         )}
         <form action={criarProdutoAction.bind(null, r.id)} className="grade">
           {voltarPedido && <input type="hidden" name="voltar_pedido" value={voltarPedido} />}
+          {itensVincular.length > 0 && <input type="hidden" name="itens" value={itensVincular.join(",")} />}
           <Campo label="SKU *" name="sku" required defaultValue={pre.sku} />
           <Campo label="Nome *" name="nome" required minLength={2} defaultValue={pre.nome} />
           <Campo label="Unidade" name="unidade" placeholder="un, cx, kg" />

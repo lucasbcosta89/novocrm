@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { idSchema, precosSchema, produtoSchema, produtoUpdateSchema } from "@/lib/validacao";
 import type { Contexto } from "./contexto";
 import { detectarTipoImagem } from "@/lib/imagem";
@@ -97,8 +98,43 @@ export async function atualizarProduto(ctx: Contexto, id: string, input: unknown
   return obterProduto(ctx, atual.id);
 }
 
+export type UsoProduto = { pedidos: number; oportunidades: number; devolucoes: number };
+
+/** Fase 17.1 (G): em quantos pedidos/oportunidades/devoluções cada produto da representada é usado. */
+export async function usoDosProdutos({ supabase }: Contexto, representadaId: string): Promise<Map<string, UsoProduto>> {
+  const { data, error } = await supabase.rpc("uso_produtos", { p_representada_id: idSchema.parse(representadaId) });
+  if (error) throw erroBanco(error);
+  return new Map(((data ?? []) as ({ produto_id: string } & UsoProduto)[]).map((u) => [u.produto_id, {
+    pedidos: Number(u.pedidos), oportunidades: Number(u.oportunidades), devolucoes: Number(u.devolucoes),
+  }]));
+}
+
+export const msgProdutoEmUso = (n: number) => `Este produto está em ${n} pedidos. Desative-o em vez de excluir.`;
+
+/** G: desativar é o caminho preferido — sai do seletor de novos pedidos, continua íntegro no histórico, sem pendência. */
+export async function alterarAtivoProduto({ supabase }: Contexto, id: string, ativo: boolean): Promise<void> {
+  const { error, count } = await supabase.from("produtos").update({ ativo: z.boolean().parse(ativo) }, { count: "exact" }).eq("id", idSchema.parse(id));
+  if (error) throw erroBanco(error);
+  if (!count) throw new AppError(404, "Não encontrado", "nao_encontrado");
+}
+
+/**
+ * G.3–G.5: exclusão BLOQUEADA se houver qualquer item de pedido (ou oportunidade/devolução) apontando para o produto.
+ * Sem uso, exclui normalmente; a FK pedido_itens.produto_id ON DELETE SET NULL fica só como rede de segurança.
+ * Nunca apaga pedido ou item por consequência.
+ */
 export async function excluirProduto({ supabase }: Contexto, id: string): Promise<void> {
-  const { error, count } = await supabase.from("produtos").delete({ count: "exact" }).eq("id", idSchema.parse(id));
+  const produtoId = idSchema.parse(id);
+  const [itens, oport, devol] = await Promise.all([
+    supabase.from("pedido_itens").select("pedido_id").eq("produto_id", produtoId).returns<{ pedido_id: string }[]>(),
+    supabase.from("oportunidade_produtos").select("produto_id", { count: "exact", head: true }).eq("produto_id", produtoId),
+    supabase.from("devolucao_itens").select("produto_id", { count: "exact", head: true }).eq("produto_id", produtoId),
+  ]);
+  for (const r of [itens, oport, devol]) if (r.error) throw erroBanco(r.error);
+  const pedidos = new Set((itens.data ?? []).map((i) => i.pedido_id)).size;
+  if (pedidos > 0) throw new AppError(409, msgProdutoEmUso(pedidos), "produto_em_uso");
+  if ((oport.count ?? 0) + (devol.count ?? 0) > 0) throw new AppError(409, "Produto usado em oportunidades ou devoluções. Desative-o em vez de excluir.", "produto_em_uso");
+  const { error, count } = await supabase.from("produtos").delete({ count: "exact" }).eq("id", produtoId);
   if (error) throw erroBanco(error);
   if (!count) throw new AppError(404, "Não encontrado", "nao_encontrado");
 }

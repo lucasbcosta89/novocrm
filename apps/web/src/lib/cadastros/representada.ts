@@ -76,6 +76,14 @@ export const CAMPOS_REPRESENTADA = {
       .refine((n) => Math.abs(Math.round(n * 100) - n * 100) < 1e-6, "Comissão fixa: no máximo 2 casas decimais")
       .nullable(),
   ),
+  /** Fase 17.1 (F): desconto máximo da representada — 2º nível da cascata (produto → representada → padrão → 10). */
+  desconto_max: z.preprocess(
+    normalizarDecimal,
+    z.number("Desconto máximo deve ser um número de 0 a 100")
+      .min(0, "Desconto máximo deve estar entre 0 e 100")
+      .max(100, "Desconto máximo deve estar entre 0 e 100")
+      .nullable(),
+  ),
   prazo_pagamento_dias: z.preprocess(
     (v) => (vazio(v) ? null : normalizarDecimal(v)),
     z.number("Prazo deve ser um número de dias").int("Prazo deve ser em dias inteiros").min(0, "Prazo entre 0 e 365 dias").max(365, "Prazo entre 0 e 365 dias").nullable(),
@@ -186,7 +194,7 @@ export type ValoresFormRepresentada = Record<CampoRepresentada, string>;
 export const VALORES_VAZIOS_REPRESENTADA: ValoresFormRepresentada = {
   codigo_representada: "", razao_social: "", nome_fantasia: "", cnpj: "", inscricao_estadual: "", email_comercial: "",
   telefone: "", contato_nome: "", contato_telefone: "", cep: "", endereco: "", numero: "", complemento: "", bairro: "",
-  cidade: "", uf: "", comissao_percentual: "", prazo_pagamento_dias: "", tabela_preco: "",
+  cidade: "", uf: "", comissao_percentual: "", desconto_max: "", prazo_pagamento_dias: "", tabela_preco: "",
   comissao_pagamento_tipo: "faturamento", comissao_pagamento_referencia: "", comissao_pagamento_dias: "", status: "ativa", observacoes: "",
 };
 
@@ -196,7 +204,7 @@ export function valoresDaRepresentada(r: Partial<Record<CampoRepresentada, unkno
   for (const c of CAMPOS_FORM_REPRESENTADA) {
     const x = r[c];
     if (x == null) continue;
-    v[c] = c === "comissao_percentual" ? String(Number(x)).replace(".", ",") : String(x);
+    v[c] = c === "comissao_percentual" || c === "desconto_max" ? String(Number(x)).replace(".", ",") : String(x);
   }
   return v;
 }

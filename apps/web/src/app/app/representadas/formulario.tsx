@@ -139,6 +139,7 @@ export function FormularioRepresentada({ acao, iniciais, edicao = false, catalog
         <legend>Condições Comerciais</legend>
         <div className="grade">
           {C({ c: "comissao_percentual", rotulo: "Comissão fixa (se houver) (%)", inputMode: "decimal", placeholder: "Vazio = varia por produto" })}
+          {C({ c: "desconto_max", rotulo: "Desconto máximo (%)", inputMode: "decimal", placeholder: "Vazio = padrão da conta" })}
           <label className="campo" htmlFor="rep-comissao_pagamento_tipo">
             <span>Pagamento da Comissão</span>
             <select id="rep-comissao_pagamento_tipo" name="comissao_pagamento_tipo" value={valores.comissao_pagamento_tipo}

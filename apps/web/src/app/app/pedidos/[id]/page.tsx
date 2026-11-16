@@ -4,7 +4,7 @@ import { Mensagens, type Busca } from "@/components/form";
 import { Icone } from "@/components/icones";
 import { StatusPedido } from "@/components/status";
 import { formatarData, formatarDataHora, formatarDocumento, formatarMoeda, formatarPercentual, formatarDia } from "@/lib/formato";
-import { ROTULO_FORMA_PAGAMENTO, ROTULO_STATUS_COMISSAO } from "@/lib/rotulos";
+import { ROTULO_FORMA_PAGAMENTO, ROTULO_ORIGEM_CALCULO, ROTULO_STATUS_COMISSAO } from "@/lib/rotulos";
 import { carregar } from "@/server/acao";
 import { obterCliente } from "@/server/clientes";
 import { obterPedido } from "@/server/pedidos";
@@ -113,17 +113,18 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
         <section className="card" id="pendencias">
           <h2 className="titulo-icone"><Icone nome="alerta" tamanho={20} /> Pendências deste pedido</h2>
           <p className="dica">
-            Fica separada da lista de itens porque mostra o que veio da planilha e ainda precisa de ação sua; os itens abaixo
-            já estão gravados no pedido com o preço da planilha.
+            Itens sem produto do Catálogo (vindos da planilha ou lançados no pedido). Ficam separados da lista de itens porque
+            ainda precisam de ação sua; os itens abaixo já estão gravados com o preço informado. Ao cadastrar o produto, o item é
+            vinculado e a comissão dele é recalculada uma vez.
           </p>
           <div className="tabela-wrap">
             <table className="tabela">
-              <thead><tr><th>SKU</th><th>Descrição da planilha</th><th className="num">Quantidade</th><th className="num">Preço Unitário</th><th>Motivo</th><th>Ação</th></tr></thead>
+              <thead><tr><th>SKU</th><th>Descrição informada</th><th className="num">Quantidade</th><th className="num">Preço Unitário</th><th>Motivo</th><th>Ação</th></tr></thead>
               <tbody>
                 {pendentes.map((i) => (
                   <tr key={i.id}>
-                    <td data-rotulo="SKU"><code>{i.sku_planilha ?? i.produto?.sku ?? "—"}</code></td>
-                    <td data-rotulo="Descrição da planilha">{i.descricao ?? "—"}</td>
+                    <td data-rotulo="SKU">{i.sku_informado ?? i.sku_planilha ? <code>{i.sku_informado ?? i.sku_planilha}</code> : <span className="dica">sem SKU</span>}</td>
+                    <td data-rotulo="Descrição informada">{i.descricao_informada ?? i.descricao ?? "—"}{i.linha_planilha != null && <div className="dica">linha {i.linha_planilha} da planilha</div>}</td>
                     <td className="num" data-rotulo="Quantidade">{String(i.quantidade).replace(".", ",")}</td>
                     <td className="num" data-rotulo="Preço Unitário">{formatarMoeda(i.preco_unitario)}</td>
                     <td data-rotulo="Motivo">
@@ -134,7 +135,7 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
                     <td data-rotulo="Ação">
                       {i.pendencia === "produto_nao_cadastrado" && p.representada ? (
                         <Link className="btn-suave btn-peq" href={`/app/representadas/${p.representada.id}/catalogo?${new URLSearchParams({
-                          novo: "1", sku: i.sku_planilha ?? "", nome: i.descricao ?? "", preco: String(i.preco_unitario), voltar_pedido: p.id,
+                          novo: "1", sku: i.sku_informado ?? i.sku_planilha ?? "", nome: i.descricao_informada ?? i.descricao ?? "", preco: String(i.preco_unitario), voltar_pedido: p.id, itens: i.id,
                         })}#novo-produto`}>
                           <Icone nome="mais" tamanho={14} /> Cadastrar produto
                         </Link>
@@ -159,8 +160,8 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
             <tbody>
               {p.itens.map((i) => (
                 <tr key={i.id}>
-                  <td><code>{i.produto?.sku ?? i.sku_planilha ?? "—"}</code></td>
-                  <td>{i.descricao}</td>
+                  <td>{i.produto?.sku ?? i.sku_informado ?? i.sku_planilha ? <code>{i.produto?.sku ?? i.sku_informado ?? i.sku_planilha}</code> : "—"}</td>
+                  <td>{i.descricao}{!i.produto_id && <div className="dica texto-perigo">sem produto vinculado</div>}</td>
                   <td>{String(i.quantidade).replace(".", ",")}</td>
                   <td>{formatarMoeda(i.preco_unitario)}</td>
                   <td>
@@ -172,6 +173,7 @@ export default async function PedidoPage({ params, searchParams }: { params: Pro
                     {p.status === "rascunho" && i.comissao_origem !== "planilha" ? <span className="dica">ao confirmar</span> : formatarMoeda(i.comissao_valor)}
                     <div className="dica">
                       {i.comissao_origem === "planilha" ? "da planilha" : formatarPercentual(i.comissao_percentual)}
+                      {i.origem_calculo && i.comissao_origem !== "planilha" && ` · ${ROTULO_ORIGEM_CALCULO[i.origem_calculo]}`}
                       {i.comissao_planilha_ausente && " · não informada na planilha (análise)"}
                     </div>
                   </td>

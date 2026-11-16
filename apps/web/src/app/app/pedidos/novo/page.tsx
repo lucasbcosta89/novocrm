@@ -4,6 +4,9 @@ import { Mensagens } from "@/components/form";
 import { Icone } from "@/components/icones";
 import { CampoDataFaturamento } from "@/components/data-faturamento";
 import { ItensEditaveis, type LinhaEdicao } from "@/components/itens-editaveis";
+import { ItensSemProduto } from "@/components/itens-sem-produto";
+import { resolverDescontoMaximo } from "@/lib/desconto";
+import { obterConfiguracaoPedidos } from "@/server/configuracao-pedidos";
 import { carregar } from "@/server/acao";
 import { listarClientes } from "@/server/clientes";
 import { listarTabelaPrecos } from "@/server/consultas";
@@ -26,10 +29,10 @@ export default async function NovoPedidoPage({
   const cli = clientes.find((c) => c.id === cliId);
 
   // Preço do cliente (tabela específica) sobrepõe o padrão — mesma regra da função criar_pedido.
-  const [produtos, precos, proximo] =
+  const [produtos, precos, proximo, config] =
     rep && cli
-      ? await carregar((ctx) => Promise.all([listarProdutos(ctx, rep.id), listarTabelaPrecos(ctx, rep.id), proximoCodigoPedido(ctx)]))
-      : [[], [], ""];
+      ? await carregar((ctx) => Promise.all([listarProdutos(ctx, rep.id), listarTabelaPrecos(ctx, rep.id), proximoCodigoPedido(ctx), obterConfiguracaoPedidos(ctx)]))
+      : [[], [], "", null];
   const precoCliente = new Map(
     precos.filter((t) => t.cliente?.id === cli?.id && t.produto).map((t) => [t.produto!.id, t] as const),
   );
@@ -40,7 +43,8 @@ export default async function NovoPedidoPage({
     const preco = Number(especifico?.preco ?? p.preco);
     return {
       produto_id: p.id, sku: p.sku, nome: p.unidade ? `${p.nome} (${p.unidade})` : p.nome, inativo: false, quantidade: 0, preco, desconto: 0, acrescimo: 0,
-      desconto_max: Number(especifico?.desconto_max ?? p.desconto_max ?? 0), preco_catalogo: preco, comissao_catalogo: p.comissao == null ? null : Number(p.comissao),
+      // F (17.1): cascata produto → representada → padrão da conta → 10
+      desconto_max: resolverDescontoMaximo({ desconto_max: especifico?.desconto_max ?? p.desconto_max }, rep, config), preco_catalogo: preco, comissao_catalogo: p.comissao == null ? null : Number(p.comissao),
       dica_preco: especifico ? "preço do cliente" : undefined,
     };
   });
@@ -76,11 +80,12 @@ export default async function NovoPedidoPage({
       {rep && cli && (
         <section className="card">
           <h2 className="titulo-icone"><Icone nome="pacote" tamanho={20} /> 2. Itens — {rep.nome}</h2>
-          {ativos.length === 0 ? (
+          {ativos.length === 0 && (
             <p className="vazio">
-              Nenhum produto ativo. Cadastre no <Link href={`/app/representadas/${rep.id}/catalogo`}>catálogo da representada</Link>.
+              Nenhum produto ativo. Cadastre no <Link href={`/app/representadas/${rep.id}/catalogo`}>catálogo da representada</Link> ou lance itens sem produto abaixo.
             </p>
-          ) : (
+          )}
+          {(
             <form action={criarPedidoAction}>
               <input type="hidden" name="representada_id" value={rep.id} />
               <input type="hidden" name="cliente_id" value={cli.id} />
@@ -89,8 +94,12 @@ export default async function NovoPedidoPage({
                 <label className="campo"><span>Data do pedido</span><input type="date" value={hoje} disabled aria-describedby="data-pedido-dica" /><small id="data-pedido-dica" className="dica">Gravada ao salvar.</small></label>
                 <CampoDataFaturamento dataPedido={hoje} />
               </div>
-              <ItensEditaveis linhas={linhas} comAcrescimo precoFixo
-                avisos={{ manual: true, representadaId: rep.id, comissaoRepresentada: rep.comissao_percentual == null ? null : Number(rep.comissao_percentual), produtosSemComissao: semComissao }} />
+              {linhas.length > 0 && (
+                <ItensEditaveis linhas={linhas} comAcrescimo precoFixo
+                  avisos={{ manual: true, representadaId: rep.id, comissaoRepresentada: rep.comissao_percentual == null ? null : Number(rep.comissao_percentual), produtosSemComissao: semComissao }} />
+              )}
+              <ItensSemProduto comissaoRepresentada={rep.comissao_percentual == null ? null : Number(rep.comissao_percentual)}
+                descontoMax={resolverDescontoMaximo(null, rep, config)} />
               <div className="grade" style={{ marginTop: 12 }}>
                 <PagamentoPedido />
                 <div className="acoes acoes-linha">

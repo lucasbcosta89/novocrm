@@ -157,6 +157,8 @@ export type GrupoPedido = {
   itens: {
     produto_id: string | null; sku: string; descricao: string | null; quantidade: number; preco_unitario: number;
     desconto_percentual: number; acrescimo_percentual: number; pendencia: "produto_nao_cadastrado" | null;
+    /** Fase 17.1: linha da planilha (registrada na pendência do item sem produto) */
+    linha: number;
     /** Fase 20: valor da planilha (> 0, prevalece) ou null; comissao_ausente = célula vazia/zerada (vai para análise) */
     comissao_valor: number | null; comissao_ausente: boolean;
   }[];
@@ -236,7 +238,7 @@ export function agruparPedidos(linhas: ResultadoValidacaoLinha[], existentes: Ma
       return {
         produto_id: produto?.produto_id ?? null, sku: String(l.dados.sku), descricao: (l.dados.descricao as string | undefined) ?? produto?.nome ?? null,
         quantidade: Number(l.dados.quantidade), preco_unitario: preco, desconto_percentual: Number(l.dados.desconto_percentual ?? 0),
-        acrescimo_percentual: Number(l.dados.acrescimo_percentual ?? 0), pendencia,
+        acrescimo_percentual: Number(l.dados.acrescimo_percentual ?? 0), pendencia, linha: l.numero_linha,
         comissao_valor: l.dados.comissao_valor == null ? null : Number(l.dados.comissao_valor), comissao_ausente: l.dados.comissao_ausente === 1,
       };
     });
