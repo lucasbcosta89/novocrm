@@ -8,13 +8,14 @@ import { MultiSelect, type OpcaoMulti } from "@/components/multi-select";
 import { ATALHOS_COMISSOES, ROTULO_ATALHO } from "@/lib/custos";
 import { CAMPOS_DATA, ROTULOS_CAMPO_DATA } from "@/lib/comissoes/filtro";
 import {
-  acoesDoStatus, COMPLETUDES, GRUPOS_STATUS, MOTIVOS_PENDENCIA, ROTULOS_COMPLETUDE, ROTULOS_GRUPO, ROTULOS_MOTIVO, ROTULOS_ORIGEM, rotuloMotivo, rotuloStatus,
+  acoesDoStatus, COMPLETUDES, GRUPOS_STATUS, ROTULOS_TIPO, MOTIVOS_PENDENCIA, ROTULOS_COMPLETUDE, ROTULOS_GRUPO, ROTULOS_MOTIVO, ROTULOS_ORIGEM, rotuloMotivo, rotuloStatus,
   statusNoGrupo, type OrigemCalculo,
 } from "@/lib/comissoes/status";
 import { formatarMoeda, formatarPercentual } from "@/lib/formato";
 import {
   aprovarLoteAction, atualizarDataAction, definirComissaoAction, editadasNoLoteAction, marcarRecebidaAction, reabrirComissaoAction, reabrirLoteAction,
   resumoSelecaoAction,
+  processarDevolucoesAction, reabrirDevolucaoAction, resumoProcessamentoAction,
 } from "./actions";
 
 const LIMITE_LOTE = 2000;
@@ -24,7 +25,7 @@ const hojeSP = () => new Date().toLocaleDateString("sv-SE", { timeZone: "America
 /* ---------- Filtro (P) ---------- */
 
 export function FiltroComissoes({ filtro, representadas, clientes, ativos, visao }: {
-  filtro: { p: string; de: string; ate: string; campo: string; g: string[]; comp: string; mot: string; rep: string[]; cli: string[]; lote: boolean; ed: boolean };
+  filtro: { p: string; de: string; ate: string; campo: string; g: string[]; comp: string; mot: string; rep: string[]; cli: string[]; lote: boolean; ed: boolean; tipo: string };
   representadas: OpcaoMulti[]; clientes: OpcaoMulti[]; ativos: number; visao: string;
 }) {
   const [periodo, setPeriodo] = useState(filtro.p);
@@ -72,6 +73,14 @@ export function FiltroComissoes({ filtro, representadas, clientes, ativos, visao
       <MultiSelect nome="rep" rotulo="Representada" opcoes={representadas} selecionados={filtro.rep} />
       <MultiSelect nome="cli" rotulo="Cliente" opcoes={clientes} selecionados={filtro.cli} todos="Todos" />
       <label className="check"><input type="checkbox" name="lote" value="1" defaultChecked={filtro.lote} onChange={enviar} /> Aprovadas em lote</label>
+      <label className="campo">
+        <span>Tipo</span>
+        <select name="tipo" defaultValue={filtro.tipo} onChange={enviar}>
+          <option value="">Todos</option>
+          <option value="normal">Normal</option>
+          <option value="estorno">{visao === "analise" ? "Somente estornos" : "Estorno"}</option>
+        </select>
+      </label>
       <label className="check"><input type="checkbox" name="ed" value="1" defaultChecked={filtro.ed} onChange={enviar} /> Data editada manualmente</label>
       <div className="acoes-linha">
         <button className="btn-secundario btn-peq" type="submit"><Icone nome="filtro" tamanho={16} /> Aplicar</button>
@@ -90,6 +99,9 @@ export type LinhaComissao = {
   id: string; pedido: { id: string; codigo: string } | null; cliente: string; representada: { id: string; nome: string } | null; produto: string;
   base: number; percentual: number; valor: number; previsao: string | null; recebimento: string | null; status: string; completude: string;
   motivos: string[]; origem: OrigemCalculo | null; editada: boolean; lote: string | null; historico: string[];
+  /** Fase 22: tipo e devolução vinculada (estorno) */
+  tipo: "normal" | "estorno"; observacao: string | null;
+  devolucao: { id: string; numero: string; status: string; data: string; data_processamento: string | null } | null;
 };
 
 /**
@@ -199,13 +211,13 @@ export function TabelaComissoes({ linhas, selecionaveis, assinatura, filtro, ana
                 onChange={() => { const s = new Set(sel); daPagina.forEach((id) => (paginaToda ? s.delete(id) : s.add(id))); setSel(s); }} /></th>
               <th><Link href={ordens.pedido.href}>Pedido{ordens.pedido.seta}</Link></th><th>Cliente</th><th>Representada</th><th>Produto</th>
               <th className="num">Valor base</th><th className="num">%</th><th className="num"><Link href={ordens.valor.href}>Comissão (R$){ordens.valor.seta}</Link></th>
-              <th><Link href={ordens.previsao.href}>Previsão{ordens.previsao.seta}</Link></th><th>Recebimento</th><th>Status</th><th>Completude</th><th>Origem</th><th>Ações</th>
+              <th><Link href={ordens.previsao.href}>Previsão{ordens.previsao.seta}</Link></th><th>Recebimento</th><th>Status</th><th>Tipo</th><th>Completude</th><th>Origem</th><th>Ações</th>
             </tr>
           </thead>
           <tbody>
             {linhas.map((l) => {
               const grupo = statusNoGrupo(l.status);
-              const acoes = acoesDoStatus(l.status);
+              const acoes = acoesDoStatus(l.status, l.tipo, l.devolucao);
               return (
                 <tr key={l.id} className={grupo === "em_analise" ? "linha-analise" : undefined}>
                   <td>{selecionaveisSet.has(l.id) && <input type="checkbox" checked={sel.has(l.id)} onChange={() => alternar(l.id)} aria-label={`Selecionar ${l.pedido?.codigo ?? "comissão"}`} />}</td>
@@ -215,7 +227,7 @@ export function TabelaComissoes({ linhas, selecionaveis, assinatura, filtro, ana
                   <td data-rotulo="Produto">{l.produto}</td>
                   <td className="num" data-rotulo="Valor base">{formatarMoeda(l.base)}</td>
                   <td className="num" data-rotulo="%">{formatarPercentual(l.percentual)}</td>
-                  <td className="num" data-rotulo="Comissão"><strong>{formatarMoeda(l.valor)}</strong></td>
+                  <td className="num" data-rotulo="Comissão"><strong className={l.valor < 0 ? "valor-estorno" : undefined}>{formatarMoeda(l.valor)}</strong></td>
                   <td data-rotulo="Previsão">{l.previsao ? dia(l.previsao) : <span className="dica">Sem previsão</span>}</td>
                   <td data-rotulo="Recebimento">
                     {acoes.cancelada ? "—" : (
@@ -238,6 +250,11 @@ export function TabelaComissoes({ linhas, selecionaveis, assinatura, filtro, ana
                     <span className={`etiqueta etiqueta-com-${grupo}`}>{rotuloStatus(l.status)}</span>
                     {l.motivos.length > 0 && <ul className="motivos">{l.motivos.map((m) => <li key={m}>{rotuloMotivo(m)}</li>)}</ul>}
                   </td>
+                  <td data-rotulo="Tipo">
+                    {ROTULOS_TIPO[l.tipo]}
+                    {l.devolucao && <div className="dica">Devolução {l.devolucao.numero} · {l.devolucao.status === "processada" ? `processada ${dia(l.devolucao.data_processamento)}` : "pendente"}</div>}
+                    {l.observacao && <div className="dica">{l.observacao}</div>}
+                  </td>
                   <td data-rotulo="Completude">{l.completude === "completa" ? "Completa" : "Incompleta"}</td>
                   <td data-rotulo="Origem">{l.origem ? ROTULOS_ORIGEM[l.origem] : "—"}</td>
                   <td data-rotulo="Ações">
@@ -253,6 +270,10 @@ export function TabelaComissoes({ linhas, selecionaveis, assinatura, filtro, ana
                         )}
                         {acoes.editarData && <button type="button" className="btn-link" onClick={() => document.getElementById(`data-${l.id}`)?.focus()}>Editar data</button>}
                         {acoes.editarData && l.recebimento && <button type="button" className="btn-link" disabled={ocupado} onClick={() => removerData(l)}>Remover data</button>}
+                        {acoes.processar && l.devolucao && (
+                          <ProcessarDevolucoes ids={[l.devolucao.id]} rotulo="Marcar como processada" classe="btn-link" />
+                        )}
+                        {acoes.reabrirDevolucao && l.devolucao && <ReabrirDevolucao id={l.devolucao.id} />}
                         {acoes.definir && (
                           <button type="button" className="btn-link" disabled={ocupado} onClick={() => definir(l)}>{l.origem === "zero" || l.valor <= 0 ? "Definir comissão" : "Editar comissão"}</button>
                         )}
@@ -330,5 +351,114 @@ export function BotaoReabrirLote({ lote, quantidade, valor }: { lote: string; qu
       <button type="button" className="btn-secundario btn-peq" onClick={reabrir} disabled={quantidade === 0}>Reabrir lote</button>
       {msg && <span className="dica"> {msg}</span>}
     </>
+  );
+}
+
+/* ---------- Fase 22: marcar como processada / reabrir devolução (G) ---------- */
+
+/**
+ * G.2 — confirmação obrigatória com quantidade, valor a estornar e a Data de Processamento usada; sem data na
+ * devolução, a data é pedida aqui mesmo. Transacional no banco (devolução e estorno nunca divergem).
+ */
+export function ProcessarDevolucoes({ ids, rotulo = "Marcar como processada", classe = "btn btn-peq", aoConcluir }: {
+  ids: string[]; rotulo?: string; classe?: string; aoConcluir?: () => void;
+}) {
+  const router = useRouter();
+  const dialogo = useRef<HTMLDialogElement>(null);
+  const [resumo, setResumo] = useState<null | { quantidade: number; valor: number; semData: number; datas: string[]; invalidas: number }>(null);
+  const [data, setData] = useState("");
+  const [msg, setMsg] = useState<{ ok?: string; erro?: string } | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+  async function abrir() {
+    if (!ids.length) return;
+    if (ids.length > LIMITE_LOTE) return setMsg({ erro: `Seleção acima de ${LIMITE_LOTE.toLocaleString("pt-BR")} devoluções: refine o filtro.` });
+    setOcupado(true);
+    const r = await resumoProcessamentoAction(ids);
+    setOcupado(false);
+    if ("erro" in r && r.erro) return setMsg({ erro: r.erro });
+    const res = r as { quantidade: number; valor: number; semData: number; datas: string[]; invalidas: number };
+    setResumo(res);
+    setData(res.semData > 0 ? hojeSP() : "");
+    dialogo.current?.showModal();
+  }
+  async function confirmar() {
+    if (resumo && resumo.semData > 0 && !data) return;
+    setOcupado(true);
+    const r = await processarDevolucoesAction(ids, resumo && resumo.semData > 0 ? data : null);
+    setOcupado(false);
+    dialogo.current?.close();
+    setMsg("erro" in r ? { erro: r.erro } : { ok: r.ok });
+    if (!("erro" in r)) { aoConcluir?.(); router.refresh(); }
+  }
+  return (
+    <>
+      <button type="button" className={classe} disabled={ocupado || !ids.length} onClick={abrir}>{rotulo}</button>
+      {msg && <span className={msg.erro ? "texto-perigo" : "dica"} role="status"> {msg.erro ?? msg.ok}</span>}
+      <dialog ref={dialogo} className="modal" aria-labelledby="titulo-processar">
+        {resumo && (
+          <div className="modal-corpo">
+            <h2 id="titulo-processar">Marcar {resumo.quantidade} devolução(ões) como processada(s)</h2>
+            <dl className="resumo">
+              <div><dt>Quantidade</dt><dd>{resumo.quantidade}</dd></div>
+              <div><dt>Valor total a estornar</dt><dd className="valor-estorno">−{formatarMoeda(resumo.valor)}</dd></div>
+              <div><dt>Data de Processamento</dt><dd>{resumo.semData > 0 ? "informe abaixo" : resumo.datas.map(dia).join(", ")}</dd></div>
+            </dl>
+            {resumo.semData > 0 && (
+              <label className="campo">
+                <span>Data de Processamento *</span>
+                <input type="date" value={data} required onChange={(e) => setData(e.target.value)} />
+                <small className="dica">{resumo.semData === resumo.quantidade ? "Nenhuma devolução selecionada tem a data." : `${resumo.semData} sem data: a data informada vale para todas as selecionadas.`}</small>
+              </label>
+            )}
+            {resumo.invalidas > 0 && <p className="aviso aviso-erro">{resumo.invalidas} da seleção já foram processadas ou não têm estorno: atualize a página.</p>}
+            <p className="dica">O estorno passa a “Recebida” na Data de Processamento e reduz o recebido daquele mês. A comissão original do pedido não muda.</p>
+            <div className="acoes-linha">
+              <button type="button" className="btn" disabled={ocupado || resumo.invalidas > 0 || (resumo.semData > 0 && !data)} onClick={confirmar}>Confirmar processamento</button>
+              <button type="button" className="btn-link" onClick={() => dialogo.current?.close()}>Cancelar</button>
+            </div>
+          </div>
+        )}
+      </dialog>
+    </>
+  );
+}
+
+/** G.5 — reabrir: devolução volta a pendente; o estorno volta a 'Prevista' (nunca é apagado). */
+export function ReabrirDevolucao({ id }: { id: string }) {
+  const router = useRouter();
+  const [msg, setMsg] = useState<string | null>(null);
+  async function reabrir() {
+    if (!window.confirm("Reabrir esta devolução? Ela volta para pendente e o estorno volta a “Prevista” (não é apagado).")) return;
+    const limpar = window.confirm("Limpar também a Data de Processamento?\nOK = limpar · Cancelar = manter a data informada.");
+    const r = await reabrirDevolucaoAction(id, limpar);
+    setMsg("erro" in r ? r.erro : r.ok);
+    router.refresh();
+  }
+  return <><button type="button" className="btn-link" onClick={reabrir}>Reabrir devolução</button>{msg && <span className="dica"> {msg}</span>}</>;
+}
+
+/** Seleção + processamento em lote na visão de devoluções (limitado ao filtro ativo, mesmo padrão da Fase 21). */
+export function SelecaoDevolucoes({ pendentes, assinatura }: { pendentes: string[]; assinatura: string }) {
+  const [sel, setSel] = useSelecao(`comissoes-selecao:dev:${assinatura}`);
+  const validos = [...sel].filter((id) => pendentes.includes(id));
+  useEffect(() => {
+    const marcar = (e: Event) => {
+      const alvo = e.target as HTMLInputElement;
+      if (!alvo.matches?.("input[data-devolucao]")) return;
+      const s = new Set(sel);
+      if (alvo.checked) s.add(alvo.dataset.devolucao!); else s.delete(alvo.dataset.devolucao!);
+      setSel(s);
+    };
+    document.addEventListener("change", marcar);
+    document.querySelectorAll<HTMLInputElement>("input[data-devolucao]").forEach((i) => { i.checked = sel.has(i.dataset.devolucao!); });
+    return () => document.removeEventListener("change", marcar);
+  }, [sel, setSel]);
+  return (
+    <div className="barra-selecao">
+      <button type="button" className="btn-link" disabled={!pendentes.length} onClick={() => setSel(new Set(pendentes))}>Selecionar todas as {pendentes.length} pendentes do filtro</button>
+      <span><strong>{validos.length}</strong> selecionada(s)</span>
+      {validos.length > 0 && <button type="button" className="btn-link" onClick={() => setSel(new Set())}>Limpar seleção</button>}
+      <ProcessarDevolucoes ids={validos} rotulo="Marcar selecionadas como processadas" aoConcluir={() => setSel(new Set())} />
+    </div>
   );
 }

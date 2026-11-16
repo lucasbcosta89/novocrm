@@ -116,5 +116,5 @@ export interface ConfiguracaoImportacao<T> {
   /** Modelo .xlsx pronto (formatado) em public/; sem ele, o modelo é gerado a partir de colunasEsperadas. */
   modeloUrl?: string;
   /** contagens extras da conferência, mostradas ANTES de confirmar (ex.: linhas com comissão não informada) */
-  resumoExtra?: (linhas: ResultadoValidacaoLinha[]) => { rotulo: string; valor: number }[];
+  resumoExtra?: (linhas: ResultadoValidacaoLinha[]) => { rotulo: string; valor: number; formato?: "moeda" }[];
 }

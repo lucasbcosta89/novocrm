@@ -5,6 +5,7 @@ import {
   aprovarLote, atualizarDataRecebimento, definirComissao, editadasNoLote, marcarRecebida, reabrirComissao, reabrirLote, resumoSelecao,
 } from "@/server/comissoes";
 import { obterContexto } from "@/server/contexto";
+import { processarDevolucoes, reabrirDevolucao, resumoProcessamento } from "@/server/estornos";
 import { normalizarErro } from "@/server/erros";
 import { rotuloStatus } from "@/lib/comissoes/status";
 
@@ -72,4 +73,25 @@ export async function reabrirLoteAction(lote: string) {
     const r = await reabrirLote(ctx, lote);
     return { ok: `Lote reaberto: ${r.quantidade} comissão(ões) voltaram para análise, com os motivos preservados` };
   });
+}
+
+/* ---------- Fase 22: devoluções (estorno) ---------- */
+
+export async function resumoProcessamentoAction(ids: string[]) {
+  try {
+    return { ok: "", ...(await resumoProcessamento(await obterContexto(), ids)) };
+  } catch (e) {
+    return { erro: normalizarErro(e).message };
+  }
+}
+
+export async function processarDevolucoesAction(ids: string[], data: string | null) {
+  return executar(async (ctx) => {
+    const r = await processarDevolucoes(ctx, ids, data);
+    return { ok: `${r.quantidade} devolução(ões) processada(s): estorno de ${Number(r.valor_estornado).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}` };
+  });
+}
+
+export async function reabrirDevolucaoAction(id: string, limparData: boolean) {
+  return executar(async (ctx) => { await reabrirDevolucao(ctx, id, limparData); return { ok: "Devolução reaberta: o estorno voltou a “Prevista”" }; });
 }

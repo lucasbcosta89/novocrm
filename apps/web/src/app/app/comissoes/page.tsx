@@ -11,7 +11,9 @@ import {
   descreverEvento, historicoDasComissoes, listarComissoes, listarLotes, nomesDosAutores, pendentesDeAnalise, produtoDaComissao,
 } from "@/server/comissoes";
 import { listarRepresentadas } from "@/server/representadas";
-import { BotaoReabrirLote, FiltroComissoes, TabelaComissoes, type LinhaComissao } from "./componentes";
+import { BotaoReabrirLote, FiltroComissoes, ProcessarDevolucoes, ReabrirDevolucao, SelecaoDevolucoes, TabelaComissoes, type LinhaComissao } from "./componentes";
+import { listarDevolucoesImportadas } from "@/server/estornos";
+import { podeImportar } from "@/server/importacao";
 
 type Busca = Promise<Record<string, string | string[] | undefined>>;
 const TOM: Record<GrupoStatus, string> = { recebido: "tom-ok", a_receber: "tom-azul", em_analise: "tom-analise" };
@@ -22,9 +24,10 @@ export default async function ComissoesPage({ searchParams }: { searchParams: Bu
   const erro = typeof sp.erro === "string" ? sp.erro : undefined;
   const ok = typeof sp.ok === "string" ? sp.ok : undefined;
   const f = lerFiltroComissoes(sp);
-  const [res, pend, representadas, clientes, lotes, nomes] = await carregar((ctx) => Promise.all([
+  const [res, pend, representadas, clientes, lotes, nomes, devs, importar] = await carregar((ctx) => Promise.all([
     listarComissoes(ctx, sp), pendentesDeAnalise(ctx), listarRepresentadas(ctx), listarClientes(ctx),
     f.visao === "lotes" ? listarLotes(ctx) : Promise.resolve([]), nomesDosAutores(ctx),
+    f.visao === "devolucoes" ? listarDevolucoesImportadas(ctx, sp) : Promise.resolve(null), podeImportar(ctx),
   ]));
   const historico = await carregar((ctx) => historicoDasComissoes(ctx, res.linhas.map((c) => c.id)));
   const url = (mudar: Partial<Record<keyof Filtro, unknown>> = {}) => urlComissoes(f, mudar);
@@ -38,6 +41,7 @@ export default async function ComissoesPage({ searchParams }: { searchParams: Bu
     previsao: c.data_prevista_recebimento, recebimento: c.data_recebimento, status: c.status, completude: c.completude, motivos: c.motivos_pendencia,
     origem: c.origem_calculo, editada: c.data_recebimento_editada, lote: c.lote_aprovacao_id,
     historico: (historico.get(c.id) ?? []).map((e) => descreverEvento(e, nomes)),
+    tipo: c.tipo, observacao: c.observacoes, devolucao: c.devolucao,
   }));
   const gruposSomados: GrupoStatus[] = f.visao === "analise" ? ["em_analise"] : f.g.length ? f.g : [...GRUPOS_STATUS];
   const totalGeral = gruposSomados.reduce((t, g) => t + res.totais[g].valor, 0);
@@ -56,9 +60,88 @@ export default async function ComissoesPage({ searchParams }: { searchParams: Bu
         {aba("lista", "Lançamentos")}
         {aba("analise", `Fila de análise${pend.quantidade ? ` (${pend.quantidade})` : ""}`)}
         {aba("lotes", "Aprovadas em lote")}
+        {aba("devolucoes", "Devoluções")}
       </nav>
 
-      {f.visao === "lotes" ? (
+      {f.visao === "devolucoes" && devs ? (
+        <>
+          <form method="get" className="card filtros-custos">
+            <input type="hidden" name="visao" value="devolucoes" />
+            <label className="campo"><span>Período</span>
+              <select name="p" defaultValue={typeof sp.p === "string" ? sp.p : "este_mes"}>
+                {["7d", "30d", "90d", "este_mes", "ano", "ano_anterior"].map((a) => <option key={a} value={a}>{({ "7d": "Últimos 7 dias", "30d": "Últimos 30 dias", "90d": "Últimos 90 dias", este_mes: "Este mês", ano: "Este ano", ano_anterior: "Ano anterior" } as Record<string, string>)[a]}</option>)}
+              </select>
+            </label>
+            <label className="campo"><span>Data do período</span>
+              <select name="campo" defaultValue={sp.campo === "devolucao" ? "devolucao" : "processamento"}>
+                <option value="processamento">Data de Processamento (mês do estorno)</option>
+                <option value="devolucao">Data da Devolução</option>
+              </select>
+            </label>
+            <label className="campo"><span>Situação</span>
+              <select name="st" defaultValue={typeof sp.st === "string" ? sp.st : ""}>
+                <option value="">Todas</option><option value="pendente">Pendentes</option><option value="processada">Processadas</option>
+              </select>
+            </label>
+            <div className="acoes-linha">
+              <button className="btn-secundario btn-peq" type="submit"><Icone nome="filtro" tamanho={16} /> Aplicar</button>
+              {importar && <Link className="btn-suave btn-peq" href="/app/comissoes/devolucoes/importar"><Icone nome="arquivo" tamanho={16} /> Cadastrar devoluções com Excel</Link>}
+              {devs.linhas.length > 0 && <a className="btn-suave btn-peq" download href={`/api/comissoes/devolucoes/exportar?${new URLSearchParams(Object.entries(sp).flatMap(([k, v]) => (typeof v === "string" ? [[k, v]] : []))).toString()}`}><Icone nome="download" tamanho={16} /> Exportar XLSX</a>}
+            </div>
+          </form>
+          <section className="card">
+            <p className="subtitulo">{devs.periodo.rotulo}</p>
+            <dl className="kpis">
+              <div className="kpi"><div><dt>Devoluções</dt><dd>{devs.totais.quantidade}</dd><span className="item-sub">{devs.totais.pendentes} pendente(s) · {devs.totais.processadas} processada(s)</span></div></div>
+              <div className="kpi"><div><dt>Valor devolvido</dt><dd>{formatarMoeda(devs.totais.valor_total)}</dd></div></div>
+              <div className="kpi"><div><dt>Comissão estornada</dt><dd className="valor-estorno">−{formatarMoeda(devs.totais.comissao_estornada)}</dd></div></div>
+            </dl>
+            {devs.porRepresentada.length > 0 && (
+              <div className="tabela-wrap">
+                <table className="tabela">
+                  <thead><tr><th>Representada</th><th className="num">Devoluções</th><th className="num">Valor devolvido</th><th className="num">Comissão estornada</th></tr></thead>
+                  <tbody>{devs.porRepresentada.map((r) => <tr key={r.id}><td>{r.nome}</td><td className="num">{r.quantidade}</td><td className="num">{formatarMoeda(r.valor_total)}</td><td className="num">−{formatarMoeda(r.comissao_estornada)}</td></tr>)}</tbody>
+                  <tfoot><tr><th>Total</th><th className="num">{devs.totais.quantidade}</th><th className="num">{formatarMoeda(devs.totais.valor_total)}</th><th className="num">−{formatarMoeda(devs.totais.comissao_estornada)}</th></tr></tfoot>
+                </table>
+              </div>
+            )}
+          </section>
+          <section className="card">
+            <h2 className="titulo-icone"><Icone nome="recibo" tamanho={20} /> Devoluções importadas</h2>
+            {devs.linhas.length === 0 ? <div className="vazio">Nenhuma devolução neste período.</div> : (
+              <>
+                <div className="tabela-wrap">
+                  <table className="tabela">
+                    <thead><tr><th /><th>Nº</th><th>Pedido</th><th>SKU</th><th className="num">Qtd.</th><th className="num">Valor</th><th className="num">Comissão estornada</th><th>Situação</th><th>Devolução</th><th>Processamento</th><th>Ações</th></tr></thead>
+                    <tbody>
+                      {devs.linhas.map((d) => (
+                        <tr key={d.id}>
+                          <td>{d.status === "pendente" && d.comissao_id && <input type="checkbox" data-devolucao={d.id} aria-label={`Selecionar ${d.numero}`} />}</td>
+                          <td data-rotulo="Nº">{d.numero}</td>
+                          <td data-rotulo="Pedido">{d.pedido ? <Link href={`/app/pedidos/${d.pedido.id}`}>{d.pedido.codigo_pedido}</Link> : d.codigo_pedido_informado ?? "—"}</td>
+                          <td data-rotulo="SKU">{d.sku_informado ?? "—"}{d.descricao_informada && <div className="dica">{d.descricao_informada}</div>}</td>
+                          <td className="num" data-rotulo="Qtd.">{Number(d.quantidade).toLocaleString("pt-BR")}</td>
+                          <td className="num" data-rotulo="Valor">{formatarMoeda(d.valor_total)}</td>
+                          <td className="num" data-rotulo="Comissão estornada"><span className="valor-estorno">−{formatarMoeda(d.comissao_estornada)}</span></td>
+                          <td data-rotulo="Situação">{d.status === "processada" ? "Processada" : "Pendente"}</td>
+                          <td data-rotulo="Devolução">{d.data.split("-").reverse().join("/")}</td>
+                          <td data-rotulo="Processamento">{d.data_processamento ? d.data_processamento.split("-").reverse().join("/") : "—"}</td>
+                          <td data-rotulo="Ações">
+                            {d.comissao_id && d.status === "pendente" && <ProcessarDevolucoes ids={[d.id]} classe="btn-link" />}
+                            {d.comissao_id && d.status === "processada" && <ReabrirDevolucao id={d.id} />}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <SelecaoDevolucoes assinatura={JSON.stringify([sp.p ?? "", sp.campo ?? "", sp.st ?? ""])}
+                  pendentes={devs.linhas.filter((d) => d.status === "pendente" && d.comissao_id).map((d) => d.id)} />
+              </>
+            )}
+          </section>
+        </>
+      ) : f.visao === "lotes" ? (
         <section className="card">
           <h2 className="titulo-icone"><Icone nome="check" tamanho={20} /> Aprovações em lote</h2>
           {lotes.length === 0 ? <div className="vazio">Nenhuma aprovação em lote.</div> : (
@@ -88,7 +171,7 @@ export default async function ComissoesPage({ searchParams }: { searchParams: Bu
       ) : (
         <>
           <FiltroComissoes visao={f.visao} ativos={contarFiltrosAtivos(f)}
-            filtro={{ p: f.p, de: res.periodo.de, ate: res.periodo.ate, campo: f.campo, g: f.g, comp: f.comp ?? "", mot: f.mot ?? "", rep: f.rep, cli: f.cli, lote: f.lote, ed: f.ed }}
+            filtro={{ p: f.p, de: res.periodo.de, ate: res.periodo.ate, campo: f.campo, g: f.g, comp: f.comp ?? "", mot: f.mot ?? "", rep: f.rep, cli: f.cli, lote: f.lote, ed: f.ed, tipo: f.tipo ?? "" }}
             representadas={representadas.map((r) => ({ id: r.id, nome: r.nome }))} clientes={clientes.map((c) => ({ id: c.id, nome: c.nome }))} />
 
           <section className="card">

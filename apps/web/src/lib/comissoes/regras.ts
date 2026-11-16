@@ -103,23 +103,29 @@ export function elegivelLiquidacao(c: {
 }
 
 /**
+ * Fase 22: "recebida" = LÍQUIDA (bruta − devoluções); recebida_bruta e devolucoes vêm separadas (nunca só o líquido).
  * M — TRÊS indicadores distintos do dashboard (nunca somados entre si): recebida (GROUP_RECEBIDO, pela data de
  * recebimento), a receber (GROUP_A_RECEBER, pela previsão) e em análise (GROUP_EM_ANALISE: valor E quantidade, pela
  * previsão). Cancelada fica fora. `noPeriodo` decide se a data cai no período.
  */
 export function indicadoresComissao(
-  comissoes: { status: string; valor: number; data_prevista_recebimento: string | null; data_recebimento: string | null }[],
+  comissoes: { status: string; valor: number; data_prevista_recebimento: string | null; data_recebimento: string | null; tipo?: string }[],
   noPeriodo: (data: string | null) => boolean,
-): { recebida: number; a_receber: number; em_analise: { valor: number; quantidade: number } } {
-  const r = { recebida: 0, a_receber: 0, em_analise: { valor: 0, quantidade: 0 } };
+): { recebida: number; recebida_bruta: number; devolucoes: number; a_receber: number; em_analise: { valor: number; quantidade: number } } {
+  const r = { bruta: 0, devolucoes: 0, a_receber: 0, em_analise: { valor: 0, quantidade: 0 } };
   for (const c of comissoes) {
     const g = statusNoGrupo(c.status);
-    if (g === "recebido" && noPeriodo(c.data_recebimento)) r.recebida += Number(c.valor);
-    else if (g === "a_receber" && noPeriodo(c.data_prevista_recebimento)) r.a_receber += Number(c.valor);
+    if (g === "recebido" && noPeriodo(c.data_recebimento)) {
+      // Fase 22 (H.1/H.2): o estorno recebido é negativo no mesmo grupo; mostrado à parte, em valor absoluto
+      if (c.tipo === "estorno") r.devolucoes += Math.abs(Number(c.valor)); else r.bruta += Number(c.valor);
+    } else if (g === "a_receber" && noPeriodo(c.data_prevista_recebimento)) r.a_receber += Number(c.valor);
     else if (g === "em_analise" && noPeriodo(c.data_prevista_recebimento)) { r.em_analise.valor += Number(c.valor); r.em_analise.quantidade++; }
   }
   const c2 = (v: number) => Math.round(v * 100) / 100;
-  return { recebida: c2(r.recebida), a_receber: c2(r.a_receber), em_analise: { valor: c2(r.em_analise.valor), quantidade: r.em_analise.quantidade } };
+  return {
+    recebida: c2(r.bruta - r.devolucoes), recebida_bruta: c2(r.bruta), devolucoes: c2(r.devolucoes), a_receber: c2(r.a_receber),
+    em_analise: { valor: c2(r.em_analise.valor), quantidade: r.em_analise.quantidade },
+  };
 }
 
 /** K.3/K.4 — status resultante da edição manual da data de recebimento. */

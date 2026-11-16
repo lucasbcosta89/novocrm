@@ -175,7 +175,10 @@ export function PainelPrincipal({ representadas, dataExtenso }: { representadas:
             <CardKpi titulo="Vendas no mês" kpi={d.kpis.vendas_mes_atual} icone="tendencia" tom="tom-azul"
               href={representada !== "todas" ? `/app/representadas/${representada}/pedidos` : "/app/representadas"} />
             {/* Fase 21 (M): três indicadores distintos, período no rótulo; em análise com cor própria e link para a fila */}
-            <CardKpi titulo={`Comissão recebida · ${periodoCard(d.meta)}`} kpi={d.kpis.comissao_recebida} icone="concluido" tom="tom-ok" href={`/app/comissoes?g=recebido&campo=recebimento${filtroComissao}`} />
+            {/* Fase 22 (H.2): bruta, devoluções e líquido sempre juntos — nunca só o líquido */}
+            <CardKpi titulo={`Comissão recebida (bruta) · ${periodoCard(d.meta)}`} kpi={d.kpis.comissao_recebida_bruta} icone="concluido" tom="tom-ok" href={`/app/comissoes?g=recebido&campo=recebimento&tipo=normal${filtroComissao}`} />
+            <CardKpi titulo={`Devoluções · ${periodoCard(d.meta)}`} kpi={d.kpis.comissao_devolucoes} icone="recibo" tom="tom-neutro" inverso href="/app/comissoes?visao=devolucoes" />
+            <CardKpi titulo={`Líquido recebido · ${periodoCard(d.meta)}`} kpi={d.kpis.comissao_recebida} icone="cifrao" tom="tom-ok" href={`/app/comissoes?g=recebido&campo=recebimento${filtroComissao}`} />
             <CardKpi titulo={`A receber · ${periodoCard(d.meta)}`} kpi={d.kpis.comissao_a_receber} icone="relogio" tom="tom-violeta" href={`/app/comissoes?g=a_receber${filtroComissao}`} />
             <CardKpiBase titulo={`Em análise · ${periodoCard(d.meta)}`} valor={brl.format(d.kpis.comissao_em_analise.valor)} variacao={null}
               nota={`${d.comissao_em_analise_qtd} ${d.comissao_em_analise_qtd === 1 ? "comissão" : "comissões"}`} icone="alerta" tom="tom-analise" href={`/app/comissoes?visao=analise${filtroComissao}`} />
@@ -188,7 +191,7 @@ export function PainelPrincipal({ representadas, dataExtenso }: { representadas:
               href={`/app/custos${representada !== "todas" ? `?rep=${representada}` : ""}`} />
           </>
         ) : (
-          Array.from({ length: 8 }, (_, i) => <div key={i} className="dash-card esqueleto esqueleto-kpi" />)
+          Array.from({ length: 10 }, (_, i) => <div key={i} className="dash-card esqueleto esqueleto-kpi" />)
         )}
       </section>
 

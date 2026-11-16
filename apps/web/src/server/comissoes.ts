@@ -31,6 +31,10 @@ export type Comissao = {
   lote_aprovacao_id: string | null;
   aprovada_em: string | null;
   reaberta_em: string | null;
+  /** Fase 22: 'estorno' = comissão negativa de uma devolução */
+  tipo: "normal" | "estorno";
+  observacoes: string | null;
+  devolucao: { id: string; numero: string; data: string; data_processamento: string | null; status: string } | null;
   representada: { id: string; nome: string } | null;
   pedido: {
     id: string; codigo_pedido: string; data: string; data_faturamento: string | null; valor_total: number; origem: string;
@@ -39,7 +43,8 @@ export type Comissao = {
 };
 
 const CAMPOS = `id, representada_id, percentual, valor, status, completude, motivos_pendencia, origem_calculo, data_prevista_recebimento, data_recebimento,
-  liquidada_automaticamente, data_recebimento_editada, lote_aprovacao_id, aprovada_em, reaberta_em,
+  liquidada_automaticamente, data_recebimento_editada, lote_aprovacao_id, aprovada_em, reaberta_em, tipo, observacoes,
+  devolucao:devolucoes!comissoes_devolucao_id_fkey(id, numero, data, data_processamento, status),
   representada:representadas(id, nome:razao_social),
   pedido:pedidos!inner(id, codigo_pedido, data, data_faturamento, valor_total, origem, cliente_id, cliente:clientes(id, nome),
     itens:pedido_itens(descricao, descricao_informada, produto:produtos(nome, sku)))`;
@@ -67,6 +72,7 @@ function aplicarFiltro(q: any, f: FiltroComissoes, op: Opcoes = {}) {
   if (f.cli.length) q = q.in("pedido.cliente_id", f.cli);
   if (f.lote) q = q.not("lote_aprovacao_id", "is", null);
   if (f.ed) q = q.eq("data_recebimento_editada", true);
+  if (f.tipo) q = q.eq("tipo", f.tipo);
   if (f.campo === "sem_previsao") return q.is("data_prevista_recebimento", null);
   const { de, ate } = periodoDoFiltro(f, hojeSP());
   switch (f.campo) {
@@ -130,7 +136,7 @@ export async function listarComissoes(ctx: Contexto, entrada: unknown): Promise<
   }
   return {
     filtro: f, periodo, linhas: todas.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA), total: todas.length, pagina, paginas,
-    totais: totalizar(todas), selecionaveis: todas.filter((c) => selecionavelEmLote(c.status)).map((c) => c.id), emAnaliseFora,
+    totais: totalizar(todas), selecionaveis: todas.filter((c) => selecionavelEmLote(c.status, c.tipo)).map((c) => c.id), emAnaliseFora,
     limitado: todas.length >= LIMITE,
   };
 }
@@ -214,19 +220,29 @@ export async function editadasNoLote({ supabase }: Contexto, lote: string): Prom
 const dataSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida (use AAAA-MM-DD)")
   .refine((d) => !Number.isNaN(Date.parse(`${d}T00:00:00Z`)) && new Date(`${d}T00:00:00Z`).toISOString().startsWith(d), "Data inválida");
 
+/** Fase 22: estorno só muda pelo processamento/reabertura da devolução (o banco também o protege). */
+async function exigirComissaoNormal(supabase: Contexto["supabase"], id: string): Promise<void> {
+  const { data, error } = await supabase.from("comissoes").select("tipo").eq("id", idSchema.parse(id)).maybeSingle<{ tipo: string }>();
+  if (error) throw erroBanco(error);
+  if (data?.tipo === "estorno") throw new AppError(400, "Estorno de devolução: use “Marcar como processada” ou “Reabrir devolução”", "estorno");
+}
+
 /** 'Marcar como recebida' (prevista/reaberta) ou H.4 'Analisar e marcar como recebida' (limpa os motivos). */
 export async function marcarRecebida({ supabase }: Contexto, id: string, analise = false): Promise<void> {
+  await exigirComissaoNormal(supabase, id);
   const { error } = await supabase.rpc("marcar_comissao_recebida", { p_id: idSchema.parse(id), p_analise: z.boolean().parse(analise) });
   if (error) throw erroBanco(error);
 }
 
 export async function reabrirComissao({ supabase }: Contexto, id: string): Promise<void> {
+  await exigirComissaoNormal(supabase, id);
   const { error } = await supabase.rpc("reabrir_comissao", { p_id: idSchema.parse(id) });
   if (error) throw erroBanco(error);
 }
 
 /** 'Definir comissão' / 'Editar comissão' (D.5): valor manual (origem 'manual'). */
 export async function definirComissao({ supabase }: Contexto, id: string, valor: unknown): Promise<void> {
+  await exigirComissaoNormal(supabase, id);
   const v = z.preprocess((x) => (typeof x === "string" ? Number(x.replace(/\./g, "").replace(",", ".")) : x),
     z.number("Informe o valor da comissão").min(0, "Valor não pode ser negativo").max(99_999_999, "Valor inválido")).parse(valor);
   const { error } = await supabase.rpc("definir_comissao", { p_id: idSchema.parse(id), p_valor: v });
@@ -235,6 +251,7 @@ export async function definirComissao({ supabase }: Contexto, id: string, valor:
 
 /** K: atualizarDataRecebimento — data <= hoje → recebida; > hoje → prevista; vazia → 'Remover data'. */
 export async function atualizarDataRecebimento({ supabase }: Contexto, id: string, data: unknown): Promise<StatusComissao> {
+  await exigirComissaoNormal(supabase, id);
   const d = data == null || data === "" ? null : dataSchema.parse(data);
   const { data: status, error } = await supabase.rpc("atualizar_data_recebimento", { p_id: idSchema.parse(id), p_data: d });
   if (error) throw erroBanco(error);
@@ -247,6 +264,10 @@ export const LIMITE_LOTE = 2000;
 export async function aprovarLote({ supabase }: Contexto, ids: unknown, filtro: unknown): Promise<{ lote_id: string; quantidade: number; valor_total: number }> {
   const lista = z.array(idSchema).min(1, "Selecione ao menos uma comissão").parse(ids);
   if (lista.length > LIMITE_LOTE) throw new AppError(400, `Seleção acima de ${LIMITE_LOTE.toLocaleString("pt-BR")} comissões: refine o filtro`, "limite_lote");
+  // Fase 22: estorno nunca entra na aprovação em lote (só muda pelo processamento da devolução)
+  const { count, error: e1 } = await supabase.from("comissoes").select("id", { count: "exact", head: true }).in("id", lista).eq("tipo", "estorno");
+  if (e1) throw erroBanco(e1);
+  if (count) throw new AppError(400, "A seleção tem estornos de devolução: use “Marcar como processada”", "estorno_no_lote");
   const { data, error } = await supabase.rpc("aprovar_comissoes_lote", { p_ids: lista, p_filtro: z.record(z.string(), z.unknown()).parse(filtro ?? {}) });
   if (error) throw erroBanco(error);
   return data as { lote_id: string; quantidade: number; valor_total: number };
@@ -264,11 +285,11 @@ export async function resumoSelecao({ supabase }: Contexto, ids: unknown): Promi
   const motivos: Record<string, number> = {};
   let valor = 0, invalidas = 0;
   for (let i = 0; i < lista.length; i += 500) {
-    const { data, error } = await supabase.from("comissoes").select("valor, status, motivos_pendencia").in("id", lista.slice(i, i + 500))
-      .returns<{ valor: number; status: string; motivos_pendencia: string[] }[]>();
+    const { data, error } = await supabase.from("comissoes").select("valor, status, tipo, motivos_pendencia").in("id", lista.slice(i, i + 500))
+      .returns<{ valor: number; status: string; tipo: string; motivos_pendencia: string[] }[]>();
     if (error) throw erroBanco(error);
     for (const c of data) {
-      if (!selecionavelEmLote(c.status)) invalidas++;
+      if (!selecionavelEmLote(c.status, c.tipo)) invalidas++;
       valor += Number(c.valor);
       for (const m of c.motivos_pendencia) motivos[m] = (motivos[m] ?? 0) + 1;
     }

@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { RelatorioImportacao, ResultadoValidacaoLinha } from "@/lib/cadastros/tipos";
 import { COLUNAS_CLIENTE } from "@/lib/cadastros/importacao-clientes";
 import { agruparPedidos, type ProdutoExistente } from "@/lib/cadastros/importacao-pedidos";
+import { chavePedido, type DevolucaoExistente, type DevolvidoItem, type PedidoOriginal } from "@/lib/import/devolucoes";
 import { COLUNAS_REPRESENTADA } from "@/lib/cadastros/importacao-representadas";
 import type { Recurso } from "@/lib/planos";
 import { chaveImportacao, MAX_LINHAS, resumirValidacao, separarParaGravacao, validarPlanilha } from "@/lib/importacao/motor";
@@ -26,6 +27,44 @@ type Adaptador = {
 };
 
 const ADAPTADORES: Record<EntidadeImportacao, Adaptador> = {
+  /** Fase 22: pedidos originais (itens com a comissão gravada), já devolvido por item e chaves já importadas. */
+  devolucoes: {
+    async existentes({ supabase }) {
+      const [pedidos, devolucoes] = await Promise.all([
+        supabase.from("pedidos")
+          .select("id, codigo_pedido, itens:pedido_itens(id, quantidade, subtotal, comissao_percentual, comissao_valor, comissao_origem, origem_calculo, sku_informado, descricao, produto:produtos(sku)), comissao:comissoes(status, tipo)")
+          .neq("status", "cancelado").limit(100_000)
+          .returns<{ id: string; codigo_pedido: string; itens: { id: string; quantidade: number; subtotal: number; comissao_percentual: number; comissao_valor: number; comissao_origem: "calculada" | "planilha"; origem_calculo: string | null; sku_informado: string | null; descricao: string | null; produto: { sku: string } | null }[]; comissao: { status: string; tipo: string }[] }[]>(),
+        supabase.from("devolucoes").select("numero, pedido_item_id, quantidade, comissao_estornada, chave_unica").not("chave_unica", "is", null).limit(100_000)
+          .returns<{ numero: string; pedido_item_id: string | null; quantidade: number; comissao_estornada: number; chave_unica: string }[]>(),
+      ]);
+      for (const r of [pedidos, devolucoes]) if (r.error) throw erroBanco(r.error);
+      const m = new Map<string, unknown>();
+      for (const p of pedidos.data!) {
+        const original: PedidoOriginal = {
+          id: p.id, codigo: p.codigo_pedido, status_comissao: p.comissao.find((c) => c.tipo === "normal")?.status ?? null,
+          itens: p.itens.map((i) => ({
+            id: i.id, sku: i.produto?.sku ?? i.sku_informado, descricao: i.descricao, quantidade: Number(i.quantidade), subtotal: Number(i.subtotal),
+            comissao_percentual: Number(i.comissao_percentual ?? 0), comissao_valor: Number(i.comissao_valor ?? 0), comissao_origem: i.comissao_origem, origem_calculo: i.origem_calculo,
+          })),
+        };
+        m.set(chavePedido(p.codigo_pedido), original);
+      }
+      for (const d of devolucoes.data!) {
+        m.set(chaveImportacao("chave_unica", d.chave_unica), { comissao_estornada: Number(d.comissao_estornada), numero: d.numero } satisfies DevolucaoExistente);
+        if (!d.pedido_item_id) continue;
+        const k = chaveImportacao("item", d.pedido_item_id);
+        const a = (m.get(k) as DevolvidoItem | undefined) ?? { quantidade: 0, estornado: 0 };
+        m.set(k, { quantidade: a.quantidade + Number(d.quantidade ?? 0), estornado: Math.round((a.estornado + Number(d.comissao_estornada)) * 100) / 100 });
+      }
+      return m;
+    },
+    async gravar(ctx, linhas) {
+      const { data, error } = await ctx.supabase.rpc("importar_devolucoes", { p_linhas: linhas.map((l) => l.dados) });
+      if (error) throw new AppError(409, `Nada foi gravado: o lote foi desfeito por inteiro (${error.message}). Corrija e envie de novo.`, "lote_desfeito");
+      return data as { inseridas: number; atualizadas: number };
+    },
+  },
   representadas: {
     async existentes({ supabase }) {
       const { data, error } = await supabase

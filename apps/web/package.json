@@ -11,7 +11,8 @@
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "gerar:logo": "node scripts/gerar-logo.mjs",
-    "gerar:modelo:pedidos": "node scripts/gerar-modelo-pedidos.ts"
+    "gerar:modelo:pedidos": "node scripts/gerar-modelo-pedidos.ts",
+    "gerar:modelo:devolucoes": "node scripts/gerar-modelo-devolucoes.ts"
   },
   "dependencies": {
     "@opennextjs/cloudflare": "1.20.8",

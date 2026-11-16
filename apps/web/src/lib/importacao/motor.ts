@@ -31,7 +31,8 @@ export function problemasCabecalho(esperadas: readonly string[], recebido: reado
   const total = Math.max(esperadas.length, recebido.length);
   for (let i = 0; i < total; i++) {
     const esp = esperadas[i];
-    const rec = (recebido[i] ?? "").trim();
+    // Fase 22: obrigatória marcada com asterisco no modelo ("SKU *") vale como o rótulo exato
+    const rec = (recebido[i] ?? "").trim().replace(/\s*\*$/, "");
     if (esp === rec) continue;
     if (esp === undefined) {
       problemas.push({ campo: rec || `coluna ${i + 1}`, mensagem: `Cabeçalho fora do padrão: coluna ${i + 1} ("${rec}") não existe no modelo`, valor_recebido: rec || null });

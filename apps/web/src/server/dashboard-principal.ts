@@ -23,7 +23,7 @@ export type DashboardPrincipal = {
     de: string; ate: string; granularidade: Janela["granularidade"]; pontos: string[];
   };
   kpis: Record<
-    | "vendas_total" | "vendas_mes_atual" | "comissao_a_receber" | "comissao_recebida" | "comissao_em_analise" | "oportunidades_abertas" | "ticket_medio" | "taxa_conversao"
+    | "vendas_total" | "vendas_mes_atual" | "comissao_a_receber" | "comissao_recebida" | "comissao_recebida_bruta" | "comissao_devolucoes" | "comissao_em_analise" | "oportunidades_abertas" | "ticket_medio" | "taxa_conversao"
     // Fase 11: custos = despesas do período; bruto = comissões recebidas; líquido = bruto − custos
     | "custos_total" | "resultado_bruto" | "resultado_liquido",
     Kpi
@@ -49,7 +49,7 @@ type Nome = { nome: string } | null;
 type PedidoRow = { id: string; data: string; valor_total: number; cliente_id: string; representada_id: string; cliente: Nome; representada: Nome };
 type ItemRow = { quantidade: number; produto_id: string | null; produto: { nome: string; sku: string } | null };
 type ComissaoRow = {
-  id: string; valor: number; status: string; data_prevista_recebimento: string | null; data_recebimento: string | null;
+  id: string; valor: number; status: string; tipo: string; data_prevista_recebimento: string | null; data_recebimento: string | null;
   pedido: { id: string; codigo_pedido: string; cliente: Nome } | null;
 };
 type OpRow = {
@@ -134,7 +134,7 @@ async function calcular(ctx: Contexto, q: DashboardQuery, rep: string | null) {
     .lt("pedido.data", isoUtc(atual.fim));
   let comissoesQ = supabase
     .from("comissoes")
-    .select("id, valor, status, data_prevista_recebimento, data_recebimento, pedido:pedidos(id, codigo_pedido, cliente:clientes(nome))")
+    .select("id, valor, status, tipo, data_prevista_recebimento, data_recebimento, pedido:pedidos(id, codigo_pedido, cliente:clientes(nome))")
     .in("status", statusDosGrupos(GRUPOS_STATUS)) // Fase 21: mapa único (cancelada fica fora)
     .or(`data_prevista_recebimento.gte.${diaSP(anterior.inicio)},data_recebimento.gte.${diaSP(anterior.inicio)},and(status.in.(${statusDosGrupos(["a_receber"]).join(",")}),data_prevista_recebimento.lt.${hoje})`);
   let opsQ = supabase
@@ -235,6 +235,8 @@ async function calcular(ctx: Contexto, q: DashboardQuery, rep: string | null) {
     vendas_mes_atual: k(porMes.get(mesAtual) ?? 0, porMes.get(mesAnterior) ?? 0),
     comissao_a_receber: k(indAtual.a_receber, indAnterior.a_receber),
     comissao_recebida: k(indAtual.recebida, indAnterior.recebida),
+    comissao_recebida_bruta: k(indAtual.recebida_bruta, indAnterior.recebida_bruta),
+    comissao_devolucoes: k(indAtual.devolucoes, indAnterior.devolucoes),
     comissao_em_analise: k(indAtual.em_analise.valor, indAnterior.em_analise.valor),
     // valor = em aberto agora; variação = abertas criadas no período vs no anterior
     oportunidades_abertas: { valor: abertas.length, variacao_pct: variacao(criadasEmAberto(atual), criadasEmAberto(anterior)) },

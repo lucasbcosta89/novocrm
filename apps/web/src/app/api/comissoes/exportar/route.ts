@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { gerarCsv } from "@/lib/csv";
 import { formatarDia } from "@/lib/formato";
 import { gerarXlsx } from "@/lib/planilha";
-import { ROTULOS_COMPLETUDE, ROTULOS_ORIGEM, rotuloStatus } from "@/lib/comissoes/status";
+import { ROTULOS_COMPLETUDE, ROTULOS_ORIGEM, ROTULOS_TIPO, rotuloStatus } from "@/lib/comissoes/status";
 import { comissoesParaExportar } from "@/server/comissoes";
 import { obterContexto } from "@/server/contexto";
 import { normalizarErro } from "@/server/erros";
@@ -11,6 +11,7 @@ import { normalizarErro } from "@/server/erros";
 const CABECALHO = [
   "Pedido", "Cliente", "Representada", "Produto ou descrição informada", "Valor base (R$)", "Percentual (%)", "Comissão (R$)", "Status", "Completude",
   "Origem do cálculo", "Previsão de recebimento", "Data de recebimento", "Editada manualmente", "Lote de aprovação",
+  "Tipo", "Devolução vinculada", "Data da devolução", "Data de processamento",
 ];
 
 /** GET /api/comissoes/exportar?<filtro da página>&formato=csv|xlsx → exatamente a visão filtrada (RLS), até 10.000. */
@@ -26,6 +27,8 @@ export async function GET(req: NextRequest) {
         ROTULOS_COMPLETUDE[c.completude] ?? c.completude, c.origem_calculo ? ROTULOS_ORIGEM[c.origem_calculo] : "",
         c.data_prevista_recebimento ? formatarDia(c.data_prevista_recebimento) : "Sem previsão", c.data_recebimento ? formatarDia(c.data_recebimento) : "",
         c.data_recebimento_editada ? "Sim" : "Não", c.lote_aprovacao_id ?? "",
+        ROTULOS_TIPO[c.tipo], c.devolucao?.numero ?? "", c.devolucao ? formatarDia(c.devolucao.data) : "",
+        c.devolucao?.data_processamento ? formatarDia(c.devolucao.data_processamento) : "",
       ];
     });
     const nome = `comissoes-${new Date().toISOString().slice(0, 10)}`;

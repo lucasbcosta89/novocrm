@@ -2,7 +2,7 @@ import "server-only";
 import { after } from "next/server";
 import { z } from "zod";
 import { idSchema } from "@/lib/validacao";
-import { GRUPOS_STATUS } from "@/lib/comissoes/status";
+import { GRUPOS_STATUS, TIPOS_COMISSAO } from "@/lib/comissoes/status";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { lerArquivo, salvarArquivo } from "./armazenamento";
 import type { Contexto } from "./contexto";
@@ -55,7 +55,7 @@ const representadaOuTodas = z.union([idSchema, z.literal("todas")]);
 export const solicitacaoSchema = z.discriminatedUnion("tipo", [
   z.object({ tipo: z.literal("relatorio_periodo"), representada_id: representadaOuTodas, periodo: periodoSchema }),
   // Fase 21 (N.2): grupos de status do relatório; padrão = recebida + a receber (em análise fora, com aviso)
-  z.object({ tipo: z.literal("relatorio_comissao"), representada_id: representadaOuTodas, periodo: periodoSchema, grupos: z.array(z.enum(GRUPOS_STATUS)).min(1).optional() }),
+  z.object({ tipo: z.literal("relatorio_comissao"), representada_id: representadaOuTodas, periodo: periodoSchema, grupos: z.array(z.enum(GRUPOS_STATUS)).min(1).optional(), tipo_comissao: z.enum(TIPOS_COMISSAO).optional() }),
   z.object({ tipo: z.literal("catalogo"), representada_id: idSchema }),
   z.object({ tipo: z.literal("catalogo_geral") }),
   z.object({ tipo: z.literal("relatorio_vendas_geral"), periodo: periodoSchema }),
@@ -142,10 +142,10 @@ async function preparar(ctx: Contexto, s: Solicitacao, rep: Representante) {
     return { dados, titulo: `Relatório mensal — ${dados.representada.nome} — ${rotulo}`, gerar: () => pdfMensal(dados, rep) };
   }
   if (ids) {
-    const dados = await Promise.all(ids.map((id) => dadosComissoes(ctx, id, s.periodo, s.grupos)));
+    const dados = await Promise.all(ids.map((id) => dadosComissoes(ctx, id, s.periodo, s.grupos, s.tipo_comissao ?? null)));
     return { dados, titulo: `Relatório de Comissões (Geral) — ${rotulo}`, gerar: () => pdfComissoesGeral(dados, s.periodo, rep) };
   }
-  const dados = await dadosComissoes(ctx, s.representada_id, s.periodo, s.grupos);
+  const dados = await dadosComissoes(ctx, s.representada_id, s.periodo, s.grupos, s.tipo_comissao ?? null);
   return { dados, titulo: `Comissões — ${dados.representada.nome} — ${rotulo}`, gerar: () => pdfComissoes(dados, rep) };
 }
 

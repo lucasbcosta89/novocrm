@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ATALHOS_COMISSOES, resolverPeriodo } from "@/lib/custos";
-import { COMPLETUDES, GRUPOS_STATUS, MOTIVOS_PENDENCIA, type GrupoStatus } from "./status";
+import { COMPLETUDES, GRUPOS_STATUS, MOTIVOS_PENDENCIA, TIPOS_COMISSAO, type GrupoStatus } from "./status";
 
 /**
  * Fase 21 (P) — filtro da página de Comissões, persistido na URL (sobrevive ao reload, à paginação, à ordenação e às
@@ -13,7 +13,7 @@ export const ROTULOS_CAMPO_DATA: Record<CampoData, string> = {
   sem_previsao: "Sem previsão",
 };
 export const ORDENS = ["previsao", "pedido", "valor"] as const;
-export const VISOES = ["lista", "analise", "lotes"] as const;
+export const VISOES = ["lista", "analise", "lotes", "devolucoes"] as const;
 export const POR_PAGINA = 50;
 
 const lista = <T extends readonly [string, ...string[]]>(valores: T) =>
@@ -33,6 +33,8 @@ export const filtroComissoesSchema = z.object({
   cli: uuidLista,
   lote: z.preprocess((v) => um(v) === "1", z.boolean()).default(false),
   ed: z.preprocess((v) => um(v) === "1", z.boolean()).default(false),
+  /** Fase 22: Normal / Estorno ("Somente estornos" na fila) */
+  tipo: z.preprocess(um, z.enum(TIPOS_COMISSAO).optional().catch(undefined)),
   ord: z.preprocess(um, z.enum(ORDENS).catch("previsao")).default("previsao"),
   dir: z.preprocess(um, z.enum(["asc", "desc"]).catch("asc")).default("asc"),
   pag: z.preprocess((v) => Number(um(v)) || 1, z.number().int().min(1).max(10_000)).default(1),
@@ -49,7 +51,7 @@ export function periodoDoFiltro(f: FiltroComissoes, hoje: string) {
 
 /** Filtros complementares ativos (chip "N filtros"). Período/campo padrão e paginação não contam. */
 export function contarFiltrosAtivos(f: FiltroComissoes): number {
-  return [f.p !== "este_mes", f.campo !== "previsao", f.g.length > 0, !!f.comp, !!f.mot, f.rep.length > 0, f.cli.length > 0, f.lote, f.ed].filter(Boolean).length;
+  return [f.p !== "este_mes", f.campo !== "previsao", f.g.length > 0, !!f.comp, !!f.mot, f.rep.length > 0, f.cli.length > 0, f.lote, f.ed, !!f.tipo].filter(Boolean).length;
 }
 
 /**
@@ -58,7 +60,7 @@ export function contarFiltrosAtivos(f: FiltroComissoes): number {
  */
 export function assinaturaFiltro(f: FiltroComissoes): string {
   return JSON.stringify([f.p, f.p === "personalizado" ? f.de : "", f.p === "personalizado" ? f.ate : "", f.campo, [...f.g].sort(), f.comp ?? "", f.mot ?? "",
-    [...f.rep].sort(), [...f.cli].sort(), f.lote, f.ed, f.visao]);
+    [...f.rep].sort(), [...f.cli].sort(), f.lote, f.ed, f.tipo ?? "", f.visao]);
 }
 
 /** URL da página com o filtro (+ alterações). Valores padrão não vão para a URL. */
@@ -75,6 +77,7 @@ export function urlComissoes(f: FiltroComissoes, mudar: Partial<Record<keyof Fil
   if (v.cli.length) qs.set("cli", v.cli.join(","));
   if (v.lote) qs.set("lote", "1");
   if (v.ed) qs.set("ed", "1");
+  if (v.tipo) qs.set("tipo", v.tipo);
   if (v.ord !== "previsao") qs.set("ord", v.ord);
   if (v.dir !== "asc") qs.set("dir", v.dir);
   if (v.pag > 1) qs.set("pag", String(v.pag));

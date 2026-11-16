@@ -4,7 +4,7 @@ import { formatarData, formatarDataHora, formatarDia, formatarDocumento, formata
 import { cabecalho, COR, gerarPdf, indicadores, quebraPagina, secao, tabela, type Representante } from "@/lib/pdf";
 import { ROTULO_STATUS_PEDIDO } from "@/lib/rotulos";
 import {
-  GRUPOS_PADRAO_RELATORIO, GRUPOS_STATUS, ROTULOS_COMPLETUDE, ROTULOS_GRUPO, rotuloStatus, rotuloTotal, statusDosGrupos, statusNoGrupo, type GrupoStatus,
+  GRUPOS_PADRAO_RELATORIO, GRUPOS_STATUS, ROTULOS_COMPLETUDE, ROTULOS_TIPO, type TipoComissao, ROTULOS_GRUPO, rotuloStatus, rotuloTotal, statusDosGrupos, statusNoGrupo, type GrupoStatus,
 } from "@/lib/comissoes/status";
 import { detectarTipoImagem } from "@/lib/imagem";
 import { idSchema } from "@/lib/validacao";
@@ -204,10 +204,13 @@ export type DadosComissoes = {
   grupos: GrupoStatus[];
   /** N.3: comissões em análise fora do filtro (chip fixo no relatório) */
   em_analise_fora: number;
+  /** Fase 22 (H.3): filtro por tipo (Normal / Estorno); ausente = todos */
+  tipo?: TipoComissao | null;
   comissoes: {
     percentual: number;
     valor: number;
     status: string;
+    tipo: TipoComissao;
     completude: string;
     data_prevista_recebimento: string | null;
     data_recebimento: string | null;
@@ -237,13 +240,13 @@ function agruparProdutos(itens: ItemComissaoRow[]): ProdutoComissao[] {
 }
 
 /** Só comissões de pedidos do período. */
-export async function dadosComissoes(ctx: Contexto, representadaId: string, periodo: string, grupos: readonly GrupoStatus[] = GRUPOS_PADRAO_RELATORIO): Promise<DadosComissoes> {
+export async function dadosComissoes(ctx: Contexto, representadaId: string, periodo: string, grupos: readonly GrupoStatus[] = GRUPOS_PADRAO_RELATORIO, tipo: TipoComissao | null = null): Promise<DadosComissoes> {
   const rep = await representada(ctx, representadaId);
   const { inicio, fim } = limitesPeriodo(periodo);
   const [com, itens] = await Promise.all([
     ctx.supabase
       .from("comissoes")
-      .select("percentual, valor, status, completude, data_prevista_recebimento, data_recebimento, pedido:pedidos!inner(codigo_pedido, data, valor_total, cliente:clientes(nome))")
+      .select("percentual, valor, status, tipo, completude, data_prevista_recebimento, data_recebimento, pedido:pedidos!inner(codigo_pedido, data, valor_total, cliente:clientes(nome))")
       .eq("representada_id", rep.id)
       .in("status", statusDosGrupos(GRUPOS_STATUS))
       .gte("pedido.data", inicio)
@@ -262,9 +265,9 @@ export async function dadosComissoes(ctx: Contexto, representadaId: string, peri
   if (itens.error) throw erroBanco(itens.error);
   const todas = [...com.data].sort((a, b) => a.pedido.data.localeCompare(b.pedido.data));
   const incluidos = new Set<string>(grupos);
-  const comissoes = todas.filter((c) => incluidos.has(statusNoGrupo(c.status)));
+  const comissoes = todas.filter((c) => incluidos.has(statusNoGrupo(c.status)) && (!tipo || c.tipo === tipo));
   const emAnaliseFora = incluidos.has("em_analise") ? 0 : todas.filter((c) => statusNoGrupo(c.status) === "em_analise").length;
-  return { representada: rep, periodo, grupos: [...grupos], em_analise_fora: emAnaliseFora, comissoes, produtos: agruparProdutos(itens.data) };
+  return { representada: rep, periodo, grupos: [...grupos], em_analise_fora: emAnaliseFora, tipo, comissoes, produtos: agruparProdutos(itens.data) };
 }
 
 /** Comissões que entram nos totais (grupos do filtro; cancelada nunca entra). */
@@ -292,10 +295,11 @@ function corpoComissoes(d: DadosComissoes): Content[] {
         { titulo: "Previsão", valor: (c) => (c.data_prevista_recebimento ? formatarDia(c.data_prevista_recebimento) : "Sem previsão"), largura: "auto" },
         { titulo: "Recebimento", valor: (c) => (c.data_recebimento ? formatarDia(c.data_recebimento) : "—"), largura: "auto" },
         { titulo: "Status", valor: (c) => rotuloStatus(c.status), largura: "auto" },
+        { titulo: "Tipo", valor: (c) => ROTULOS_TIPO[c.tipo] ?? c.tipo, largura: "auto" },
         { titulo: "Completude", valor: (c) => ROTULOS_COMPLETUDE[c.completude as "completa"] ?? c.completude, largura: "auto" },
       ],
       d.comissoes,
-      { vazio: "Nenhuma comissão no período.", totais: [rotuloTotal(d.grupos), "", "", "", "", formatarMoeda(soma(validas.map((c) => c.valor))), "", "", "", ""] },
+      { vazio: "Nenhuma comissão no período.", totais: [rotuloTotal(d.grupos), "", "", "", "", formatarMoeda(soma(validas.map((c) => c.valor))), "", "", "", "", ""] },
     ),
     secao("Detalhe por produto"),
     tabelaProdutos(d.produtos),

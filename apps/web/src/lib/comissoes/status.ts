@@ -53,8 +53,13 @@ export function rotuloTotal(grupos: readonly GrupoStatus[]): string {
   return `Total ${nomes || "—"}${grupos.includes("em_analise") ? "" : " (exclui em análise)"}`;
 }
 
-/** I.9: recebida, reaberta e cancelada não entram na aprovação em lote. */
-export const selecionavelEmLote = (status: string) => !["recebida", "reaberta", STATUS_CANCELADA].includes(status);
+/** I.9: recebida, reaberta e cancelada não entram na aprovação em lote; estorno (Fase 22) só muda pelo processamento. */
+export const selecionavelEmLote = (status: string, tipo: string = "normal") => tipo !== "estorno" && !["recebida", "reaberta", STATUS_CANCELADA].includes(status);
+
+/* ---------- Fase 22: tipo do lançamento ---------- */
+export const TIPOS_COMISSAO = ["normal", "estorno"] as const;
+export type TipoComissao = (typeof TIPOS_COMISSAO)[number];
+export const ROTULOS_TIPO: Record<TipoComissao, string> = { normal: "Normal", estorno: "Estorno" };
 
 /* ---------- Completude e motivos (F / H.2) ---------- */
 
@@ -84,10 +89,17 @@ export const ROTULOS_ORIGEM: Record<OrigemCalculo, string> = {
 export const AVISO_PENDENTES_ANALISE = "Você possui comissões pendentes de análise";
 
 /** Ações de linha disponíveis por status (Q.2) — derivadas dos grupos, nunca de status escrito à mão no consumidor. */
-export function acoesDoStatus(status: string) {
+export function acoesDoStatus(status: string, tipo: string = "normal", devolucao: { status: string } | null = null) {
   const g = statusNoGrupo(status);
   const cancelada = status === STATUS_CANCELADA;
+  if (tipo === "estorno") {
+    // Fase 22 (G): o estorno só muda pela devolução vinculada
+    return { marcarRecebida: false, analisar: false, reabrir: false, editarData: false, definir: false, cancelada,
+      processar: !cancelada && devolucao?.status === "pendente", reabrirDevolucao: !cancelada && devolucao?.status === "processada" };
+  }
   return {
+    processar: false,
+    reabrirDevolucao: false,
     marcarRecebida: g === "a_receber",
     analisar: g === "em_analise",
     reabrir: g === "recebido",

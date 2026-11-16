@@ -27,7 +27,7 @@ describe("fase 21 — mapa único de status (B)", () => {
     expect(AVISO_PENDENTES_ANALISE).toBe("Você possui comissões pendentes de análise");
   });
   it("seleção em lote e ações por status (I.9 / Q.2)", () => {
-    expect(["prevista", "pendente_analise", "recebida", "reaberta", "cancelada"].map(selecionavelEmLote)).toEqual([true, true, false, false, false]);
+    expect(["prevista", "pendente_analise", "recebida", "reaberta", "cancelada"].map((s) => selecionavelEmLote(s))).toEqual([true, true, false, false, false]);
     expect(acoesDoStatus("pendente_analise")).toMatchObject({ analisar: true, marcarRecebida: false, definir: true });
     expect(acoesDoStatus("recebida")).toMatchObject({ reabrir: true, definir: false });
     expect(acoesDoStatus("cancelada")).toMatchObject({ editarData: false, cancelada: true });
@@ -58,8 +58,8 @@ describe("fase 21 — dashboard: três indicadores distintos (M)", () => {
       { status: "cancelada", valor: 99, data_prevista_recebimento: d, data_recebimento: null },
     ];
     const r = indicadoresComissao(lista, (x) => !!x && x.startsWith("2026-11"));
-    expect(r).toEqual({ recebida: 10, a_receber: 5, em_analise: { valor: 3, quantidade: 3 } });
-    expect(indicadoresComissao([], () => true)).toEqual({ recebida: 0, a_receber: 0, em_analise: { valor: 0, quantidade: 0 } });
+    expect(r).toEqual({ recebida: 10, recebida_bruta: 10, devolucoes: 0, a_receber: 5, em_analise: { valor: 3, quantidade: 3 } });
+    expect(indicadoresComissao([], () => true)).toEqual({ recebida: 0, recebida_bruta: 0, devolucoes: 0, a_receber: 0, em_analise: { valor: 0, quantidade: 0 } });
     expect(totalizar(lista)).toEqual({ recebido: { valor: 10, quantidade: 10 }, a_receber: { valor: 5, quantidade: 5 }, em_analise: { valor: 3, quantidade: 3 } });
   });
 });
