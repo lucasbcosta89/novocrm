@@ -88,6 +88,64 @@ A política de privacidade já existe em: `ENDEREÇO-DA-PLATAFORMA/politica-de-p
 8. No **Supabase**: **Authentication** → **Sign In / Providers** → **Facebook** → **Enable** →
    *Client ID* = **ID do app**, *Client Secret* = **Chave secreta do app** → **Save**.
 
+### Facebook não aceita os endereços? Siga esta lista, na ordem
+
+A Meta confere os endereços em **quatro lugares diferentes**. Se faltar um, ela recusa. Vá de um em
+um e marque.
+
+**1. Os endereços em si (o erro mais comum)**
+- Comece sempre com `https://` (com o **s**).
+- Sem espaço no começo ou no fim. Dica: cole primeiro no Bloco de Notas, apague os espaços e copie
+  de lá.
+- Sem barra no fim do endereço de retorno. O certo é exatamente:
+  `https://axgbsafbevhzvasbkrkf.supabase.co/auth/v1/callback`
+- Teste a política de privacidade: abra `ENDEREÇO-DA-PLATAFORMA/politica-de-privacidade` numa
+  **janela anônima** do navegador. Se a página não abrir para você, a Meta também não consegue.
+
+**2. Domínios do app** — *Configurações do app* → **Básico**
+- No campo **Domínios do app**, digite e tecle Enter depois de cada um (cada domínio vira uma
+  "etiqueta"):
+  - `axgbsafbevhzvasbkrkf.supabase.co`
+  - o domínio da plataforma **sem** `https://` e sem nada depois da barra
+    (ex.: `app.seudominio.com.br` ou `crm-multimarcas.seu-nome.workers.dev`)
+- Role até o fim da página → **+ Adicionar plataforma** → **Site** → em **URL do site**, cole
+  `ENDEREÇO-DA-PLATAFORMA` (com `https://`).
+- Confira também **URL da Política de Privacidade** e **URL das instruções de exclusão de dados**
+  (passo 6 acima) → **Salvar alterações** no rodapé.
+
+**3. Endereço de retorno** — *Casos de uso* → **Autenticação e criação de conta** (pode aparecer
+como "Login do Facebook") → **Personalizar** → **Configurações** (na lateral, ou em
+"Ir para as configurações")
+- **Login no OAuth do cliente:** Sim
+- **Login do OAuth na Web:** Sim
+- **Forçar HTTPS:** Sim
+- **URIs de redirecionamento do OAuth válidos:** cole o endereço de retorno do Supabase e tecle
+  **Enter** (ele precisa virar uma "etiqueta"; se ficar só como texto, não salva).
+- **Salvar alterações** no rodapé da página.
+- Opcional, para conferir: no **Validador de URI de redirecionamento**, na mesma tela, cole o
+  endereço de retorno → **Verificar URI**. Tem que aparecer em verde.
+
+**4. Modo do app** — topo do painel
+- Mude de **Desenvolvimento** para **Ao vivo** (ou clique em **Publicar**). Se a Meta não deixar
+  publicar, ela mostra o que falta — quase sempre é a política de privacidade, a categoria ou o ícone
+  do app (envie `assets/brand/plurima-simbolo-positivo.webp` em *Configurações do app → Básico →
+  Ícone do app*).
+
+**Se não achar "Login do Facebook":** o app pode ter sido criado como tipo **Empresa** (aparece
+"Login do Facebook para empresas", com outras opções). Nesse caso é mais rápido criar um app novo:
+**Meus apps → Criar app → caso de uso "Autenticar e solicitar dados de usuários com o Login do
+Facebook"** e repetir o Passo 2. Depois, apague o app antigo em *Configurações do app → Avançado →
+Excluir app*.
+
+**Qual mensagem você vê?**
+| Mensagem | Onde resolver |
+|---|---|
+| "Não é possível carregar a URL: o domínio dessa URL não está incluído nos domínios do app" | Item 2 (Domínios do app e plataforma Site) |
+| "URL bloqueada: o redirecionamento falhou porque o URI não está na lista de permissões" | Item 3 (URIs de redirecionamento) |
+| "URL inválida" ao salvar a política de privacidade | Item 1 (abrir a página em janela anônima) |
+| "O app não está ativo" / "Recurso indisponível" ao testar com outra conta | Item 4 (modo Ao vivo) |
+| Funciona para você, mas não para outras pessoas | Item 4 (modo Ao vivo) |
+
 ---
 
 ## Passo 3 — LinkedIn (20 min)
