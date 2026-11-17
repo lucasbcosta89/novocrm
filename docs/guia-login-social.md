@@ -3,6 +3,9 @@
 Para quem não é programador. Você cria três "apps de login" (um em cada empresa) e cola as
 chaves no Supabase. Nenhuma chave precisa ser enviada no chat: elas vão **só** para o Supabase.
 
+> Este guia é a **Parte C** do [guia-cadastro.md](guia-cadastro.md). Comece por lá: ele explica que
+> a configuração é feita **uma vez só** e vale para todas as páginas, para o cadastro e para o login.
+
 Tempo estimado: Google 15 min · Facebook 20 min · LinkedIn 20 min (+ página da empresa, se não tiver).
 
 ---
