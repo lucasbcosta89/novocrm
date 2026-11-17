@@ -15,7 +15,7 @@ Este resumo não substitui o texto completo abaixo.
 
 ## 1. Quem somos e a quem esta política se aplica
 
-A Plurima é uma plataforma de gestão para representantes comerciais multimarcas, operada por **LB DA COSTA LTDA** (nome fantasia Plurima Sistemas), inscrita no CNPJ sob o nº 45.133.427/0001-04, com sede na Rua RA-5, Qd. 16, Lt. 19, Anápolis-GO. Nesta política, "Plurima" e "nós" se referem a essa empresa; "você" se refere a quem visita o site, se cadastra ou usa a plataforma.
+A Plurima é uma plataforma de gestão para representantes comerciais multimarcas, operada por **LB DA COSTA LTDA** (Plurima), inscrita no CNPJ sob o nº 45.133.427/0001-04, com sede na Rua RA-5, Qd. 16, Lt. 19, Anápolis-GO. Nesta política, "Plurima" e "nós" se referem a essa empresa; "você" se refere a quem visita o site, se cadastra ou usa a plataforma.
 
 Esta política vale para o site da Plurima, para as páginas de cadastro e para a plataforma (web e aplicativo). Ela segue a Lei Geral de Proteção de Dados Pessoais (LGPD — Lei nº 13.709/2018), o Marco Civil da Internet (Lei nº 12.965/2014) e a regulamentação da Autoridade Nacional de Proteção de Dados (ANPD).
 
@@ -148,7 +148,7 @@ Pela LGPD (art. 18), você pode, a qualquer momento e sem custo:
 - opor-se a tratamento feito com base no legítimo interesse;
 - pedir revisão de decisões automatizadas.
 
-Muitos desses direitos você exerce direto na plataforma (perfil, exportação, exclusão da conta). Para os demais, escreva para [plurimasistemas@gmail.com](mailto:plurimasistemas@gmail.com). Podemos pedir informações para confirmar sua identidade, e respondemos em até 15 dias. Você também pode apresentar reclamação à ANPD (gov.br/anpd).
+Muitos desses direitos você exerce direto na plataforma (perfil, exportação, exclusão da conta). Para os demais, escreva para [contato@plurima.app](mailto:contato@plurima.app). Podemos pedir informações para confirmar sua identidade, e respondemos em até 15 dias. Você também pode apresentar reclamação à ANPD (gov.br/anpd).
 
 ## 14. Menores de idade
 
@@ -162,6 +162,6 @@ Podemos atualizar esta política para refletir mudanças no produto ou na legisl
 
 Dúvidas, pedidos ou reclamações sobre esta política ou sobre o tratamento dos seus dados:
 
-- **Canal do encarregado (DPO):** [plurimasistemas@gmail.com](mailto:plurimasistemas@gmail.com)
-- **Controladora:** LB DA COSTA LTDA (Plurima Sistemas) · CNPJ 45.133.427/0001-04
+- **Canal do encarregado (DPO):** [contato@plurima.app](mailto:contato@plurima.app)
+- **Controladora:** LB DA COSTA LTDA (Plurima) · CNPJ 45.133.427/0001-04
 - **Endereço:** Rua RA-5, Qd. 16, Lt. 19, Anápolis-GO
