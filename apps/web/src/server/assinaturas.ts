@@ -1,7 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { envMp } from "@/lib/env";
-import { ORDEM_PLANOS } from "@/lib/planos";
+import { CICLOS, ORDEM_CICLOS, PLANO } from "@/lib/planos";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { Contexto } from "./contexto";
 import { AppError, erroBanco } from "./erros";
@@ -9,6 +9,7 @@ import { mp, type MpAuthorizedPayment, type MpPayment, type MpPreapproval } from
 
 export type Assinatura = {
   plano: string;
+  ciclo: "mensal" | "anual";
   status: string;
   periodo_inicio: string | null;
   periodo_fim: string | null;
@@ -19,51 +20,57 @@ export const referenciaExterna = (userId: string) => `user_${userId}`;
 export async function obterAssinatura({ supabase, userId }: Contexto): Promise<Assinatura | null> {
   const { data, error } = await supabase
     .from("assinaturas")
-    .select("plano, status, periodo_inicio, periodo_fim")
+    .select("plano, ciclo, status, periodo_inicio, periodo_fim")
     .eq("user_id", userId)
     .maybeSingle<Assinatura>();
   if (error) throw erroBanco(error);
   return data;
 }
 
-const planoSchema = z.enum(ORDEM_PLANOS as [string, ...string[]], "Plano inválido");
+const cicloSchema = z.enum(ORDEM_CICLOS as [string, ...string[]], "Escolha o plano mensal ou anual");
 
 /**
- * Cria a assinatura no MP (POST /preapproval) e devolve o init_point (checkout).
- * O plano só é liberado quando o webhook confirmar pagamento aprovado.
+ * Cria a assinatura do plano único no MP (POST /preapproval) e devolve o init_point (checkout).
+ * Mensal: R$ 119,90 todo mês. Anual: R$ 1.198,80 a cada 12 meses (equivale a R$ 99,90/mês).
+ * O acesso só é liberado quando o webhook confirmar o pagamento aprovado (trial sem cartão: nada é cobrado antes).
  */
-export async function iniciarAssinatura(ctx: Contexto, planoInput: unknown, origem: string): Promise<string> {
-  const codigo = planoSchema.parse(planoInput);
+export async function iniciarAssinatura(ctx: Contexto, cicloInput: unknown, origem: string): Promise<string> {
+  const ciclo = cicloSchema.parse(cicloInput) as keyof typeof CICLOS;
+  const preco = CICLOS[ciclo];
   if (!origem.startsWith("https://")) {
     throw new AppError(400, "O checkout do Mercado Pago só funciona pelo endereço público (https), não pelo localhost.", "mercado_pago");
   }
   const admin = supabaseAdmin();
-  const [{ data: plano, error: e1 }, { data: usuario, error: e2 }, { data: atual }] = await Promise.all([
-    admin.from("planos").select("codigo, nome, preco").eq("codigo", codigo).single<{ codigo: string; nome: string; preco: number }>(),
+  const [{ data: usuario, error: e2 }, { data: atual }] = await Promise.all([
     admin.from("usuarios").select("email").eq("id", ctx.userId).single<{ email: string }>(),
     admin
       .from("assinaturas")
-      .select("plano, status, mp_preapproval_id, mp_preapproval_anterior, plano_anterior")
+      .select("ciclo, status, periodo_fim, mp_preapproval_id, mp_preapproval_anterior, ciclo_anterior")
       .eq("user_id", ctx.userId)
       .maybeSingle<{
-        plano: string;
+        ciclo: "mensal" | "anual";
         status: string;
+        periodo_fim: string | null;
         mp_preapproval_id: string | null;
         mp_preapproval_anterior: string | null;
-        plano_anterior: string | null;
+        ciclo_anterior: "mensal" | "anual" | null;
       }>(),
   ]);
-  if (e1 || e2) throw erroBanco((e1 ?? e2)!);
+  if (e2) throw erroBanco(e2);
+  const ativa = atual?.status === "active" && !!atual.periodo_fim && new Date(atual.periodo_fim).getTime() > Date.now();
+  if (ativa && atual.ciclo === ciclo && !atual.mp_preapproval_anterior) {
+    throw new AppError(409, `Você já tem a assinatura ${preco.rotulo.toLowerCase()} ativa.`, "assinatura_ativa");
+  }
 
   const externa = referenciaExterna(ctx.userId);
   const { MP_TEST_PAYER_EMAIL } = envMp();
   const pre = await mp<MpPreapproval>("/preapproval", {
     method: "POST",
     body: {
-      reason: `Plurima — Plano ${plano.nome}`,
+      reason: `${PLANO.nome} — plano ${preco.rotulo.toLowerCase()}`,
       external_reference: externa,
       payer_email: MP_TEST_PAYER_EMAIL ?? usuario.email,
-      auto_recurring: { frequency: 1, frequency_type: "months", transaction_amount: Number(plano.preco), currency_id: "BRL" },
+      auto_recurring: { frequency: preco.meses, frequency_type: "months", transaction_amount: preco.cobranca, currency_id: "BRL" },
       back_url: `${origem}/app/configurar?retorno=mp`,
       notification_url: `${origem}/api/webhooks/mercadopago`,
       status: "pending",
@@ -71,18 +78,18 @@ export async function iniciarAssinatura(ctx: Contexto, planoInput: unknown, orig
   });
   if (!pre.init_point) throw new AppError(502, "Mercado Pago não retornou o link de pagamento", "mercado_pago");
 
-  // Upgrade com assinatura ativa: guarda a preapproval/plano vigentes. Pagamentos da antiga mantêm o plano
-  // antigo; o 1º pagamento da nova libera o plano novo e a antiga é cancelada no MP (ver aplicar_pagamento_assinatura).
-  const ativa = atual?.status === "active";
+  // Troca de ciclo com assinatura ativa: guarda a preapproval/ciclo vigentes. Pagamentos da antiga mantêm o ciclo
+  // antigo; o 1º pagamento da nova vale o ciclo novo e a antiga é cancelada no MP (ver aplicar_pagamento_assinatura).
   const vigente = ativa
     ? atual.mp_preapproval_anterior
-      ? { mp_preapproval_anterior: atual.mp_preapproval_anterior, plano_anterior: atual.plano_anterior }
-      : { mp_preapproval_anterior: atual.mp_preapproval_id, plano_anterior: atual.plano }
-    : { mp_preapproval_anterior: null, plano_anterior: null };
+      ? { mp_preapproval_anterior: atual.mp_preapproval_anterior, ciclo_anterior: atual.ciclo_anterior }
+      : { mp_preapproval_anterior: atual.mp_preapproval_id, ciclo_anterior: atual.ciclo }
+    : { mp_preapproval_anterior: null, ciclo_anterior: null };
   const { error } = await admin.from("assinaturas").upsert(
     {
       user_id: ctx.userId,
-      plano: codigo,
+      plano: PLANO.codigo,
+      ciclo,
       status: ativa ? "active" : "pending",
       external_reference: externa,
       mp_preapproval_id: pre.id,

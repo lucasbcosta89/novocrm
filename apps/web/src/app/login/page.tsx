@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AntiBot } from "@/components/anti-bot";
 import { entrar } from "./actions";
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ erro?: string }> }) {
@@ -15,6 +16,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           Senha
           <input name="senha" type="password" autoComplete="current-password" minLength={8} required />
         </label>
+        <AntiBot />
         {erro && <p className="erro">{erro}</p>}
         <button className="btn" type="submit">Entrar</button>
         <p className="alt">

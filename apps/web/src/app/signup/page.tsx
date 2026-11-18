@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AntiBot } from "@/components/anti-bot";
 import { criarConta } from "./actions";
 
 export default async function SignupPage({ searchParams }: { searchParams: Promise<{ erro?: string }> }) {
@@ -19,6 +20,8 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
           Senha
           <input name="senha" type="password" autoComplete="new-password" minLength={8} required />
         </label>
+        <AntiBot />
+        <p className="dica">7 dias grátis, sem cartão de crédito.</p>
         {erro && <p className="erro">{erro}</p>}
         <button className="btn" type="submit">Criar conta</button>
         <p className="alt">

@@ -2,25 +2,50 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { buscarSecao, SECOES } from "@/lib/navegacao";
-import { PLANOS } from "@/lib/planos";
+import { calcularAcesso, CICLOS, diasAte, ECONOMIA_ANUAL, PLANO } from "@/lib/planos";
 
-describe("planos", () => {
-  it("preços e limites batem com a especificação", () => {
-    expect([PLANOS.solo.preco, PLANOS.profissional.preco, PLANOS.pro.preco]).toEqual([49, 89, 149]);
-    expect(PLANOS.solo.limites).toMatchObject({ representadas: 1, clientes: 100, conversas_mes: 200 });
-    expect(PLANOS.profissional.limites).toMatchObject({ representadas: 3, clientes: 1000, conversas_mes: 500 });
-    expect(PLANOS.pro.limites).toMatchObject({ representadas: null, clientes: null, conversas_mes: 1500 });
+describe("plano único", () => {
+  it("preços: R$ 119,90 mensal; anual R$ 99,90/mês cobrado de uma vez (R$ 1.198,80)", () => {
+    expect(CICLOS.mensal).toMatchObject({ cobranca: 119.9, meses: 1 });
+    expect(CICLOS.anual).toMatchObject({ valorMensal: 99.9, cobranca: 1198.8, meses: 12 });
+    expect(ECONOMIA_ANUAL).toBe(17);
   });
 
-  it("seed da Fase 6 em schema.sql espelha PLANOS", () => {
+  it("sem limites de representadas/clientes/PDFs; WhatsApp com teto de uso justo", () => {
+    expect(PLANO.limites).toEqual({ representadas: null, clientes: null, oportunidades: null, pdf_mes: null, conversas_mes: 1500 });
+  });
+
+  it("schema.sql cria a linha 'plurima' espelhando PLANO", () => {
     const sql = readFileSync(path.resolve(__dirname, "../../../schema.sql"), "utf8");
-    for (const [codigo, p] of Object.entries(PLANOS)) {
-      const linha = sql.split("\n").find((l) => l.startsWith("update planos set preco") && l.includes("where codigo = '" + codigo + "'"));
-      const m = linha?.match(/preco = (\d+),\s+limites = '(\{.*\})'/);
-      expect(m, codigo).toBeTruthy();
-      expect(Number(m![1])).toBe(p.preco);
-      expect(JSON.parse(m![2]!)).toEqual(p.limites);
-    }
+    const m = sql.match(/values \('plurima', 'Plurima', ([\d.]+), '(\{.*\})'\)/);
+    expect(m).toBeTruthy();
+    expect(Number(m![1])).toBe(CICLOS.mensal.cobranca);
+    expect(JSON.parse(m![2]!)).toEqual(PLANO.limites);
+  });
+});
+
+describe("paywall (espelho de acesso_usuario)", () => {
+  const agora = new Date("2026-11-20T12:00:00Z");
+  const em = (dias: number) => new Date(agora.getTime() + dias * 86_400_000).toISOString();
+
+  it("trial vigente → trial; vencido sem assinatura → leitura", () => {
+    expect(calcularAcesso({ trial_fim: em(3), assinatura: null }, agora)).toBe("trial");
+    expect(calcularAcesso({ trial_fim: em(-1), assinatura: null }, agora)).toBe("leitura");
+    expect(calcularAcesso({ trial_fim: em(-1), assinatura: { status: "pending", periodo_fim: null } }, agora)).toBe("leitura");
+  });
+
+  it("assinatura paga → assinante; vencida há < 7 dias → carência; depois → leitura", () => {
+    expect(calcularAcesso({ trial_fim: em(-30), assinatura: { status: "active", periodo_fim: em(10) } }, agora)).toBe("assinante");
+    expect(calcularAcesso({ trial_fim: em(-30), assinatura: { status: "active", periodo_fim: em(-3) } }, agora)).toBe("carencia");
+    expect(calcularAcesso({ trial_fim: em(-30), assinatura: { status: "active", periodo_fim: em(-8) } }, agora)).toBe("leitura");
+    // cancelada mantém o acesso até o fim do período já pago
+    expect(calcularAcesso({ trial_fim: em(-30), assinatura: { status: "cancelled", periodo_fim: em(5) } }, agora)).toBe("assinante");
+  });
+
+  it("dias restantes arredondam para cima e nunca ficam negativos", () => {
+    expect(diasAte(em(2.2), agora)).toBe(3);
+    expect(diasAte(em(-1), agora)).toBe(0);
+    expect(diasAte(null, agora)).toBe(0);
   });
 });
 

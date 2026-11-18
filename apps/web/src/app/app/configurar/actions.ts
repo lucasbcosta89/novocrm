@@ -8,7 +8,7 @@ import { conciliarAssinatura, iniciarAssinatura } from "@/server/assinaturas";
 export async function iniciarAssinaturaAction(fd: FormData) {
   const h = await headers();
   const origem = h.get("origin") ?? `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host")}`;
-  await executarAcao((ctx) => iniciarAssinatura(ctx, fd.get("plano"), origem), {
+  await executarAcao((ctx) => iniciarAssinatura(ctx, fd.get("ciclo"), origem), {
     ok: (initPoint) => initPoint,
     erro: "/app/configurar",
   });
@@ -20,7 +20,7 @@ export async function verificarPagamentoAction() {
   await executarAcao(
     async (ctx) => {
       const { aplicados } = await conciliarAssinatura(ctx.userId);
-      mensagem = aplicados ? "Pagamento confirmado: plano liberado!" : "Pagamento ainda não aprovado pelo Mercado Pago. Tente em instantes.";
+      mensagem = aplicados ? "Pagamento confirmado: assinatura ativada!" : "Pagamento ainda não aprovado pelo Mercado Pago. Tente em instantes.";
     },
     { ok: () => `/app/configurar?ok=${encodeURIComponent(mensagem)}`, erro: "/app/configurar" },
   );

@@ -335,6 +335,7 @@ section[id] { scroll-margin-top: 16px; }
 .etiqueta-dev-recusada { background: var(--danger-suave); color: var(--danger-texto); }
 
 /* Fase 6: planos e limites */
+.aviso-paywall { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 .aviso-limite { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 .planos { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
 .plano { border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: grid; gap: 8px; align-content: start; background: var(--surface); }

@@ -1,14 +1,15 @@
 import { redirect } from "next/navigation";
 import { Mensagens } from "@/components/form";
+import { Icone } from "@/components/icones";
 import { OpcoesPlano } from "@/components/upgrade";
 import { formatarData, formatarMoeda } from "@/lib/formato";
-import { fimDaCarencia, RECURSOS, RECURSOS_MENSAIS, ROTULO_RECURSO } from "@/lib/planos";
+import { CICLOS, fimDaCarencia, PLANO, ROTULO_RECURSO } from "@/lib/planos";
 import { carregar } from "@/server/acao";
+import { obterAcesso } from "@/server/acesso";
 import { conciliarAssinatura, obterAssinatura } from "@/server/assinaturas";
 import { obterContexto } from "@/server/contexto";
-import { verificarPagamentoAction } from "./actions";
 import { obterUso } from "@/server/quota";
-import { Icone } from "@/components/icones";
+import { verificarPagamentoAction } from "./actions";
 
 const ROTULO_ASSINATURA: Record<string, string> = {
   pending: "Aguardando pagamento",
@@ -18,19 +19,20 @@ const ROTULO_ASSINATURA: Record<string, string> = {
   expired: "Expirada",
 };
 
+/** Assinatura do plano único (paywall): trial de 7 dias sem cartão, depois mensal ou anual pelo Mercado Pago. */
 export default async function ConfigurarPage({
   searchParams,
 }: {
   searchParams: Promise<{ erro?: string; ok?: string; retorno?: string }>;
 }) {
   const { erro, ok, retorno } = await searchParams;
-  // Voltando do checkout ou com assinatura pendente: confere no MP e libera o plano se o pagamento já foi aprovado.
+  // Voltando do checkout ou com assinatura pendente: confere no MP e libera o acesso se o pagamento já foi aprovado.
   const pendente = (await carregar(obterAssinatura))?.status === "pending";
   if (retorno === "mp" || pendente) {
     const { userId } = await obterContexto();
     await conciliarAssinatura(userId).catch((e) => console.error("conciliação MP", e));
   }
-  const [uso, assinatura] = await carregar((ctx) => Promise.all([obterUso(ctx), obterAssinatura(ctx)]));
+  const [uso, assinatura, acesso] = await carregar((ctx) => Promise.all([obterUso(ctx), obterAssinatura(ctx), obterAcesso(ctx)]));
 
   // checkout concluído → cadastro pós-checkout (dados + LGPD), se ainda não feito
   if (retorno === "mp" && assinatura?.status === "active") {
@@ -39,29 +41,40 @@ export default async function ConfigurarPage({
   }
 
   const carencia = fimDaCarencia(assinatura?.periodo_fim ?? null);
+  const whatsapp = uso.recursos.conversas_mes;
+  const cicloAtivo = acesso.estado === "assinante" || acesso.estado === "carencia" ? assinatura?.ciclo ?? null : null;
 
   return (
     <>
-      <h1 className="titulo-icone"><Icone nome="engrenagem" tamanho={24} /> Configurar</h1>
+      <h1 className="titulo-icone"><Icone nome="engrenagem" tamanho={24} /> Assinatura</h1>
       <Mensagens erro={erro} ok={ok} />
       {retorno === "mp" && (
         <p className="aviso aviso-ok">
-          Recebemos seu retorno do Mercado Pago. O plano é liberado assim que o pagamento for aprovado — normalmente em instantes.
+          Recebemos seu retorno do Mercado Pago. O acesso completo é liberado assim que o pagamento for aprovado — normalmente em instantes.
         </p>
       )}
       {carencia && (
         <p className="aviso aviso-erro alerta">
-          Pagamento da assinatura pendente. Seu plano continua ativo até {formatarData(carencia.toISOString())};
-          depois disso a conta volta para o plano Solo (nenhum dado é apagado).
+          Pagamento da assinatura pendente. Seu acesso continua completo até {formatarData(carencia.toISOString())};
+          depois disso a conta fica somente leitura até o pagamento (nenhum dado é apagado).
         </p>
       )}
 
       <section className="card">
-        <h2 className="titulo-icone"><Icone nome="cartao" tamanho={20} /> Plano atual: {uso.plano.nome}</h2>
+        <h2 className="titulo-icone"><Icone nome="cartao" tamanho={20} /> {PLANO.nome}</h2>
         <dl className="resumo">
-          <div><dt>Mensalidade</dt><dd>{formatarMoeda(uso.plano.preco)}</dd></div>
-          <div><dt>Assinatura</dt><dd>{assinatura ? ROTULO_ASSINATURA[assinatura.status] ?? assinatura.status : "Sem assinatura"}</dd></div>
-          {assinatura?.status === "pending" && <div><dt>Plano escolhido</dt><dd>{assinatura.plano}</dd></div>}
+          <div>
+            <dt>Situação</dt>
+            <dd>
+              {acesso.estado === "trial" && `Teste grátis — ${acesso.diasTrial} dia(s) restante(s)`}
+              {acesso.estado === "assinante" && "Assinatura ativa"}
+              {acesso.estado === "carencia" && "Pagamento pendente (carência)"}
+              {acesso.estado === "leitura" && "Somente leitura — assine para voltar a criar e editar"}
+            </dd>
+          </div>
+          {acesso.estado === "trial" && acesso.trialFim && <div><dt>Teste grátis até</dt><dd>{formatarData(acesso.trialFim)}</dd></div>}
+          {assinatura && <div><dt>Assinatura</dt><dd>{ROTULO_ASSINATURA[assinatura.status] ?? assinatura.status} · {CICLOS[assinatura.ciclo].rotulo}</dd></div>}
+          {assinatura && <div><dt>Valor</dt><dd>{formatarMoeda(CICLOS[assinatura.ciclo].cobranca)}{assinatura.ciclo === "anual" ? "/ano" : "/mês"}</dd></div>}
           {assinatura?.periodo_fim && <div><dt>Válida até</dt><dd>{formatarData(assinatura.periodo_fim)}</dd></div>}
         </dl>
         {assinatura?.status === "pending" && (
@@ -71,38 +84,22 @@ export default async function ConfigurarPage({
         )}
       </section>
 
-      <section className="card">
-        <h2 className="titulo-icone"><Icone nome="grafico" tamanho={20} /> Uso e limites</h2>
-        <div className="tabela-wrap">
-          <table className="tabela">
-            <thead>
-              <tr><th>Recurso</th><th>Uso</th><th>Limite</th><th></th></tr>
-            </thead>
-            <tbody>
-              {RECURSOS.map((r) => {
-                const u = uso.recursos[r];
-                const pct = u.limite ? Math.min(100, Math.round((u.usado / u.limite) * 100)) : 0;
-                return (
-                  <tr key={r} className={u.atingido ? "linha-alerta" : undefined}>
-                    <td>{ROTULO_RECURSO[r]}{RECURSOS_MENSAIS.includes(r) && <span className="dica"> ({uso.mes})</span>}</td>
-                    <td>{u.usado}</td>
-                    <td>{u.limite ?? "Ilimitado"}</td>
-                    <td>
-                      {u.limite != null && (
-                        <div className="barra" aria-label={`${pct}%`}><span style={{ width: `${pct}%` }} className={u.atingido ? "cheia" : undefined} /></div>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+      <section className="card" id="planos">
+        <h2 className="titulo-icone"><Icone nome="pacote" tamanho={20} /> {cicloAtivo ? "Trocar o ciclo de cobrança" : "Assinar"}</h2>
+        <p className="dica">Um plano só, com todas as funcionalidades. Escolha pagar por mês ou por ano.</p>
+        <OpcoesPlano atual={cicloAtivo} />
       </section>
 
-      <section className="card" id="planos">
-        <h2 className="titulo-icone"><Icone nome="pacote" tamanho={20} /> Planos</h2>
-        <OpcoesPlano atual={uso.plano.codigo} />
+      <section className="card">
+        <h2 className="titulo-icone"><Icone nome="escudo" tamanho={20} /> Uso justo</h2>
+        <p className="dica">
+          Sem limite de representadas, clientes, oportunidades ou PDFs. Para proteger a plataforma contra uso automatizado, há
+          limites de ritmo na geração de PDFs (até 15 a cada 10 minutos) e um teto de {whatsapp.limite?.toLocaleString("pt-BR")} {ROTULO_RECURSO.conversas_mes.toLowerCase()}.
+        </p>
+        <dl className="resumo">
+          <div><dt>{ROTULO_RECURSO.conversas_mes} ({uso.mes})</dt><dd>{whatsapp.usado.toLocaleString("pt-BR")} de {whatsapp.limite?.toLocaleString("pt-BR") ?? "—"}</dd></div>
+          <div><dt>{ROTULO_RECURSO.pdf_mes} ({uso.mes})</dt><dd>{uso.recursos.pdf_mes.usado.toLocaleString("pt-BR")}</dd></div>
+        </dl>
       </section>
     </>
   );

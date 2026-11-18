@@ -5,14 +5,12 @@ import { carregar } from "@/server/acao";
 import { obterPerfil } from "@/server/perfil";
 import { obterConfiguracaoPedidos } from "@/server/configuracao-pedidos";
 import { obterUso } from "@/server/quota";
-import { BotaoUpgrade } from "@/components/upgrade";
 import { revelarDocumentosAction, salvarDescontoPadraoAction, salvarPerfilAction } from "./actions";
 import { Icone } from "@/components/icones";
 
 export default async function PerfilPage({ searchParams }: { searchParams: Busca }) {
   const [{ ok, erro }, [perfil, uso, config]] = await Promise.all([searchParams, carregar((ctx) => Promise.all([obterPerfil(ctx), obterUso(ctx), obterConfiguracaoPedidos(ctx)]))]);
   const pdf = uso.recursos.pdf_mes;
-  const pct = pdf.limite ? Math.min(100, Math.round((pdf.usado / pdf.limite) * 100)) : 0;
   const aceite = (em: string | null, versao: string | null) => (em ? `${formatarDataHora(em)} · versão ${versao ?? "—"}` : "Não registrado");
 
   return (
@@ -47,16 +45,7 @@ export default async function PerfilPage({ searchParams }: { searchParams: Busca
 
       <section className="card">
         <h2 className="titulo-icone"><Icone nome="documento" tamanho={20} /> Relatórios e catálogos</h2>
-        <p><strong>{pdf.usado}{pdf.limite != null ? ` de ${pdf.limite}` : ""} PDFs este mês</strong>{pdf.limite == null && " (ilimitado no seu plano)"}</p>
-        {pdf.limite != null && (
-          <div className="barra barra-larga" aria-label={`${pct}% do limite`}><span style={{ width: `${pct}%` }} className={pct >= 80 ? "cheia" : undefined} /></div>
-        )}
-        {pdf.limite != null && pct >= 80 && (
-          <div className="aviso aviso-erro aviso-limite">
-            <span>{pdf.atingido ? "Limite de PDFs do mês atingido." : "Você está perto do limite de PDFs do mês."} Faça upgrade para gerar mais.</span>
-            <BotaoUpgrade atual={uso.plano.codigo} />
-          </div>
-        )}
+        <p><strong>{pdf.usado} PDFs este mês</strong> (sem limite mensal)</p>
         <p className="dica">Relatórios gerais e Catálogo Geral ficam em Representadas; o catálogo de cada marca, na página da representada.</p>
       </section>
 

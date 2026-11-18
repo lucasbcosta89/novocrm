@@ -3,29 +3,32 @@
 import { useRef } from "react";
 import { iniciarAssinaturaAction } from "@/app/app/configurar/actions";
 import { formatarMoeda } from "@/lib/formato";
-import { ORDEM_PLANOS, PLANOS, ROTULO_RECURSO, type Recurso } from "@/lib/planos";
+import { CICLOS, ECONOMIA_ANUAL, ORDEM_CICLOS, PLANO, type Ciclo } from "@/lib/planos";
 
-const NOME: Record<string, string> = { solo: "Solo", profissional: "Profissional", pro: "Pro" };
-const DESTAQUES: Recurso[] = ["representadas", "clientes", "oportunidades", "conversas_mes", "pdf_mes"];
+const BENEFICIOS = [
+  "Representadas, clientes e produtos ilimitados",
+  "Pedidos, importação por Excel e comissões completas",
+  "Relatórios, catálogos em PDF e análises",
+  "Todas as funcionalidades, sem plano inferior",
+];
 
-/** Cards de plano com botão que leva ao checkout do Mercado Pago. */
-export function OpcoesPlano({ atual }: { atual: string }) {
+/** Cards do plano único (mensal / anual) com botão que leva ao checkout do Mercado Pago. */
+export function OpcoesPlano({ atual }: { atual?: Ciclo | null }) {
   return (
     <div className="planos">
-      {ORDEM_PLANOS.map((codigo) => {
-        const p = PLANOS[codigo];
-        const eAtual = codigo === atual;
+      {ORDEM_CICLOS.map((ciclo) => {
+        const c = CICLOS[ciclo];
+        const eAtual = ciclo === atual;
         return (
-          <form key={codigo} action={iniciarAssinaturaAction} className={`plano ${eAtual ? "plano-atual" : ""}`}>
-            <input type="hidden" name="plano" value={codigo} />
-            <h3>{NOME[codigo]}</h3>
-            <p className="preco">{formatarMoeda(p.preco)}<span>/mês</span></p>
-            <ul>
-              {DESTAQUES.map((r) => (
-                <li key={r}>{p.limites[r] ?? "Ilimitado"} {ROTULO_RECURSO[r].toLowerCase()}</li>
-              ))}
-            </ul>
-            <button className="btn" type="submit">{eAtual ? "Assinar / renovar" : "Assinar"}</button>
+          <form key={ciclo} action={iniciarAssinaturaAction} className={`plano ${ciclo === "anual" ? "plano-destaque" : ""} ${eAtual ? "plano-atual" : ""}`}>
+            <input type="hidden" name="ciclo" value={ciclo} />
+            <h3>{PLANO.nome} {c.rotulo}</h3>
+            <p className="preco">{formatarMoeda(c.valorMensal)}<span>/mês</span></p>
+            <p className="dica">
+              {ciclo === "anual" ? `${formatarMoeda(c.cobranca)} cobrados por ano · economia de ${ECONOMIA_ANUAL}%` : "Cobrança mensal, cancele quando quiser"}
+            </p>
+            <ul>{BENEFICIOS.map((b) => <li key={b}>{b}</li>)}</ul>
+            <button className="btn" type="submit">{eAtual ? "Renovar" : `Assinar ${c.rotulo.toLowerCase()}`}</button>
           </form>
         );
       })}
@@ -33,19 +36,19 @@ export function OpcoesPlano({ atual }: { atual: string }) {
   );
 }
 
-/** Botão que abre o modal de upgrade. */
-export function BotaoUpgrade({ atual, rotulo = "Fazer upgrade" }: { atual: string; rotulo?: string }) {
+/** Botão que abre o modal de assinatura (paywall). */
+export function BotaoUpgrade({ rotulo = "Assinar a Plurima" }: { atual?: string; rotulo?: string }) {
   const ref = useRef<HTMLDialogElement>(null);
   return (
     <>
       <button type="button" className="btn btn-peq" onClick={() => ref.current?.showModal()}>{rotulo}</button>
       <dialog ref={ref} className="modal" onClick={(e) => e.target === ref.current && ref.current?.close()}>
         <div className="cabecalho">
-          <h2>Escolha seu plano</h2>
+          <h2>Assine a Plurima</h2>
           <button type="button" className="btn-link" onClick={() => ref.current?.close()} aria-label="Fechar">✕</button>
         </div>
-        <p className="dica">Pagamento recorrente pelo Mercado Pago. O novo limite é liberado assim que o pagamento for aprovado.</p>
-        <OpcoesPlano atual={atual} />
+        <p className="dica">Pagamento recorrente pelo Mercado Pago. O acesso completo é liberado assim que o pagamento é aprovado.</p>
+        <OpcoesPlano />
       </dialog>
     </>
   );
