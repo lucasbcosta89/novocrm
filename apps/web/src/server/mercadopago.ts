@@ -41,6 +41,8 @@ export type MpPreapproval = {
   external_reference?: string;
 };
 
+export type MpPreference = { id: string; init_point?: string };
+
 export type MpPayment = {
   id: number;
   status: string; // approved | pending | rejected | ...

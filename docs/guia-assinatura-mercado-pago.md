@@ -10,7 +10,17 @@
 | **Somente leitura** (trial acabou sem assinatura, ou carência expirou) | Ver e exportar; não cria nem edita nada |
 
 - O bloqueio é **no banco** (gatilho `exigir_assinatura`), então nem uma chamada direta à API consegue gravar sem assinatura.
-- Preços: **Mensal R$ 119,90/mês**; **Anual R$ 99,90/mês, cobrado como R$ 1.198,80 uma vez por ano** (assinatura do MP com frequência de 12 meses).
+- Quatro formas de pagamento (mesmo plano, muda só como paga):
+
+  | Forma | Preço | Como funciona no Mercado Pago |
+  |---|---|---|
+  | Cartão mensal | R$ 129,90/mês | Assinatura recorrente (/preapproval): cobra todo mês até o cliente cancelar (botão "Cancelar assinatura no cartão" na página Assinatura) |
+  | Cartão anual | 12x de R$ 109,90 (R$ 1.318,80) | Pagamento único parcelado (Checkout Pro); libera 12 meses |
+  | Pix mensal | R$ 109,90 | Pagamento único; libera 1 mês. Aviso de renovação 5 dias antes de vencer |
+  | Pix anual | R$ 1.078,80 à vista (R$ 89,90/mês) | Pagamento único; libera 12 meses |
+
+- Pagamentos novos somam ao período vigente. Se quem paga no cartão mensal fizer um Pix ou o anual, a recorrência é cancelada sozinha no MP (não cobra em dobro).
+- O banco recusa pagamento único abaixo do preço (proteção contra valor adulterado).
 - Contas que já existiam ganharam 7 dias de trial a partir de 23/11/2026 (data da migração).
 - Sem limite de representadas, clientes, oportunidades ou PDFs. Proteções de uso justo:
   - PDFs: até 3 em geração ao mesmo tempo, 15 a cada 10 min, 60 por hora e 300 por dia;
@@ -30,6 +40,13 @@
 > Depois de apagar o secret no GitHub, remova-o também do Cloudflare (o deploy só envia os secrets preenchidos e não apaga os antigos):
 > `cd apps/web; npx wrangler secret delete MP_TEST_PAYER_EMAIL`
 
+## 1b. Mercado Pago — parcelamento sem juros (obrigatório para o "12x de R$ 109,90")
+
+Sem isso o cliente vê 12x **com juros** (parcela maior que R$ 109,90).
+1. No painel do Mercado Pago: **Seu negócio → Custos** (ou **Configurações → Parcelamento**).
+2. Ative **Oferecer parcelamento sem juros** até **12 parcelas** para pagamentos online. O custo do parcelamento passa a ser descontado de você.
+3. Confira a taxa e o prazo de recebimento escolhidos (na hora ou em 14/30 dias), que mudam o custo.
+
 ## 2. Mercado Pago — webhook
 
 1. Em **Suas integrações → (aplicação) → Webhooks → Configurar notificações**, aba **Modo produção**.
@@ -42,7 +59,7 @@
 
 1. Ainda com credenciais **de teste**: em **Suas integrações → Contas de teste**, crie um *vendedor* e um *comprador*.
 2. Use o Access Token do vendedor de teste em `MP_ACCESS_TOKEN` e o e-mail do comprador em `MP_TEST_PAYER_EMAIL`.
-3. Crie uma conta nova na Plurima → em **Assinatura**, escolha Mensal → pague com o comprador de teste e um cartão de teste (titular `APRO`).
+3. Crie uma conta nova na Plurima → em **Assinatura**, teste as 4 opções: cartão mensal e cartão anual com um cartão de teste (titular `APRO`) e Pix (no ambiente de teste o Pix fica pendente; aprove pelo painel de testes ou use o botão "Já paguei — verificar pagamento").
 4. Confira: volta para `/app/configurar?retorno=mp`, a situação vira **Assinatura ativa** e a validade fica em +1 mês (ou +12 meses no anual).
 5. Para testar o modo leitura sem esperar 7 dias, rode no SQL Editor do Supabase:
    `update usuarios set trial_fim = now() - interval '1 minute' where email = '<e-mail da conta de teste>';`

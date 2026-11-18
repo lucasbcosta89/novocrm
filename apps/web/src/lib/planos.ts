@@ -24,15 +24,24 @@ export const PLANO = {
   limites: { representadas: null, clientes: null, oportunidades: null, pdf_mes: null, conversas_mes: 1500 } satisfies Limites,
 } as const;
 
-/** Ciclos de cobrança do plano único. Anual: R$ 99,90/mês cobrados de uma vez (12 × 99,90 = R$ 1.198,80/ano). */
-export const CICLOS = {
-  mensal: { rotulo: "Mensal", valorMensal: 119.9, cobranca: 119.9, meses: 1 },
-  anual: { rotulo: "Anual", valorMensal: 99.9, cobranca: 1198.8, meses: 12 },
+/**
+ * Formas de pagamento do plano único (espelho de aplicar_pagamento_avulso / assinaturas.forma no banco):
+ * - cartao_mensal: R$ 129,90/mês recorrente no cartão (assinatura do MP; cancela quando quiser);
+ * - cartao_anual: R$ 1.318,80 em até 12x de R$ 109,90 no cartão (pagamento único parcelado; 12 meses);
+ * - pix_mensal: R$ 109,90 à vista no Pix (1 mês; renova manualmente);
+ * - pix_anual: R$ 1.078,80 à vista no Pix (12 meses; equivale a R$ 89,90/mês).
+ */
+export const FORMAS = {
+  cartao_mensal: { meio: "cartao", ciclo: "mensal", rotulo: "Cartão mensal", cobranca: 129.9, valorMensal: 129.9, meses: 1, parcelas: 1, recorrente: true },
+  cartao_anual: { meio: "cartao", ciclo: "anual", rotulo: "Cartão anual", cobranca: 1318.8, valorMensal: 109.9, meses: 12, parcelas: 12, recorrente: false },
+  pix_mensal: { meio: "pix", ciclo: "mensal", rotulo: "Pix mensal", cobranca: 109.9, valorMensal: 109.9, meses: 1, parcelas: 1, recorrente: false },
+  pix_anual: { meio: "pix", ciclo: "anual", rotulo: "Pix anual", cobranca: 1078.8, valorMensal: 89.9, meses: 12, parcelas: 1, recorrente: false },
 } as const;
-export type Ciclo = keyof typeof CICLOS;
-export const ORDEM_CICLOS: Ciclo[] = ["mensal", "anual"];
-/** economia do anual sobre 12 mensalidades (%) */
-export const ECONOMIA_ANUAL = Math.round((1 - CICLOS.anual.cobranca / (CICLOS.mensal.cobranca * 12)) * 100);
+export type Forma = keyof typeof FORMAS;
+export const ORDEM_FORMAS: Forma[] = ["cartao_mensal", "cartao_anual", "pix_mensal", "pix_anual"];
+export type Ciclo = "mensal" | "anual";
+/** economia (%) de uma forma sobre 12 meses no cartão mensal */
+export const economia = (f: Forma) => Math.round((1 - FORMAS[f].valorMensal / FORMAS.cartao_mensal.valorMensal) * 100);
 
 /** Trial gratuito, sem cartão, contado do cadastro (espelha usuarios.trial_fim). */
 export const TRIAL_DIAS = 7;

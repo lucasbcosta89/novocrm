@@ -1176,3 +1176,19 @@ tr[id^="item-"]:target > td { background: var(--accent-suave); }
   .colapsada .sidebar .nav-item { gap: 10px; padding: 0 12px; justify-content: flex-start; }
   .colapsada .sidebar .nav-item .rotulo { display: inline; }
 }
+
+/* Paywall: 4 formas de pagamento (Mensal/Anual × Pix/Cartão) */
+.planos-formas { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 760px; }
+@media (max-width: 640px) { .planos-formas { grid-template-columns: 1fr; } }
+.plano-destaque { border-color: var(--accent); }
+.plano-topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.selo-plano { font-size: .75rem; font-weight: 600; padding: 3px 8px; border-radius: 999px; background: var(--accent-suave); color: var(--text); }
+.forma-pagamento { display: grid; gap: 10px; padding: 12px 0 0; border-top: 1px solid var(--border); }
+.forma-pagamento.plano-atual { box-shadow: none; border-top-color: var(--accent); }
+.forma-info { display: grid; gap: 2px; }
+.forma-meio { font-size: .8rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.forma-pagamento .preco { font-variant-numeric: tabular-nums; }
+.forma-pagamento .preco small { font-size: .9rem; font-weight: 600; }
+.forma-pagamento .dica { margin: 0; }
+.forma-pagamento button { justify-self: start; }
+.planos-beneficios { grid-column: 1 / -1; margin: 0; padding-left: 18px; color: var(--muted); font-size: .9rem; columns: 2 240px; }

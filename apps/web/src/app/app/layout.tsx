@@ -19,7 +19,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const [{ data: usuario }, { data: assinatura }, jar, pedidosPend, comissoesPend] = await Promise.all([
     supabase.from("usuarios").select("nome, trial_fim, consentimento_lgpd_aceito_em, onboarding_concluido, onboarding_pulado, onboarding_etapa").eq("id", user.id)
       .maybeSingle<{ nome: string; trial_fim: string | null; consentimento_lgpd_aceito_em: string | null; onboarding_concluido: boolean; onboarding_pulado: boolean; onboarding_etapa: number }>(),
-    supabase.from("assinaturas").select("status, periodo_fim").eq("user_id", user.id).maybeSingle<{ status: string; periodo_fim: string | null }>(),
+    supabase.from("assinaturas").select("status, periodo_fim, forma").eq("user_id", user.id).maybeSingle<{ status: string; periodo_fim: string | null; forma: string | null }>(),
     cookies(),
     // Fase 23.3: selos do menu (só contagens; RLS)
     supabase.from("pedidos").select("id", { count: "exact", head: true }).eq("tem_pendencias", true),
@@ -29,6 +29,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   // Paywall: o bloqueio real é no banco (gatilho exigir_assinatura); aqui só o aviso.
   const acesso = calcularAcesso({ trial_fim: usuario?.trial_fim ?? null, assinatura: assinatura ?? null });
   const diasTrial = diasAte(usuario?.trial_fim ?? null);
+  // Pix e cartão anual não renovam sozinhos: avisa 5 dias antes do fim do período pago
+  const diasPago = acesso === "assinante" && assinatura?.forma && assinatura.forma !== "cartao_mensal" ? diasAte(assinatura.periodo_fim) : null;
 
   return (
     <Shell nome={usuario?.nome ?? null} colapsadaInicial={jar.get(COOKIE_SIDEBAR)?.value === "colapsada"}
@@ -40,8 +42,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       )}
       {acesso === "trial" && diasTrial <= 3 && (
         <p className="aviso aviso-paywall">
-          {diasTrial <= 1 ? "Seu teste grátis termina hoje." : `Faltam ${diasTrial} dias do seu teste grátis.`}{" "}
+          <span>{diasTrial <= 1 ? "Seu teste grátis termina hoje." : `Faltam ${diasTrial} dias do seu teste grátis.`}</span>
           <Link href="/app/configurar#planos">Assinar a Plurima</Link>
+        </p>
+      )}
+      {diasPago != null && diasPago <= 5 && (
+        <p className="aviso aviso-paywall">
+          <span>{diasPago <= 1 ? "Seu acesso pago termina hoje." : `Seu acesso pago termina em ${diasPago} dias.`}</span>
+          <Link href="/app/configurar#planos">Renovar</Link>
         </p>
       )}
       {acesso === "carencia" && (
@@ -51,7 +59,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       )}
       {acesso === "leitura" && (
         <p className="aviso aviso-erro alerta aviso-paywall">
-          <strong>Sua conta está em modo somente leitura.</strong> Seus dados continuam aqui — assine para voltar a criar e editar.{" "}
+          <span><strong>Sua conta está em modo somente leitura.</strong> Seus dados continuam aqui — assine para voltar a criar e editar.</span>
           <Link href="/app/configurar#planos" className="btn btn-peq">Assinar agora</Link>
         </p>
       )}

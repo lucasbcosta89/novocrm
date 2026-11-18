@@ -3,13 +3,13 @@ import { Mensagens } from "@/components/form";
 import { Icone } from "@/components/icones";
 import { OpcoesPlano } from "@/components/upgrade";
 import { formatarData, formatarMoeda } from "@/lib/formato";
-import { CICLOS, fimDaCarencia, PLANO, ROTULO_RECURSO } from "@/lib/planos";
+import { diasAte, fimDaCarencia, FORMAS, PLANO, ROTULO_RECURSO } from "@/lib/planos";
 import { carregar } from "@/server/acao";
 import { obterAcesso } from "@/server/acesso";
 import { conciliarAssinatura, obterAssinatura } from "@/server/assinaturas";
 import { obterContexto } from "@/server/contexto";
 import { obterUso } from "@/server/quota";
-import { verificarPagamentoAction } from "./actions";
+import { cancelarAssinaturaAction, verificarPagamentoAction } from "./actions";
 
 const ROTULO_ASSINATURA: Record<string, string> = {
   pending: "Aguardando pagamento",
@@ -42,7 +42,12 @@ export default async function ConfigurarPage({
 
   const carencia = fimDaCarencia(assinatura?.periodo_fim ?? null);
   const whatsapp = uso.recursos.conversas_mes;
-  const cicloAtivo = acesso.estado === "assinante" || acesso.estado === "carencia" ? assinatura?.ciclo ?? null : null;
+  const vigente = acesso.estado === "assinante" || acesso.estado === "carencia";
+  const forma = assinatura?.forma ? FORMAS[assinatura.forma] : null;
+  const formaAtiva = vigente && assinatura?.status === "active" ? assinatura.forma : null;
+  const recorrenteAtiva = formaAtiva === "cartao_mensal";
+  // pagamento único (Pix ou cartão anual) vencendo em até 7 dias: hora de renovar
+  const diasParaVencer = vigente && forma && !forma.recorrente ? diasAte(assinatura?.periodo_fim ?? null) : null;
 
   return (
     <>
@@ -73,10 +78,21 @@ export default async function ConfigurarPage({
             </dd>
           </div>
           {acesso.estado === "trial" && acesso.trialFim && <div><dt>Teste grátis até</dt><dd>{formatarData(acesso.trialFim)}</dd></div>}
-          {assinatura && <div><dt>Assinatura</dt><dd>{ROTULO_ASSINATURA[assinatura.status] ?? assinatura.status} · {CICLOS[assinatura.ciclo].rotulo}</dd></div>}
-          {assinatura && <div><dt>Valor</dt><dd>{formatarMoeda(CICLOS[assinatura.ciclo].cobranca)}{assinatura.ciclo === "anual" ? "/ano" : "/mês"}</dd></div>}
-          {assinatura?.periodo_fim && <div><dt>Válida até</dt><dd>{formatarData(assinatura.periodo_fim)}</dd></div>}
+          {assinatura && <div><dt>Assinatura</dt><dd>{ROTULO_ASSINATURA[assinatura.status] ?? assinatura.status}{forma && ` · ${forma.rotulo}`}</dd></div>}
+          {forma && <div><dt>Valor</dt><dd>{forma.parcelas > 1 ? `12x de ${formatarMoeda(forma.valorMensal)}` : formatarMoeda(forma.cobranca)}{forma.recorrente ? "/mês" : forma.meses === 12 ? " (12 meses)" : " (1 mês)"}</dd></div>}
+          {assinatura?.periodo_fim && <div><dt>{recorrenteAtiva ? "Próxima cobrança" : "Acesso pago até"}</dt><dd>{formatarData(assinatura.periodo_fim)}</dd></div>}
         </dl>
+        {diasParaVencer != null && diasParaVencer <= 7 && (
+          <p className="aviso aviso-paywall">
+            {diasParaVencer <= 1 ? "Seu acesso pago termina hoje." : `Seu acesso pago termina em ${diasParaVencer} dias.`} Renove abaixo para não perder o acesso.
+          </p>
+        )}
+        {recorrenteAtiva && (
+          <form action={cancelarAssinaturaAction}>
+            <button className="btn-link" type="submit">Cancelar assinatura no cartão</button>
+            <span className="dica"> O acesso continua até {assinatura?.periodo_fim ? formatarData(assinatura.periodo_fim) : "o fim do período pago"}.</span>
+          </form>
+        )}
         {assinatura?.status === "pending" && (
           <form action={verificarPagamentoAction}>
             <button className="btn btn-peq" type="submit">Já paguei — verificar pagamento</button>
@@ -85,9 +101,10 @@ export default async function ConfigurarPage({
       </section>
 
       <section className="card" id="planos">
-        <h2 className="titulo-icone"><Icone nome="pacote" tamanho={20} /> {cicloAtivo ? "Trocar o ciclo de cobrança" : "Assinar"}</h2>
-        <p className="dica">Um plano só, com todas as funcionalidades. Escolha pagar por mês ou por ano.</p>
-        <OpcoesPlano atual={cicloAtivo} />
+        <h2 className="titulo-icone"><Icone nome="pacote" tamanho={20} /> {vigente ? "Renovar ou trocar a forma de pagamento" : "Escolha como pagar"}</h2>
+        <p className="dica">Um plano só, com todas as funcionalidades. No Pix sai mais barato; no cartão mensal a cobrança é automática.
+          Pagamentos novos somam ao período que você já tem.</p>
+        <OpcoesPlano atual={formaAtiva} />
       </section>
 
       <section className="card">

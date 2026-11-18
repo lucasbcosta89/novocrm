@@ -3,41 +3,71 @@
 import { useRef } from "react";
 import { iniciarAssinaturaAction } from "@/app/app/configurar/actions";
 import { formatarMoeda } from "@/lib/formato";
-import { CICLOS, ECONOMIA_ANUAL, ORDEM_CICLOS, PLANO, type Ciclo } from "@/lib/planos";
+import { economia, FORMAS, type Ciclo, type Forma } from "@/lib/planos";
 
 const BENEFICIOS = [
   "Representadas, clientes e produtos ilimitados",
-  "Pedidos, importação por Excel e comissões completas",
+  "Pedidos, importação por Excel e comissões",
   "Relatórios, catálogos em PDF e análises",
-  "Todas as funcionalidades, sem plano inferior",
 ];
 
-/** Cards do plano único (mensal / anual) com botão que leva ao checkout do Mercado Pago. */
-export function OpcoesPlano({ atual }: { atual?: Ciclo | null }) {
+const GRUPOS: { ciclo: Ciclo; titulo: string; formas: Forma[] }[] = [
+  { ciclo: "mensal", titulo: "Mensal", formas: ["pix_mensal", "cartao_mensal"] },
+  { ciclo: "anual", titulo: "Anual", formas: ["pix_anual", "cartao_anual"] },
+];
+
+function detalhe(forma: Forma): string {
+  switch (forma) {
+    case "cartao_mensal": return "Cobrado todo mês no cartão. Cancele quando quiser.";
+    case "pix_mensal": return "Pagamento único de 1 mês. Renove pelo Pix quando vencer.";
+    case "cartao_anual": return `12x de ${formatarMoeda(FORMAS.cartao_anual.valorMensal)} sem juros no cartão (${formatarMoeda(FORMAS.cartao_anual.cobranca)}).`;
+    case "pix_anual": return `${formatarMoeda(FORMAS.pix_anual.cobranca)} à vista no Pix: 12 meses de acesso.`;
+  }
+}
+
+/** Paywall: as 4 formas de pagamento do plano único, agrupadas em Mensal e Anual, com Pix e cartão lado a lado. */
+export function OpcoesPlano({ atual }: { atual?: Forma | null }) {
   return (
-    <div className="planos">
-      {ORDEM_CICLOS.map((ciclo) => {
-        const c = CICLOS[ciclo];
-        const eAtual = ciclo === atual;
-        return (
-          <form key={ciclo} action={iniciarAssinaturaAction} className={`plano ${ciclo === "anual" ? "plano-destaque" : ""} ${eAtual ? "plano-atual" : ""}`}>
-            <input type="hidden" name="ciclo" value={ciclo} />
-            <h3>{PLANO.nome} {c.rotulo}</h3>
-            <p className="preco">{formatarMoeda(c.valorMensal)}<span>/mês</span></p>
-            <p className="dica">
-              {ciclo === "anual" ? `${formatarMoeda(c.cobranca)} cobrados por ano · economia de ${ECONOMIA_ANUAL}%` : "Cobrança mensal, cancele quando quiser"}
-            </p>
-            <ul>{BENEFICIOS.map((b) => <li key={b}>{b}</li>)}</ul>
-            <button className="btn" type="submit">{eAtual ? "Renovar" : `Assinar ${c.rotulo.toLowerCase()}`}</button>
-          </form>
-        );
-      })}
+    <div className="planos planos-formas">
+      {GRUPOS.map((g) => (
+        <div key={g.ciclo} className={`plano ${g.ciclo === "anual" ? "plano-destaque" : ""}`}>
+          <div className="plano-topo">
+            <h3>{g.titulo}</h3>
+            {g.ciclo === "anual" && <span className="selo-plano">Menor preço · até {economia("pix_anual")}% off</span>}
+          </div>
+          {g.formas.map((forma) => {
+            const f = FORMAS[forma];
+            const eAtual = forma === atual;
+            return (
+              <form key={forma} action={iniciarAssinaturaAction} className={`forma-pagamento ${eAtual ? "plano-atual" : ""}`}>
+                <input type="hidden" name="forma" value={forma} />
+                <div className="forma-info">
+                  <span className="forma-meio">{f.meio === "pix" ? "Pix" : "Cartão de crédito"}</span>
+                  <p className="preco">
+                    {f.parcelas > 1 && <small>12x </small>}
+                    {formatarMoeda(f.valorMensal)}
+                    <span>{f.parcelas > 1 ? "" : "/mês"}</span>
+                  </p>
+                  <p className="dica">{detalhe(forma)}</p>
+                </div>
+                <button className={f.meio === "pix" ? "btn" : "btn-secundario"} type="submit" disabled={eAtual && f.recorrente}>
+                  {eAtual && f.recorrente ? "Assinatura atual" : f.meio === "pix" ? "Pagar com Pix" : f.recorrente ? "Assinar no cartão" : "Pagar no cartão"}
+                </button>
+              </form>
+            );
+          })}
+        </div>
+      ))}
+      <ul className="planos-beneficios">
+        {BENEFICIOS.map((b) => <li key={b}>{b}</li>)}
+        <li>Mesmo plano em todas as opções: muda só a forma de pagamento</li>
+      </ul>
     </div>
   );
 }
 
 /** Botão que abre o modal de assinatura (paywall). */
-export function BotaoUpgrade({ rotulo = "Assinar a Plurima" }: { atual?: string; rotulo?: string }) {
+export function BotaoUpgrade({ rotulo = "Assinar a Plurima" }: { rotulo?: string }) {
   const ref = useRef<HTMLDialogElement>(null);
   return (
     <>
@@ -47,7 +77,7 @@ export function BotaoUpgrade({ rotulo = "Assinar a Plurima" }: { atual?: string;
           <h2>Assine a Plurima</h2>
           <button type="button" className="btn-link" onClick={() => ref.current?.close()} aria-label="Fechar">✕</button>
         </div>
-        <p className="dica">Pagamento recorrente pelo Mercado Pago. O acesso completo é liberado assim que o pagamento é aprovado.</p>
+        <p className="dica">Pagamento pelo Mercado Pago. O acesso completo é liberado assim que o pagamento é aprovado.</p>
         <OpcoesPlano />
       </dialog>
     </>
