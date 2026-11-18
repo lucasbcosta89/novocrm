@@ -137,12 +137,33 @@ como "Login do Facebook") → **Personalizar** → **Configurações** (na later
 Facebook"** e repetir o Passo 2. Depois, apague o app antigo em *Configurações do app → Avançado →
 Excluir app*.
 
+**O Depurador de Compartilhamento do Facebook mostra "403"?**
+"403" quer dizer "acesso proibido": o **Cloudflare** está barrando o robô da Meta, que é quem lê a
+política de privacidade. Para pessoas a página abre normalmente (conferido em 17/11/2026:
+`https://plurima.app/politica-de-privacidade` responde 200). Corrija no Cloudflare:
+1. Entre em **dash.cloudflare.com** → clique no domínio **plurima.app**.
+2. Descubra quem bloqueou: menu **Security** (Segurança) → **Events** (Eventos) → **Add filter** →
+   *User Agent* → *contains* → `facebookexternalhit`. A coluna **Service** mostra o responsável.
+3. Desligue o responsável:
+   - **Bot Fight Mode**: *Security* → **Bots** → desligue **Bot Fight Mode**. (No plano grátis não dá
+     para abrir exceção, por isso é preciso desligar.)
+   - **Block AI bots / AI Crawl Control**: *Security* → **Bots** (ou **AI Crawl Control**) → em
+     *Block AI bots*, escolha **Do not block** (ou permita os robôs da **Meta**).
+   - **Regra personalizada (WAF)** ou **Security Level** alto / **I'm Under Attack**: *Security* →
+     **WAF** → **Custom rules** → **Create rule** → nome `Permitir Facebook` → campo **User Agent**,
+     operador **contains**, valor `facebookexternalhit` → ação **Skip** (marque todas as opções) →
+     **Deploy**. Em *Security → Settings*, deixe **Security Level** em *Medium* e o *Under Attack*
+     desligado.
+4. Espere 1 minuto e, no Depurador, clique em **Extrair novamente** (*Scrape Again*). Tem que
+   aparecer **200**. Depois volte e salve de novo a URL da política em *Configurações do app → Básico*.
+
 **Qual mensagem você vê?**
 | Mensagem | Onde resolver |
 |---|---|
 | "Não é possível carregar a URL: o domínio dessa URL não está incluído nos domínios do app" | Item 2 (Domínios do app e plataforma Site) |
 | "URL bloqueada: o redirecionamento falhou porque o URI não está na lista de permissões" | Item 3 (URIs de redirecionamento) |
-| "URL inválida" ao salvar a política de privacidade | Item 1 (abrir a página em janela anônima) |
+| "URL inválida" ao salvar a política de privacidade | Item 1 (abrir a página em janela anônima) e, se abrir, o bloco "403" acima |
+| "Código de resposta 403" no Depurador de Compartilhamento | Bloco "403" acima (Cloudflare) |
 | "O app não está ativo" / "Recurso indisponível" ao testar com outra conta | Item 4 (modo Ao vivo) |
 | Funciona para você, mas não para outras pessoas | Item 4 (modo Ao vivo) |
 
