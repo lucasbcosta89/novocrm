@@ -1190,5 +1190,9 @@ tr[id^="item-"]:target > td { background: var(--accent-suave); }
 .forma-pagamento .preco { font-variant-numeric: tabular-nums; }
 .forma-pagamento .preco small { font-size: .9rem; font-weight: 600; }
 .forma-pagamento .dica { margin: 0; }
+/* 2 linhas fixas: preço, texto e botão ficam na mesma altura nos dois cards */
+.forma-detalhe { line-height: 1.45; min-height: calc(2 * 1.45em); }
+.forma-detalhe span { display: block; }
+.plano-topo { min-height: 26px; }
 .forma-pagamento button { justify-self: start; }
 .planos-beneficios { grid-column: 1 / -1; margin: 0; padding-left: 18px; color: var(--muted); font-size: .9rem; columns: 2 240px; }

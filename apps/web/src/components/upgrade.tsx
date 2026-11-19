@@ -16,12 +16,13 @@ const GRUPOS: { ciclo: Ciclo; titulo: string; formas: Forma[] }[] = [
   { ciclo: "anual", titulo: "Anual", formas: ["pix_anual", "cartao_anual"] },
 ];
 
-function detalhe(forma: Forma): string {
+/** Descrição sempre em 2 linhas (uma por item) para os 4 blocos ficarem alinhados entre os cards Mensal e Anual. */
+function detalhe(forma: Forma): [string, string] {
   switch (forma) {
-    case "cartao_mensal": return "Cobrado todo mês no cartão. Cancele quando quiser.";
-    case "pix_mensal": return "Pagamento único de 1 mês. Renove pelo Pix quando vencer.";
-    case "cartao_anual": return `12x de ${formatarMoeda(FORMAS.cartao_anual.valorMensal)} sem juros no cartão (${formatarMoeda(FORMAS.cartao_anual.cobranca)}).`;
-    case "pix_anual": return `${formatarMoeda(FORMAS.pix_anual.cobranca)} à vista no Pix: 12 meses de acesso.`;
+    case "cartao_mensal": return ["Cobrado todo mês no cartão.", "Cancele quando quiser."];
+    case "pix_mensal": return ["Pagamento único de 1 mês.", "Renove pelo Pix quando vencer."];
+    case "cartao_anual": return [`Total de ${formatarMoeda(FORMAS.cartao_anual.cobranca)}, sem juros.`, "12 meses de acesso."];
+    case "pix_anual": return [`${formatarMoeda(FORMAS.pix_anual.cobranca)} à vista no Pix.`, "12 meses de acesso."];
   }
 }
 
@@ -48,7 +49,7 @@ export function OpcoesPlano({ atual }: { atual?: Forma | null }) {
                     {formatarMoeda(f.valorMensal)}
                     <span>{f.parcelas > 1 ? "" : "/mês"}</span>
                   </p>
-                  <p className="dica">{detalhe(forma)}</p>
+                  <p className="dica forma-detalhe">{detalhe(forma).map((linha) => <span key={linha}>{linha}</span>)}</p>
                 </div>
                 <button className={f.meio === "pix" ? "btn" : "btn-secundario"} type="submit" disabled={eAtual && f.recorrente}>
                   {eAtual && f.recorrente ? "Assinatura atual" : f.meio === "pix" ? "Pagar com Pix" : f.recorrente ? "Assinar no cartão" : "Pagar no cartão"}
