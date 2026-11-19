@@ -57,7 +57,6 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           MP_ACCESS_TOKEN: ${{ secrets.MP_ACCESS_TOKEN }}
           MP_WEBHOOK_SECRET: ${{ secrets.MP_WEBHOOK_SECRET }}
-          MP_TEST_PAYER_EMAIL: ${{ secrets.MP_TEST_PAYER_EMAIL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           WHATSAPP_TOKEN: ${{ secrets.WHATSAPP_TOKEN }}
           WHATSAPP_PHONE_NUMBER_ID: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
@@ -68,5 +67,5 @@ jobs:
           TURNSTILE_SECRET_KEY: ${{ secrets.TURNSTILE_SECRET_KEY }}
         # só envia os secrets preenchidos no GitHub
         run: |
-          node -e 'const k=["SUPABASE_URL","SUPABASE_ANON_KEY","SUPABASE_SERVICE_ROLE_KEY","MP_ACCESS_TOKEN","MP_WEBHOOK_SECRET","MP_TEST_PAYER_EMAIL","CRON_SECRET","WHATSAPP_TOKEN","WHATSAPP_PHONE_NUMBER_ID","WHATSAPP_VERIFY_TOKEN","WHATSAPP_APP_SECRET","DADOS_PESSOAIS_CHAVE","TURNSTILE_SITE_KEY","TURNSTILE_SECRET_KEY"];console.log(JSON.stringify(Object.fromEntries(k.filter(n=>process.env[n]).map(n=>[n,process.env[n]]))))' \
+          node -e 'const k=["SUPABASE_URL","SUPABASE_ANON_KEY","SUPABASE_SERVICE_ROLE_KEY","MP_ACCESS_TOKEN","MP_WEBHOOK_SECRET","CRON_SECRET","WHATSAPP_TOKEN","WHATSAPP_PHONE_NUMBER_ID","WHATSAPP_VERIFY_TOKEN","WHATSAPP_APP_SECRET","DADOS_PESSOAIS_CHAVE","TURNSTILE_SITE_KEY","TURNSTILE_SECRET_KEY"];console.log(JSON.stringify(Object.fromEntries(k.filter(n=>process.env[n]).map(n=>[n,process.env[n]]))))' \
             | pnpm exec wrangler secret bulk

@@ -1,6 +1,5 @@
 import "server-only";
 import { z } from "zod";
-import { envMp } from "@/lib/env";
 import { FORMAS, ORDEM_FORMAS, PLANO, type Forma } from "@/lib/planos";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { Contexto } from "./contexto";
@@ -59,7 +58,6 @@ async function iniciarAvulso(ctx: Contexto, forma: Forma, origem: string): Promi
   const f = FORMAS[forma];
   const { data: usuario, error } = await supabaseAdmin().from("usuarios").select("email").eq("id", ctx.userId).single<{ email: string }>();
   if (error) throw erroBanco(error);
-  const { MP_TEST_PAYER_EMAIL } = envMp();
   // Pix: só Pix (bank_transfer). Cartão anual: só crédito, até 12x — "sem juros" (juros por conta da Plurima)
   // é configurado na conta do Mercado Pago.
   const excluidos = f.meio === "pix"
@@ -73,7 +71,7 @@ async function iniciarAvulso(ctx: Contexto, forma: Forma, origem: string): Promi
         title: `${PLANO.nome} — ${f.ciclo === "anual" ? "12 meses" : "1 mês"} (${f.rotulo})`,
         quantity: 1, unit_price: f.cobranca, currency_id: "BRL",
       }],
-      payer: { email: MP_TEST_PAYER_EMAIL ?? usuario.email },
+      payer: { email: usuario.email },
       external_reference: referenciaAvulso(ctx.userId, forma),
       payment_methods: { excluded_payment_types: excluidos.map((id) => ({ id })), installments: f.parcelas },
       back_urls: {
@@ -117,13 +115,12 @@ async function iniciarRecorrente(ctx: Contexto, origem: string): Promise<string>
   }
 
   const externa = referenciaExterna(ctx.userId);
-  const { MP_TEST_PAYER_EMAIL } = envMp();
   const pre = await mp<MpPreapproval>("/preapproval", {
     method: "POST",
     body: {
       reason: `${PLANO.nome} — assinatura mensal`,
       external_reference: externa,
-      payer_email: MP_TEST_PAYER_EMAIL ?? usuario.email,
+      payer_email: usuario.email, // o próprio cliente (nos testes: a conta Plurima criada com o e-mail do comprador de teste)
       auto_recurring: { frequency: 1, frequency_type: "months", transaction_amount: preco.cobranca, currency_id: "BRL" },
       back_url: `${origem}/app/configurar?retorno=mp`,
       notification_url: `${origem}/api/webhooks/mercadopago`,

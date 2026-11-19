@@ -27,6 +27,9 @@ export async function mp<T>(caminho: string, init: { method?: string; body?: unk
       /* corpo não-JSON */
     }
     if (res.status >= 400 && res.status < 500 && motivo) {
+      if (/payer and collector cannot be the same/i.test(motivo)) {
+        throw new AppError(400, "Mercado Pago recusou: a conta que paga é a mesma que recebe. Entre na Plurima com a conta do cliente (não com o e-mail da conta vendedora do Mercado Pago).", "mercado_pago");
+      }
       throw new AppError(400, `Mercado Pago recusou: ${motivo}`, "mercado_pago");
     }
     throw new AppError(502, `Mercado Pago indisponível (${res.status}). Tente novamente.`, "mercado_pago");

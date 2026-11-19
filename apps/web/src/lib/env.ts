@@ -13,8 +13,6 @@ let cache: Env | undefined;
 const mpSchema = z.object({
   MP_ACCESS_TOKEN: z.string().min(1, "MP_ACCESS_TOKEN não configurado"),
   MP_WEBHOOK_SECRET: z.string().optional(),
-  /** E-mail do comprador de teste do MP (sandbox); em produção usa o e-mail do usuário. */
-  MP_TEST_PAYER_EMAIL: z.email().optional().or(z.literal("").transform(() => undefined)),
   CRON_SECRET: z.string().optional(),
 });
 
