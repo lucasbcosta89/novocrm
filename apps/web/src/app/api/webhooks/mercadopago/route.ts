@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
   const corpo = ((await req.json().catch(() => null)) ?? {}) as Notificacao;
   const dataId = req.nextUrl.searchParams.get("data.id") ?? (corpo.data?.id != null ? String(corpo.data.id) : null);
 
-  const valida = await assinaturaValida(process.env.MP_WEBHOOK_SECRET ?? "", {
+  const valida = await assinaturaValida((process.env.MP_WEBHOOK_SECRET ?? "").trim(), {
     xSignature: req.headers.get("x-signature"),
     xRequestId: req.headers.get("x-request-id"),
     dataId,

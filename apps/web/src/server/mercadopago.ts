@@ -10,7 +10,7 @@ export async function mp<T>(caminho: string, init: { method?: string; body?: unk
   const res = await fetch(`${API}${caminho}`, {
     method: init.method ?? "GET",
     headers: {
-      Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
+      Authorization: `Bearer ${MP_ACCESS_TOKEN.trim()}`, // trim: espaço/quebra de linha colados junto com o secret
       "Content-Type": "application/json",
       ...(init.method && init.method !== "GET" ? { "X-Idempotency-Key": crypto.randomUUID() } : {}),
     },
